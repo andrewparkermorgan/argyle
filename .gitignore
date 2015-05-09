@@ -39,3 +39,4 @@ Thumbs.db
 # R-generated stuff
 ###################
 .Rapp.*
+.Rhistory

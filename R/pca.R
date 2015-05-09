@@ -1,6 +1,7 @@
 ## pca.R
 ## functions for performing PCA on genotypes and hybridization intensities
 
+## internal function for actually doing PCA
 .do.pca.genotypes <- function(gty, extras = NULL, what = c("genotypes","intensity"),
 							  scale = TRUE, center = TRUE, eps = 1e-6, ...) {
 	
@@ -15,8 +16,9 @@
 	.make.pca.input <- function(g) {
 		if (what == "genotypes") {
 			if (!is.numeric(gty)) {
-				X <- t(.copy.matrix.noattr(recode.genotypes(gty, "01")))
+				gty <- recode.genotypes(gty, "01")
 			}
+			X <- t(.copy.matrix.noattr(gty))
 			## replace missing values with column mean
 			if (any(is.na(colMeans(X)))) {
 				message("\treplacing missing values with minor-allele frequency...")
@@ -68,8 +70,39 @@
 	
 }
 
-## wrapper function to return dataframe for nice plotting
-pca <- function(x, ...) UseMethod("pca")
+#' Perform PCA on a \code{genotypes} object
+#'
+#' Performs principal components analysis (PCA) on either (numerically-coded) genotypes or
+#' on the underliny 2D hybridization-intensity matrices.
+#'
+#' @param gty an object of class \code{genotypes}
+#' @param extras a second dataset of class \code{genotypes}, to be projected onto PCs computed
+#' 	from the first. NB: this function *does not* verify that the underlying features (ie. markers) match.
+#' @param what \code{"genotypes"} to do PCA on genotypes (coded 0/1/2); \code{"intensity"} to do PCA on
+#' 	underlying 2D intensities.  The latter triggers an error if intensity matrices are absent.
+#' @param K how many PCs to return.
+#' @param \code{...} other parameters for call to \code{prcomp}, such as \code{center} and \code{scale}
+#' 	(both \code{TRUE} by default)
+#'
+#' @details Uses base-\code{R}'s \code{prcomp} under the hood. By default, columns are centered and scaled;
+#' 	not doing so will likely produce a strange result.  When doing PCA on genotypes, missing values are
+#' 	replaced with the column mean, which in many circumstances can be interpreted as the minor-allele frequency.
+#' 	(This is very similar to the behavior of PLINK.)  When doing PCA on intensities, missing values are set
+#' 	to zero -- but even no-call genotypes have nonmissing intensities on Illumina arrays, so this is unlikely
+#' 	to have any effect in practice.
+#'
+#' @return a dataframe with as many rows as samples, in which the first columns are sample IDs and any associated
+#' 	metadata (as returned by \code{samples(gty)}), followed by the first K PCs.  Scaled eigenvalues (ie. percent
+#' 	of variance explained) are provided as \code{attr(,"explained")}.
+#'
+#' @seealso \code{pca.plink()} for using PLINK's (much faster and more powerful) implementation
+#'
+#' @examples
+#' pca.genotypes(geno)
+#' # equivalently, as shortcut:
+#' pca(geno)
+#'
+#' @export
 pca.genotypes <- function(gty, extras = NULL, what = c("genotypes","intensity"), K = 3, ...) {
 	
 	if (!inherits(gty, "genotypes"))
@@ -97,3 +130,4 @@ pca.genotypes <- function(gty, extras = NULL, what = c("genotypes","intensity"),
 	return(rez.df)
 	
 }
+pca <- function(x, ...) UseMethod("pca")
