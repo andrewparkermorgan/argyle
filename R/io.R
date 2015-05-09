@@ -5,7 +5,7 @@
 read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, ...) {
 
 	if (any(is.na(as.numeric(rownames(snps)))))
-		stop(paste("It looks like the <snps> object has bogus rownames. Rownames should match the 'marker' column,"
+		stop(paste("It looks like the <snps> object has bogus rownames. Rownames should match the 'marker' column",
 				   "and the marker names used on the array."))
 	
 	if (length(paste(prefix, in.path)) > 1)

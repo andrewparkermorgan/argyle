@@ -12,7 +12,23 @@
 ##	* 'alleles' -- manner in which alleles are encoded: "native" (ACTGHN), "01" (allele dosage wrt ALT allele), "relative" (allele dosage wrt MINOR allele)
 ## NB: I use missing values (NAs/NaNs) for no-calls, in order to take advantage of R's behaviors on missing data.
 
-## overload indexing operator to make genotypes object behave like normal matrix while preserving attributes
+#' Indexing into a \code{genotypes} object
+#'
+#' Allows indexing into a genotype matrix, trimming marker and sample metadata, filters,
+#' and intensity matrices accordingly.
+#'
+#' @param x an object of class \code{genotypes}
+#' @param i row index (logical, character, or numeric), recycled if needed
+#' @param j column index (logical, character, or numeric), recycled if needed
+#' @param drop allow reduction of the dimensions of \code{x} if \code{i,j} are of length 1?
+#'
+#' @return a \code{genotypes} object, preserving any attributes
+#'
+#' @examples
+#' geno[ 1:10, ]
+#' geno[ ,c("sample1","sample2") ]
+#'
+#' @export
 `[.genotypes` <- function(x, i = TRUE, j = TRUE, drop = FALSE, ...) {
 	
 	r <- NextMethod("[")
