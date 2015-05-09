@@ -33,10 +33,10 @@
 	
 	r <- NextMethod("[")
 	if (!is.null(attr(x, "map"))) {
-		attr(r, "map") <- attr(x, "map")[ i, ]
+		attr(r, "map") <- attr(x, "map")[ i,,drop = FALSE ]
 	}
 	if (!is.null(attr(x, "ped"))) {
-		attr(r, "ped") <- attr(x, "ped")[ j, ]
+		attr(r, "ped") <- attr(x, "ped")[ j,,drop = FALSE ]
 		rownames(attr(r, "ped")) <- as.character(attr(r, "ped")$iid)
 	}
 	if (.has.valid.intensity(x)) {
