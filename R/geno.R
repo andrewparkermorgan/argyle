@@ -13,7 +13,7 @@
 ## NB: I use missing values (NAs/NaNs) for no-calls, in order to take advantage of R's behaviors on missing data.
 
 ## overload indexing operator to make genotypes object behave like normal matrix while preserving attributes
-`[.genotypes` <- function(x, i, j, ...) {
+`[.genotypes` <- function(x, i = TRUE, j = TRUE, drop = FALSE, ...) {
 	
 	r <- NextMethod("[")
 	if (!is.null(attr(x, "map"))) {
@@ -24,8 +24,8 @@
 		rownames(attr(r, "ped")) <- as.character(attr(r, "ped")$iid)
 	}
 	if (.has.valid.intensity(x)) {
-		x.new <- attr(x, "intensity")$x[ i,j ]
-		y.new <- attr(x, "intensity")$y[ i,j ]
+		x.new <- attr(x, "intensity")$x[ i,j, drop = FALSE ]
+		y.new <- attr(x, "intensity")$y[ i,j, drop = FALSE ]
 		attr(r, "intensity") <- list(x = x.new, y = y.new)
 		if (!is.null(attr(x, "normalized")))
 			attr(r, "normalized") <- attr(x, "normalized")
@@ -43,6 +43,40 @@
 	return(r)
 }
 
+`$.genotypes` <- function(x, expr, ...) {
+	
+	attributes(x)[[expr]]
+	
+}
+
+
+## set some S3 generics for useful accessor functions
+
+markers <- function(x) UseMethod("markers")
+markers.genotypes <- function(gty, ...) {
+	attr(gty, "map")
+}
+
+samples <- function(x) UseMethod("samples")
+samples.genotypes <- function(gty, ...) {
+	if (!is.null(attr(gty, "ped")))
+		attr(gty, "ped")
+	else
+		colnames(gty)
+}
+
+filters <- function(x) UseMethod("filters")
+filters.genotypes <- function(gty, ...) {
+	get.filters(gty, ...)
+}
+
+intensity <- function(x) UseMethod("intensity")
+intensity.genotypes <- function(gty, ...) {
+	attr(gty, "intensity")
+}
+
+## add a method to overload subset() on a genotypes object which
+## preserves attributes (markers, samples, intensity...)
 subset.genotypes <- function(gty, expr, by = c("markers","samples"), ...) {
 	
 	if (!inherits(gty, "genotypes"))
@@ -70,48 +104,8 @@ subset.genotypes <- function(gty, expr, by = c("markers","samples"), ...) {
 	
 }
 
-.has.valid.map <- function(gty, ...) {
-	
-	map <- attr(gty, "map")
-	rez <- FALSE
-	
-	if (!is.null(map))
-		rez <- all(colnames(map)[1:4] == c("chr","marker","cM","pos"))
-	if (is.na(rez))
-		rez <- FALSE
-	
-	return(rez)
-	
-}
-
-.has.valid.ped <- function(gty, ...) {
-	
-	## TODO
-	return( !is.null(attr(gty, "ped")) )
-	
-}
-
-.null.false <- function(x) {
-	
-	if (is.null(x))
-		FALSE
-	else x
-	
-}
-
-.has.valid.intensity <- function(gty, ...) {
-	
-	rez <- FALSE
-	if (!is.null(attr(gty, "intensity")))
-		if (is.list(attr(gty, "intensity")) && length(attr(gty, "intensity")) == 2)
-			if ( all(dim(attr(gty, "intensity")$x) == dim(attr(gty, "intensity")$y)) &&
-				 	all(dim(attr(gty, "intensity")$x) == dim(gty)) )
-				rez <- TRUE
-	
-	return(rez)
-	
-}
-
+## overload cbind() to join not only genotype matrix but also sample metadata
+## NB: intensities and filters are dropped at this point
 cbind.genotypes <- function(a, b, ...) {
 	
 	if (!inherits(b, "genotypes"))
@@ -133,6 +127,8 @@ cbind.genotypes <- function(a, b, ...) {
 	
 }
 
+## overload rbind() to join not only genotype matrix but also marker metadata
+## NB: intensities and filters are dropped at this point
 rbind.genotypes <- function(a, b, ...) {
 	
 	if (!inherits(b, "genotypes"))
@@ -156,6 +152,7 @@ rbind.genotypes <- function(a, b, ...) {
 	
 }
 
+## add a method to overload merge(), again keeping attributes
 merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
 	
 	if (!inherits(b, "genotypes"))
@@ -207,6 +204,54 @@ merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
 		attr(rez, "map") <- attr(a, "map")[ keep[ order(o[keep]) ], ]
 	if (!is.null(attr(a, "ped")) & !is.null(attr(b, "ped")))
 		attr(rez, "ped") <- rbind(attr(a, "ped"), attr(b, "ped"))
+	
+	return(rez)
+	
+}
+
+## internal helpers for validating the 'genotypes' data structure and its parts
+
+.is.valid.map <- function(map, ...) {
+	return( all(colnames(map)[1:4] == c("chr","marker","cM","pos")) )
+}
+
+.has.valid.map <- function(gty, ...) {
+	
+	map <- attr(gty, "map")
+	rez <- FALSE
+	
+	if (!is.null(map))
+		rez <- .is.valid.map(map)
+	if (is.na(rez))
+		rez <- FALSE
+	
+	return(rez)
+	
+}
+
+.has.valid.ped <- function(gty, ...) {
+	
+	## TODO
+	return( !is.null(attr(gty, "ped")) )
+	
+}
+
+.null.false <- function(x) {
+	
+	if (is.null(x))
+		FALSE
+	else x
+	
+}
+
+.has.valid.intensity <- function(gty, ...) {
+	
+	rez <- FALSE
+	if (!is.null(attr(gty, "intensity")))
+		if (is.list(attr(gty, "intensity")) && length(attr(gty, "intensity")) == 2)
+			if ( all(dim(attr(gty, "intensity")$x) == dim(attr(gty, "intensity")$y)) &&
+				 	all(dim(attr(gty, "intensity")$x) == dim(gty)) )
+				rez <- TRUE
 	
 	return(rez)
 	
@@ -439,6 +484,55 @@ recode.genotypes <- function(gty, mode = c("pass","01","native","relative"),
 	class(rez) <- c("genotypes", class(rez))
 	attr(rez, "alleles") <- recode.as
 	return(rez)
+	
+}
+
+## replace an existing map with a new one, possibly with allele info
+## if <newmap> has rownames, they should map old marker names to new ones
+replace.map <- function(gty, newmap, ...) {
+	
+	if (!inherits(gty, "genotypes") | !.has.valid.map(gty))
+		stop("Please supply a genotypes object with map as an attribute.")
+	
+	map <- attr(gty, "map")
+	map$order <- 1:nrow(map)
+	rownames(map) <- as.character(map$marker)
+	message(paste("Starting with", nrow(map), "markers..."))
+	
+	if (!is.null(rownames(newmap))) {
+		## extract only markers which are (1) present in current map; (2) accounted for in new map
+		m <- match(as.character(map$marker), rownames(newmap), nomatch = 0)
+		gty <- gty[ which(m > 0), ]
+		rownames(gty) <- newmap[ m[m > 0],"marker" ]
+		attr(gty, "map") <- newmap[ m[m > 0], ]
+	}
+	else {
+		attr(gty, "map") <- newmap
+	}
+	
+	## sort the result
+	o <- order( attr(gty, "map")$chr, attr(gty, "map")$pos, attr(gty, "map")$marker )
+	map <- attr(gty, "map")
+	gty <- gty[ o, ]
+	
+	## sort intensities too, if present
+	if (.has.valid.intensity(gty)) {
+		if (is.list(attr(gty, "intensity")) && length(attr(gty, "intensity")) == 2) {
+			x.new <- attr(gty, "intensity")$x[ o, ]
+			y.new <- attr(gty, "intensity")$y[ o, ]
+			attr(gty, "intensity") <- list(x = x.new, y = y.new)
+		}
+	}
+	
+	cols <- colnames(map)
+	required <- c("chr","marker","cM","pos")
+	attr(gty, "map") <- map[ o,c(required, setdiff(cols, required)) ]
+	
+	message(paste("...and ending with", nrow(attr(gty, "map")), "markers."))
+	if (nrow(attr(gty, "map")) != nrow(gty))
+		stop("Map no longer matches genotypes object.")
+	
+	return(gty)
 	
 }
 
