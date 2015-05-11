@@ -51,7 +51,13 @@ Interface to `PLINK`
 
 Computation on large SNP array genotyping datasets is not a new problem. Many common operations -- frequency statistics (sample-wise and marker-wise), differentiation statistics (\(F_st\) et al), homozygosity checks, association testing, multivariate clustering by PCA and MDS -- are implemented efficiently in the `PLINK` package. The input formats popularized by `PLINK` are now used by other software in population genetics.
 
-This package provides functions to read and write **binary** `PLINK` filesets. The binary fileset consists of three files: \* `*.fam`: the \``family file'' describing samples (6 columns): family ID, sample ID, mom ID, dad ID, sex (0=unknown, 1=male, 2=female), phenotype (-9=missing) *`*.bim`: a file describing the marker map (6 columns, at least): chromosome, marker ID, genetic position (cM), physical position (bp), allele 1, allele 2 *`*.bed`: compact binary representation of genotypes using 2 bits per genotype Note that order matters: genotypes from the`*.bed`file are mapped to samples and markers using order of appearance in the`*.fam`and`\*.bim\` files.
+This package provides functions to read and write **binary** `PLINK` filesets. The binary fileset consists of three files:
+
+-   `*.fam`: the \`\`family file'' describing samples (6 columns): family ID, sample ID, mom ID, dad ID, sex (0=unknown, 1=male, 2=female), phenotype (-9=missing)
+-   `*.bim`: a file describing the marker map (6 columns, at least): chromosome, marker ID, genetic position (cM), physical position (bp), allele 1, allele 2
+-   `*.bed`: compact binary representation of genotypes using 2 bits per genotype
+
+Note that order matters: genotypes from the `*.bed` file are mapped to samples and markers using order of appearance in the `*.fam` and `*.bim` files.
 
 ``` {.r}
 ## this command produces files 'sample.bed', 'sample.bim' and 'sample.fam'
