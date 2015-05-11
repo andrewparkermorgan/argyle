@@ -26,6 +26,9 @@
 #' 	be present in the output, but with missing calls and intensities.  Markers in the input files
 #' 	which are missing from \code{snps} will simply be dropped.  If that occurs, check that the marker
 #' 	names in \code{snps} match exactly those in the input file.
+#' 	
+#' 	Provenance of the resulting object can be traced by checking \code{attr(,"source")}.  For the paranoid,
+#' 	a timestamp and checksum are provided in \code{attr(,"timestamp")} and \code{attr(,"md5")}.
 #'
 #' @references
 #' 	Inspiration from Dan Gatti's DOQTL package: <https://github.com/dmgatti/DOQTL/blob/master/R/extract.raw.data.R>
@@ -74,11 +77,22 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	attr(calls, "filter.samples") <- rep(FALSE, ncol(calls))
 	attr(calls, "filter.sites") <- rep(FALSE, nrow(calls))
 	
+	## make a checksum, then record file source and timestamp (which would mess up checksum comparisons)
+	attr(calls, "md5") <- digest(calls, algo = "md5")
+	attr(calls, "source") <- normalizePath(file.path(in.path, prefix))
+	attr(calls, "timestamp") <- Sys.time()
+	
+	## check that all pieces of result have matching dimensions, names, ...
+	if (!validate.genotypes(calls)) {
+		warning("The assembled genotypes object failed validation.  See messages for possible reasons.")
+	}
+	
 	message("Done.")
 	return(calls)
 	
 }
 
+## process files from BeadStudio into a dataframe (of samples) and data.table (of calls/intensities)
 .read.illumina.raw <- function(prefix, in.path = ".", ...) {
 	
 	if (length(paste(prefix, in.path)) > 1)
@@ -224,5 +238,51 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 		attr(gty.mat, "map") <- newmap
 	
 	return(gty.mat)
+	
+}
+
+#' Export genotyping result in format suitable for DOQTL.
+#'
+#' @param gty a \code{genotypes} object with intensity data attached
+#' @param where name of output file, including path (else it goes in working directory)
+#' @param recode if \code{TRUE}, genotype calls will be recoded 0/1/2 with respect to reference alleles
+#' 	before the genotypes matrix is saved
+#' 
+#' @return Returns \code{TRUE} on completion.  The Rdata file at \code{where} contains the following
+#' 	objects: \code{G}, genotype calls matrix; \code{x}, matrix of x-intensities; \code{y}, matrix of
+#' 	y-intensities; \code{sex}, named vector of sample sexes (\code{NA} if missing); and \code{snps},
+#' 	the marker map attached to the input object.  All matrices are sites x samples, following the
+#' 	convention of this pacakge, and have both row and column names.
+#'
+#' @references
+#' Gatti DM et al. (2014) Quantitative trait locus mapping methods for Diversity Outbred mice. G3 4(9): 1623-1633. doi:10.1534/g3.114.013748.
+#' Svenson KL et al. (2012) High-resolution genetic mapping using the mouse Diversity Outbred population. Genetics 190(2): 437-447. doi:10.1534/genetics.111.132597.
+#'
+#' @export
+export.doqtl <- function(gty, where = "doqtl.Rdata", recode = FALSE, ...) {
+	
+	if (!(inherits(gty, "genotypes") && .has.valid.intensity(gty)))
+		stop("To export stuff for DOQTL, need (1) genotype matrix; (2) intensity matrices; (3) marker map.")
+	
+	message("Preparing objects...")
+	where <- file.path(where)
+	x <- attr(gty, "intensity")$x
+	y <- attr(gty, "intensity")$y
+	if (!recode)
+		G <- .copy.matrix.noattr(gty)
+	else
+		G <- .copy.matrix.noattr(recode.genotypes(gty, "01"))
+	sex <- setNames( rep(NA, ncol(G)), colnames(G) )
+	if (.has.valid.ped(gty) && "sex" %in% colnames(attr(gty, "ped")))
+		sex[ rownames(attr(gty, "ped")) ] <- as.character(attr(gty, "ped")$sex)
+	sex[ sex == "1" ] <- "M"
+	sex[ sex == "2" ] <- "F"
+	sex[ sex == "0" ] <- NA
+	print(sex)
+	snps <- attr(gty, "map")
+	#save(x, y, G, sex, snps, file = where)
+	
+	message(paste("Saved DOQTL input objects in <", where, ">."))
+	return(TRUE)
 	
 }

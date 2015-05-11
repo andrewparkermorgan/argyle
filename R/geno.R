@@ -65,20 +65,68 @@
 	return(r)
 }
 
+#' @export
 `$.genotypes` <- function(x, expr, ...) {
 	
 	attributes(x)[[expr]]
 	
 }
 
+#' @export
+summary.genotypes <- function(gty, ...) {
+	
+	nsamples <- ncol(gty)
+	nsites <- nrow(gty)
+	cat("'", substitute(gty), "': genotypes object with", nsites, "sites x", nsamples, "samples\n")
+	
+	has.intens <- .has.valid.intensity(gty)
+	normed <- .null.false(attr(gty, "normalized"))
+	cat("Intensity data:", ifelse(has.intens, "yes","no"),
+		ifelse(has.intens, ifelse(normed, "(normalized)", "(raw)"), ""), "\n")
+	cat("Sample metadata:", ifelse(.has.valid.ped(gty), "yes", "no"), "\n")
+	
+	filt <- summarize.filters(gty)
+	cat("Filters set:", filt[1], "sites /", filt[2], "samples", "\n")
+	
+	if (!is.null(attr(gty, "source")))
+		cat("File source:", attr(gty, "source"), "(on", format(attr(gty, "timestamp")), ")\n")
+	if (!is.null(attr(gty, "md5")))
+		cat("Checksum:", attr(gty, "md5"), "\n")
+	
+	if (0) {
+		if (.has.valid.map(gty)) {
+			cat("\n---\nSites by chromosome:\n")
+			tbl.chr <- table(attr(gty, "map")$chr)
+			for (i in seq_along(tbl.chr)) {
+				cat("\t", names(tbl.chr)[i], ":", tbl.chr[i], "\n")
+			}
+			cat("\n")
+		}
+	}
+	
+}
 
 ## set some S3 generics for useful accessor functions
 
+#' Get marker map for a \code{genotypes} object
+#' @param gty a \code{genotypes} object
+#' @return a dataframe of marker information (chr, cM, pos, ...) which should run parallel to the
+#' 	rows of the genotypes matrix in the input.  If map is absent, returns \code{NULL.}
+#' @seealso Other accessor functions: \code{\link{samples}} (sample metadata), \code{\link{filters}}
+#' 	(site and sample filters), \code{\link{intensity}} (intensity matrices)
+#' @export
 markers.genotypes <- function(gty, ...) {
 	attr(gty, "map")
 }
 markers <- function(x) UseMethod("markers")
 
+#' Get sample metadata for a \code{genotypes} object
+#' @param gty a \code{genotypes} object
+#' @return a dataframe of sample metadata (iid, ...) which should run parallel to the
+#' 	columns of the genotypes matrix in the input.  If sample data is absent, returns \code{NULL.}
+#' @seealso Other accessor functions: \code{\link{markers}} (marker map), \code{\link{filters}}
+#' 	(site and sample filters), \code{\link{intensity}} (intensity matrices)
+#' @export
 samples.genotypes <- function(gty, ...) {
 	if (!is.null(attr(gty, "ped")))
 		attr(gty, "ped")
@@ -87,11 +135,27 @@ samples.genotypes <- function(gty, ...) {
 }
 samples <- function(x) UseMethod("samples")
 
+#' Get filters attached to a \code{genotypes} object
+#' @param gty a \code{genotypes} object
+#' @return list of length 2 with elements \code{sites} and \code{samples} which should run parallel to the
+#' 	row and columns, respectively, of the genotypes matrix in the input.  If fitlers are absent, returns logical vectors
+#' 	with appropriate dimensions which are uniformly \code{FALSE}.  These vectors have names matching the row
+#' 	and column names of the genotypes matrix.
+#' @seealso Other accessor functions: \code{\link{markers}} (marker map), \code{\link{samples}}
+#' 	(sample metadata), \code{\link{intensity}} (intensity matrices)
+#' @export
 filters.genotypes <- function(gty, ...) {
 	get.filters(gty, ...)
 }
 filters <- function(x) UseMethod("filters")
 
+#' Get intensity matrices attached to a \code{genotypes} object
+#' @param gty a \code{genotypes} object
+#' @return list of length 2 with elements \code{x} and \code{y}, respectively the x- and y-intensity matrices,
+#' 	which both have dimensions and row/column names equal to those of the genotypes matrix in the input.
+#' @seealso Other accessor functions: \code{\link{markers}} (marker map), \code{\link{samples}}
+#' 	(sample metadata), \code{\link{filters}} (site and sample filters)
+#' @export
 intensity.genotypes <- function(gty, ...) {
 	attr(gty, "intensity")
 }
@@ -137,8 +201,23 @@ get.baf <- function(gty, markers, ...) {
 	
 }
 
-## add a method to overload subset() on a genotypes object which
-## preserves attributes (markers, samples, intensity...)
+#' Subset a \code{genotypes} object by markers or samples
+#' 
+#' @param gty a \code{genotypes} object
+#' @param expr logical expression indicating elements or rows to keep: missing values are taken as false
+#' 	(just like \code{subset.data.frame()})
+#' @param by should \code{expr} be evaluated in the context of markers (eg. by rows) or samples (eg. by columns)?
+#' 
+#' @return a \code{genotypes} object similar to \code{gty}, but with only the selected rows (\code{by == "markers"})
+#' 	or columns (\code{by == "samples"}).  Attributes of \code{gty} including intensity matrices, filters,
+#' 	marker map and sample metadata are all adjusted accordingly.
+#' 	
+#' @section Warning:
+#' Since this function uses non-standard evaluation, be careful about expressions which include variables defined
+#' in both the global environment and in the scope of the call (eg. variables named same as columns of the marker
+#' map).  Results may not be what you expect.
+#' 
+#' @export
 subset.genotypes <- function(gty, expr, by = c("markers","samples"), ...) {
 	
 	if (!inherits(gty, "genotypes"))
@@ -214,7 +293,26 @@ rbind.genotypes <- function(a, b, ...) {
 	
 }
 
-## add a method to overload merge(), again keeping attributes
+#' Merge two \code{genotypes} objects which share markers
+#' 
+#' @param a a \code{genotypes} object
+#' @param b another \code{genotypes} object
+#' @param join what sort of join to perform: at present, only \code{"inner"} (intersection of \code{a}'s and \code{b}'s
+#' 	marker sets) is supported
+#' 
+#' @return a \code{genotypes} object containing all samples in \code{a} and \code{b}, at all markers shared
+#' 	by \code{a} and \code{b}
+#' 	
+#' @details Both input objects should have the same allele coding (character vs. numeric, relative vs. absolute)
+#' 	before merging.  Sharing of markers is established by the presence of overlapping rownames in the genotype
+#' 	matrices of the input, but alleles are NOT checked.  Marker names must match exactly if they are to appear
+#' 	in the output.  Intensity matrices, if present, are merged and carried over to the output. They will be marked
+#' 	as normalized only if they are marked as such in both input objects.  Vectors of site and sample filters will
+#' 	be present in the output only if they are present in both input objects, and have the expected names.  A
+#' 	logical OR is applied to the site filters -- ie. a site will be marked as \code{TRUE} (filtered) if it is
+#' 	filtered in either or both input datasets.
+#' 
+#' @export
 merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
 	
 	if (!inherits(b, "genotypes"))
@@ -248,9 +346,15 @@ merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
 		rez <- cbind( unclass(a)[ new.o, ],
 					  unclass(b)[ new.o, ] )
 		if (.has.valid.intensity(a) && .has.valid.intensity(b)) {
-			attr(rez, "intensity") <- list( x = cbind(attr(a, "intensity")$x[ new.o, ], attr(b, "intensity")$x[ new.o, ]),
-											y = cbind(attr(a, "intensity")$y[ new.o, ], attr(b, "intensity")$y[ new.o, ]) )
+			attr(rez, "intensity") <- list( x = cbind(attr(a, "intensity")$x[ new.o, drop = FALSE ], attr(b, "intensity")$x[ new.o, drop = FALSE ]),
+											y = cbind(attr(a, "intensity")$y[ new.o, drop = FALSE ], attr(b, "intensity")$y[ new.o, drop = FALSE ]) )
 			attr(rez, "normalized") <- .null.false(attr(a, "normalized")) && .null.false(attr(a, "normalized"))
+		}
+		if (.has.valid.baflrr(a) && .has.valid.baflrr(b)) {
+			attr(rez, "baf") <- cbind( attr(a, "baf")[ new.o, drop = FALSE ],
+									   attr(b, "baf")[ new.o, drop = FALSE ] )
+			attr(rez, "lrr") <- cbind( attr(a, "lrr")[ new.o, drop = FALSE ],
+									   attr(b, "lrr")[ new.o, drop = FALSE ] )
 		}
 	}
 	else
@@ -267,6 +371,16 @@ merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
 	if (!is.null(attr(a, "ped")) & !is.null(attr(b, "ped")))
 		attr(rez, "ped") <- rbind(attr(a, "ped"), attr(b, "ped"))
 	
+	## merge filters
+	if (!any(is.null(attr(b, "filter.sites")), is.null(attr(a, "filter.sites")))) {
+		fa <- attr(a, "filter.sites")
+		fb <- attr(b, "filter.sites")
+		attr(rez, "filter.sites") <- (fb[new.o] | fa[new.o])
+	}
+	if (!any(is.null(attr(b, "filter.samples")), is.null(attr(a, "filter.samples")))) {
+		attr(rez, "filter.samples") <- c( attr(a, "filter.samples"), attr(b, "filter.samples") )[ colnames(rez) ]
+	}
+	
 	return(rez)
 	
 }
@@ -280,14 +394,14 @@ merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
 .has.valid.map <- function(gty, ...) {
 	
 	map <- attr(gty, "map")
-	rez <- FALSE
+	pass <- FALSE
 	
 	if (!is.null(map))
-		rez <- .is.valid.map(map)
-	if (is.na(rez))
-		rez <- FALSE
+		pass <- .is.valid.map(map) && (nrow(map) == nrow(gty))
+	if (is.na(pass))
+		pass <- FALSE
 	
-	return(rez)
+	return(pass)
 	
 }
 
@@ -300,13 +414,13 @@ merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
 
 .has.valid.baflrr <- function(gty, ...) {
 	
-	rez <- FALSE
+	pass <- FALSE
 	if (!is.null(attr(gty, "baf")))
 		if (all( dim(attr(gty, "baf")) == dim(attr(gty, "lrr")),
 				 dim(gty) == dim(attr(gty, "baf"))))
-			rez <- TRUE
+			pass <- TRUE
 	
-	return(rez)
+	return(pass)
 	
 }
 
@@ -320,16 +434,135 @@ merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
 
 .has.valid.intensity <- function(gty, ...) {
 	
-	rez <- FALSE
+	pass <- FALSE
 	if (!is.null(attr(gty, "intensity")))
 		if (is.list(attr(gty, "intensity")) && length(attr(gty, "intensity")) == 2)
 			if ( all(dim(attr(gty, "intensity")$x) == dim(attr(gty, "intensity")$y)) &&
 				 	all(dim(attr(gty, "intensity")$x) == dim(gty)) )
-				rez <- TRUE
+				pass <- TRUE
 	
-	return(rez)
+	return(pass)
 	
 }
+
+#' Check the integrity of a \code{genotypes} object
+#'
+#' @param gty a \code{genotypes} object
+#'
+#' @return Logical scalar indicating whether object passes or fails integrity checks.
+#'
+#' @details A valid genotypes object must have the following: a genotypes matrix with row and column names;
+#' 	a valid marker map (chr,marker,cM,pos) whose rownames match the rownames of the genotypes matrix;
+#' 	filter flags for sites and samples, with appropriate dimensions; and an indicator for allele coding.
+#' 	
+#' 	If sample metadata is present, it must be a dataframe with at least a column 'iid' which is identical
+#' 	to its rownames.  A column 'sex' is strongly encouraged but its absence will not cause validation to fail.
+#' 	
+#' 	If intensity data is present, the x- and y-intensity matrices will be checked for dimensions and names
+#' 	in manner analogous to the checks on the genotypes matrix.  If LRR and BAF have been computed, they
+#' 	will be checked also.
+#'
+#' @export
+validate.genotypes <- function(gty, ...) {
+	
+	## check genotypes matrix
+	pass <- TRUE
+	pass <- pass && is.matrix(gty)
+	if (is.numeric(gty)) {
+		if (!is.null(attr(gty, "alleles"))) {
+			pass <- pass && (attr(gty, "alleles") %in% c("01","relative"))
+		}
+		else {
+			pass <- FALSE
+		}
+	}
+	else if (is.character(gty)) {
+		if (!is.null(attr(gty, "alleles"))) {
+			pass <- pass && (attr(gty, "alleles") %in% c("native"))
+		}
+		else {
+			pass <- FALSE
+		}
+	}
+	else {
+		pass <- FALSE
+	}
+	if (!pass) {
+		message("Genotype matrix is not a matrix, or allele coding is unrecognized.")
+		return(pass)
+	}
+	
+	## check marker map
+	pass <- pass && .has.valid.map(gty)
+	pass <- all(rownames(attr(gty, "map")) == rownames(gty))
+	if (!pass) {
+		message("Marker map is absent, malformed, or does not match genotypes matrix.")
+		return(pass)
+	}
+	
+	## check sample metadata
+	if (.has.valid.ped(gty)) {
+		pass <- pass && all( rownames(attr(gty, "ped")) == attr(gty, "ped")$iid,
+							 rownames(attr(gty, "ped")) == colnames(gty) )
+	}
+	if (!pass) {
+		message(paste0("Sample metadata does not match genotypes matrix.  Check that it has",
+					   "a column 'iid' which matches its rownames, and that these rownames",
+					   "match column names of genotypes matrix."))
+		return(pass)
+	}
+	
+	## check intensity
+	if (!is.null(attr(gty, "intensity"))) {
+		pass <- pass && .has.valid.intensity(gty)
+		pass <- pass && all( rownames(attr(gty, "intenxity")$x) == rownames(attr(gty, "intenxity")$y),
+							 colnames(attr(gty, "intenxity")$x) == colnames(attr(gty, "intenxity")$y),
+							 colnames(attr(gty, "intenxity")$x) == colnames(gty),
+							 rownames(attr(gty, "intenxity")$x) == rownames(gty) )
+	}
+	if (!pass) {
+		message("Intensity matrices are malformed or do not match genotypes matrix.")
+		return(pass)
+	}
+	
+	## check BAF/LRR
+	if (!is.null(attr(gty, "baf"))) {
+		if (!is.null(attr(gty, "lrr"))) {
+			pass <- pass && .has.valid.baflrr(gty)
+			pass <- pass && all( rownames(attr(gty, "baf")) == rownames(attr(gty, "lrr")),
+								 colnames(attr(gty, "baf")) == colnames(attr(gty, "baf")),
+								 colnames(attr(gty, "baf")) == colnames(gty),
+								 rownames(attr(gty, "baf")) == rownames(gty) )
+		}
+		else {
+			pass <- FALSE
+		}
+	}
+	if (!pass) {
+		message(paste0("BAF and LRR matrices are malformed or do not match genotypes matrix.  Note: if BAF is present,",
+					   "LRR must be also."))
+		return(pass)
+	}
+	
+	## check filters
+	if (!is.null(attr(gty, "filter.sites"))) {
+		pass <- pass && all( length(attr(gty, "filter.sites")) == nrow(gty),
+							 !is.na(attr(gty, "filter.sites")) )
+	}
+	if (!is.null(attr(gty, "filter.samples"))) {
+		pass <- pass && all( length(attr(gty, "filter.samples")) == ncol(gty),
+							 !is.na(attr(gty, "filter.samples")) )
+	}
+	if (!pass) {
+		message(paste("Filters are malformed.  Sites filter should have length equal to number of rows",
+					  "of genotypes matrix, and samples filter, to number of columns.  Names are not required."))
+		return(pass)
+	}
+	
+	return(pass)
+	
+}
+validate <- function(x) UseMethod("validate")
 
 ## apply a function over samples in a genotype matrix, by sample groups
 gapply <- function(gty, expr, fn = NULL, unclass = FALSE, ...) {
@@ -434,19 +667,43 @@ heterozygosity <- function(x, het.char = "H", ...) {
 	
 }
 
-## swap genotypes betewen different coding schemes
-## "01": 0/1/2 copies of non-reference allele
-## "relative": 0/1/2 copies of minor allele, wrt this dataset
-## "native": character genotypes resperenting base calls (ACGT) or H for hets
+#' Switch between character and numeric representations of genotype calls
+#' 
+#' @param gty a \code{genotypes} object
+#' @param mode conversion mode (see Details)
+#' @param allowed a vector of allowable alleles for character-encoded genotypes
+#' @param alleles a 2-column character matrix containing the reference and alternate allele
+#' 	at each marker in the input object; if null, obtained from marker map
+#' 	
+#' @return a copy of \code{gty} with alleles converted to the requested encoding
+#' 
+#' @details Genotypes on Illumina Infinium arrays are assumed to correspond to biallelic SNPs.
+#' 	Although the BeadStudio software reports calls in character form, the numeric representation
+#' 	(coded 0/1/2 for homozygous reference / heterozygous / homozygous alternate) is computationally
+#' 	much more convenient.  This function performs the character-to-numeric conversion or its inverse.
+#' 	
+#' 	When \code{mode == "pass"} (the default); the input is returned unchanged.
+#' 	When \code{mode == "01"}, conversion from character to numeric is performed.  If \code{alleles}
+#' 	is supplied or reference alleles are provided in the marker map, the coding will
+#' 	be with respect to the reference (A1) or alternate (A2) alleles.  If reference alleles
+#' 	are not provided, the recoding falls back to \code{mode == "relative"}.
+#' 	When \code{mode == "relative"}, conversion from character to numeric is performed,
+#' 	and the coding is with respect to the minor allele in the current dataset.  This can
+#' 	be a problem if the dataset is small, and obviously hampers comparisons to other datasets.
+#' 	Use this option with caution. (On the other hand, the concept of a minor allele may be
+#' 	very useful in the context of true population samples.)
+#' 	When \code{mode == "native"}, conversion from numeric back to character is attempted.
+#' 	If the input had mode "relative", an error occurs -- that conversion is too error-prone.
+#' 	Otherwise the converison uses the supplied reference alleles.
+#' 
+#' @export
 recode.genotypes <- function(gty, mode = c("pass","01","native","relative"),
 							 allowed = c("A","C","G","T","H"), alleles = NULL, ...) {
 	
 	if (!inherits(gty, "genotypes"))
 		stop("Please supply an object of class 'genotypes.'")
 	
-	if (is.null(attr(gty, "alleles"))) {
-		attr(gty, "alleles") <- FALSE
-	}
+	coding <- attr(gty, "alleles")
 	
 	## do the genotypes come with a map and reference alleles?
 	alleles <- NULL
@@ -494,12 +751,11 @@ recode.genotypes <- function(gty, mode = c("pass","01","native","relative"),
 	}
 	
 	mode <- match.arg(mode)
-	coding <- attr(gty, "alleles")
 	recode.as <- FALSE
 	if (mode == "pass")
 		converter <- identity
 	else if (mode == "01") {
-		if ((!coding || coding == "01") && is.numeric(gty)) {
+		if ((is.null(coding) || coding == "01") && is.numeric(gty)) {
 			message("Nothing to do; genotypes already in requested coding.")
 			recode.as <- "01"
 			converter <- identity
@@ -516,7 +772,7 @@ recode.genotypes <- function(gty, mode = c("pass","01","native","relative"),
 		}
 	}
 	else if (mode == "relative") {
-		if ((!coding || coding == "relative") && is.numeric(gty)) {
+		if (is.numeric(gty) && (coding == "relative" || is.null(coding))) {
 			message("Nothing to do; genotypes already in requested coding.")
 			recode.as <- "relative"
 			converter <- identity
@@ -533,7 +789,7 @@ recode.genotypes <- function(gty, mode = c("pass","01","native","relative"),
 			converter <- identity
 		}
 	else
-		if (!is.null(alleles)) {
+		if (!is.null(alleles) && coding != "relative") {
 			converter <- .recode.character.by.ref
 			recode.as <- "native"
 		}
@@ -553,7 +809,7 @@ recode.genotypes <- function(gty, mode = c("pass","01","native","relative"),
 	if (.has.valid.ped(gty))
 		attr(rez, "ped") <- attr(gty, "ped")
 	
-	for (a in c("intensity","normalized","filter.sites","filter.samples")) {
+	for (a in c("intensity","normalized","filter.sites","filter.samples","baf","lrr","qc")) {
 		if (!is.null(attr(gty, a)))
 			attr(rez, a) <- attr(gty, a)
 	}
@@ -562,13 +818,29 @@ recode.genotypes <- function(gty, mode = c("pass","01","native","relative"),
 	return(rez)
 	
 }
+recode <- function(x, ...) UseMethod("recode", x)
 
-## replace an existing map with a new one, possibly with allele info
-## if <newmap> has rownames, they should map old marker names to new ones
+#' Swap out the marker map for a different one
+#' 
+#' @param gty a \code{genotypes} object
+#' @param newmap a valid marker map (especially: rownames same as marker names)
+#' 	
+#' @return a copy of \code{gty} with old marker map replaced by the new one
+#' 
+#' @details Replacement of the marker map relies on marker names: only markers with which are shared
+#' 	by the old and new maps are retained in the output.  (As such, this function is also a backdoor
+#' 	subsetting function.)  Intensity matrices, BAF/LRR matrices, and site filters are adjusted accordingly.
+#' 	A validity check is performed before the function returns to flag problems.
+#' 
+#' @export
 replace.map <- function(gty, newmap, ...) {
 	
-	if (!inherits(gty, "genotypes") | !.has.valid.map(gty))
+	if (!inherits(gty, "genotypes") || !.has.valid.map(gty))
 		stop("Please supply a genotypes object with map as an attribute.")
+	
+	if (!.is.valid.map(newmap))
+		stop(paste("New map is not a valid marker map.  It should have (at least) the following",
+				   "columns, in order: chr, marker, cM, pos."))
 	
 	map <- attr(gty, "map")
 	map$order <- 1:nrow(map)
@@ -593,11 +865,20 @@ replace.map <- function(gty, newmap, ...) {
 	
 	## sort intensities too, if present
 	if (.has.valid.intensity(gty)) {
-		if (is.list(attr(gty, "intensity")) && length(attr(gty, "intensity")) == 2) {
-			x.new <- attr(gty, "intensity")$x[ o, ]
-			y.new <- attr(gty, "intensity")$y[ o, ]
-			attr(gty, "intensity") <- list(x = x.new, y = y.new)
-		}
+		x.new <- attr(gty, "intensity")$x[ which(m > 0), ]
+		y.new <- attr(gty, "intensity")$y[ which(m > 0), ]
+		x.new <- x.new[ o, ]
+		y.new <- y.new[ o, ]
+		attr(gty, "intensity") <- list(x = x.new, y = y.new)
+	}
+	if (.has.valid.baflrr(gty)) {
+		baf.new <- attr(gty, "baf")[ which(m > 0), ]
+		lrr.new <- attr(gty, "lrr")[ which(m > 0), ]
+		attr(gty, "baf") <- baf.new[ o, ]
+		attr(gty, "lrr") <- lrr.new[ o, ]
+	}
+	if (!is.null(attr(gty, "filter.sites"))) {
+		attr(gty, "filter.sites") <- attr(gty, "filter.sites")[o]
 	}
 	
 	cols <- colnames(map)
@@ -605,8 +886,8 @@ replace.map <- function(gty, newmap, ...) {
 	attr(gty, "map") <- map[ o,c(required, setdiff(cols, required)) ]
 	
 	message(paste("...and ending with", nrow(attr(gty, "map")), "markers."))
-	if (nrow(attr(gty, "map")) != nrow(gty))
-		stop("Map no longer matches genotypes object.")
+	if (!validate.genotypes(gty))
+		stop("Oops -- replacing the map corrupted the genotypes object.")
 	
 	return(gty)
 	

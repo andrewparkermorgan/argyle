@@ -38,6 +38,9 @@ This function initializes a \code{genotypes} object from Illumina BeadStudio out
 	be present in the output, but with missing calls and intensities.  Markers in the input files
 	which are missing from \code{snps} will simply be dropped.  If that occurs, check that the marker
 	names in \code{snps} match exactly those in the input file.
+
+	Provenance of the resulting object can be traced by checking \code{attr(,"source")}.  For the paranoid,
+	a timestamp and checksum are provided in \code{attr(,"timestamp")} and \code{attr(,"md5")}.
 }
 \references{
 Inspiration from Dan Gatti's DOQTL package: <https://github.com/dmgatti/DOQTL/blob/master/R/extract.raw.data.R>
