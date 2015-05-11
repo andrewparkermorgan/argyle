@@ -1,3 +1,1 @@
-# argyle
-
-An `R` package for import, QC and analysis of genotypes from Illumina Infinium arrays.
+<!-- README.md is generated from README.Rmd. Please edit that file -->
