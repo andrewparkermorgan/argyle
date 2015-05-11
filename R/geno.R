@@ -167,9 +167,9 @@ get.intensity <- function(gty, markers, ...) {
 	if (!(inherits(geno, "genotypes") && .has.valid.intensity(gty)))
 		stop("Please supply an object of class 'genotypes' with intensity information attached.")
 	
-	rez <- melt(attr(gty, "intensity")$x[ markers,,drop = FALSE ])
+	rez <- reshape2::melt.array(attr(gty, "intensity")$x[ markers,,drop = FALSE ])
 	colnames(rez) <- c("marker","iid","x")
-	rez <- cbind(rez, y = melt(attr(gty, "intensity")$y[ markers,,drop = FALSE ])[ ,3 ])
+	rez <- cbind(rez, y = reshape2::melt.array(attr(gty, "intensity")$y[ markers,,drop = FALSE ])[ ,3 ])
 	
 	if (.has.valid.map(gty))
 		rez <- merge(rez, attr(gty, "map"))
@@ -187,9 +187,9 @@ get.baf <- function(gty, markers, ...) {
 	if (!inherits(gty, "genotypes") && .has.valid.baflrr(gty))
 		stop("Please supply an object of class 'genotypes' with BAF and LRR computed.")
 	
-	rez <- melt(attr(gty, "baf")[ markers,,drop = FALSE ])
+	rez <- reshape2::melt.array(attr(gty, "baf")[ markers,,drop = FALSE ])
 	colnames(rez) <- c("marker","iid","BAF")
-	rez <- cbind(rez, LRR = melt(attr(gty, "lrr")[ markers,,drop = FALSE ])[ ,3 ])
+	rez <- cbind(rez, LRR = reshape2::melt.array(attr(gty, "lrr")[ markers,,drop = FALSE ])[ ,3 ])
 	
 	if (.has.valid.map(gty))
 		rez <- merge(rez, attr(gty, "map"))

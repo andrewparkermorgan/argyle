@@ -148,7 +148,7 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	
 	## slurp file into a data.table, skipping the 9 header lines
 	message(paste("Reading genotypes and intensities from <", infile, "> ..."))
-	data <- fread(piper, skip = 9)
+	data <- data.table::fread(piper, skip = 9)
 	
 	## Verify that we have all of the column names that we expect.
 	column.names <- c("SNP Name", "Sample ID", "X", "Y", "Allele1 - Forward",
@@ -194,7 +194,7 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	
 	## reshape to big matrix
 	fm <- paste("marker ~", sample.id.col)
-	gty.mat <- dcast.data.table(data, as.formula(fm), value.var = value.col)
+	gty.mat <- data.table::dcast.data.table(data, as.formula(fm), value.var = value.col)
 	setkey(gty.mat, "marker")
 	
 	before <- unique(gty.mat$marker)

@@ -8,7 +8,7 @@ column.quantiles <- function(x, q = seq(0,1,0.1), ..., .progress = "none") {
 		data.frame(q = q, value = quantile(y, q, na.rm = TRUE))
 	}
 	
-	rez <- adply(x, 2, .col.quant, .progress = .progress)
+	rez <- plyr::adply(x, 2, .col.quant, .progress = .progress)
 	colnames(rez)[1] <- "iid"
 	rez$iid <- reorder(factor(rez$iid), rez$value, median)
 	return(rez)

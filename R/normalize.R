@@ -38,8 +38,8 @@ quantile.normalize <- function(gty, weights = NULL, force = FALSE, ...) {
 		stop("Dimensiosn of weight vector and intensity matrices don't match.")
 	
 	message(paste("Performing robust quantile normalization with", ifelse(is.null(weights), "no weights","weights"), "..."))
-	x.norm <- normalize.quantiles.robust( attr(gty, "intensity")$x, weights = weights)
-	y.norm <- normalize.quantiles.robust( attr(gty, "intensity")$y, weights = weights)
+	x.norm <- preprocessCore::normalize.quantiles.robust( attr(gty, "intensity")$x, weights = weights)
+	y.norm <- preprocessCore::normalize.quantiles.robust( attr(gty, "intensity")$y, weights = weights)
 	
 	colnames(x.norm) <- colnames(attr(gty, "intensity")$x)
 	rownames(x.norm) <- rownames(attr(gty, "intensity")$x)
