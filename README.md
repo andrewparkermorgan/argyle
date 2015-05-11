@@ -13,6 +13,8 @@ Dependencies
 
 Effort has been made to keep to a minimum the number of package dependencies, subject to the constraint that I don't want to re-implement from scratch what others have done better.
 
+The list of dependencies accumulated (so far) is:
+
 *`data.table`: really fast and efficient handling of big (multi-GB scale) table-style data with low overhead *`preprocessCore` (from Biodoncuctor): robust quantile normalization routine written in `C` (faster than `limma`'s) *`ggplot2`: flexible graphics *`reshape2`: easy interconversion between matrices (good for storage) and dataframes (useful for summaries and plotting) \*`digest`: for computing MD5 checksums to check data integrity
 
 Usage
