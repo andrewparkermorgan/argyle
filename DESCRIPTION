@@ -6,4 +6,6 @@ Date: 2015-05-08
 Author: Andrew P Morgan, John P Didion
 Maintainer: Andrew P Morgan  <andrew.parker.morgan@gmail.com>
 Description: Some useful stuff for handling genotypes (and underlying hybridization intensity data) from Illumina Infinium arrays.
+Imports: data.table (>=1.9.2), digest, preprocessCore, reshape2
+Suggests: ggplot2
 License: MIT
