@@ -41,10 +41,10 @@ quantile.normalize <- function(gty, weights = NULL, force = FALSE, ...) {
 	x.norm <- normalize.quantiles.robust( attr(gty, "intensity")$x, weights = weights)
 	y.norm <- normalize.quantiles.robust( attr(gty, "intensity")$y, weights = weights)
 	
-	colnames(x.norm) <- colnames(x)
-	rownames(x.norm) <- rownames(x)
-	colnames(y.norm) <- colnames(y)
-	rownames(y.norm) <- rownames(y)
+	colnames(x.norm) <- colnames(attr(gty, "intensity")$x)
+	rownames(x.norm) <- rownames(attr(gty, "intensity")$x)
+	colnames(y.norm) <- colnames(attr(gty, "intensity")$y)
+	rownames(y.norm) <- rownames(attr(gty, "intensity")$y)
 	
 	attr(gty, "intensity") <- list(x = x.norm, y = y.norm)
 	attr(gty, "normalized") <- TRUE

@@ -9,8 +9,8 @@ column.quantiles <- function(x, q = seq(0,1,0.1), ..., .progress = "none") {
 	}
 	
 	rez <- adply(x, 2, .col.quant, .progress = .progress)
-	colnames(rez)[1] <- "id"
-	rez$id <- reorder(factor(rez$id), rez$value, median)
+	colnames(rez)[1] <- "iid"
+	rez$iid <- reorder(factor(rez$iid), rez$value, median)
 	return(rez)
 	
 }
@@ -23,6 +23,9 @@ summarize.intensity <- function(gty, q = seq(0,1,0.1), ..., .progress = "none") 
 	
 	si <- with(attr(gty, "intensity"), sqrt(x^2 + y^2))
 	rez <- column.quantiles(si, q = q, .progress = .progress)
+	
+	if (.has.valid.ped(gty))
+		rez <- merge(rez, attr(gty, "ped"))
 	
 	return(rez)
 	
@@ -48,7 +51,7 @@ summarize.calls <- function(gty, by = c("samples","markers"), ...) {
 	counts <- t(apply(gty, which.dim, function(x) tabulate(x+1, nbins = 4)))
 	
 	if (by == "samples")
-		return(data.frame(id = colnames(gty),
+		return(data.frame(iid = colnames(gty),
 						  A = counts[,1], B = counts[,3], H = counts[,2], N = counts[,4]))
 	else
 		return(data.frame(marker = rownames(gty),
