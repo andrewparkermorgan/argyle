@@ -74,28 +74,28 @@
 
 ## set some S3 generics for useful accessor functions
 
-markers <- function(x) UseMethod("markers")
 markers.genotypes <- function(gty, ...) {
 	attr(gty, "map")
 }
+markers <- function(x) UseMethod("markers")
 
-samples <- function(x) UseMethod("samples")
 samples.genotypes <- function(gty, ...) {
 	if (!is.null(attr(gty, "ped")))
 		attr(gty, "ped")
 	else
 		colnames(gty)
 }
+samples <- function(x) UseMethod("samples")
 
-filters <- function(x) UseMethod("filters")
 filters.genotypes <- function(gty, ...) {
 	get.filters(gty, ...)
 }
+filters <- function(x) UseMethod("filters")
 
-intensity <- function(x) UseMethod("intensity")
 intensity.genotypes <- function(gty, ...) {
 	attr(gty, "intensity")
 }
+intensity <- function(x) UseMethod("intensity")
 
 ## grab intensities for given markers as nice dataframe for plotting
 get.intensity <- function(gty, markers, ...) {
@@ -455,12 +455,14 @@ recode.genotypes <- function(gty, mode = c("pass","01","native","relative"),
 			alleles <- as.matrix(attr(gty, "map")[ ,5:6 ])
 	
 	## a suite of recoding functions which operate on (marker-wise) vectors of genotype calls
-	
+	top1 <- function(x, nbins) {
+		which.max(tabulate(x, nbins = nbins))
+	}
 	# recode 0=major allele, 1=het, 2=minor allele
 	.recode.numeric.by.freq <- function(calls, alleles = NULL) {
 		
-		calls <- factor( as.character(calls), levels = allowed )
-		maj <- allowed[ top1(calls[ calls != "H" ]) ]
+		calls <- factor( as.character(calls), levels = allowed[1:4] )
+		maj <- allowed[ top1(calls, 4) ]
 		new.calls <- rep(NA, length(calls))
 		new.calls[ calls == "H" ] <- 1
 		new.calls[ calls == maj ] <- 0
