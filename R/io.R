@@ -78,7 +78,7 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	attr(calls, "filter.sites") <- rep(FALSE, nrow(calls))
 	
 	## make a checksum, then record file source and timestamp (which would mess up checksum comparisons)
-	attr(calls, "md5") <- digest(calls, algo = "md5")
+	attr(calls, "md5") <- digest::digest(calls, algo = "md5")
 	attr(calls, "source") <- normalizePath(file.path(in.path, prefix))
 	attr(calls, "timestamp") <- Sys.time()
 	
@@ -160,16 +160,16 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 				   	colnames[is.na(columns)], collapse = ",")))
 	}
 	nsamples <- length(samples)
-	setnames(data, c("marker","iid","call1","call2","x","y","gc","theta","x.raw","y.raw","R"))
+	data.table::setnames(data, c("marker","iid","call1","call2","x","y","gc","theta","x.raw","y.raw","R"))
 	data[ , call := paste0(call1, call2) ]
 	data[ , is.het := (call1 != call2) ]
 	data[ , is.na := (call1 == "-" | call2 == "-") ]
-	setkey(data, is.het)
+	data.table::setkey(data, is.het)
 	data[ is.het == TRUE, call := "H" ]
-	setkey(data, is.na)
+	data.table::setkey(data, is.na)
 	data[ is.na == TRUE, call := "N" ]
 	data[ , call := substr(call, 1, 1) ]
-	setkey(data, marker)
+	data.table::setkey(data, marker)
 	
 	return( list(samples = samples.df, intens = data) )
 	
@@ -219,11 +219,11 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	}
 	
 	## sort by position
-	setorder(gty.mat, chr, pos, cM, marker)
+	data.table::setorder(gty.mat, chr, pos, cM, marker)
 	cn <- names(gty.mat)
 	cols <- c("chr","marker","cM","pos")
 	oth <- setdiff(cn, cols)
-	setcolorder(gty.mat, c(cols, oth))
+	data.table::setcolorder(gty.mat, c(cols, oth))
 	
 	## demote back to dataframe
 	gty.mat <- as.data.frame(gty.mat)
