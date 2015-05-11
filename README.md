@@ -3,8 +3,8 @@
 
 
 
-argle
-=====
+argyle
+======
 
 An `R` package for import, QC and (some) analysis of genotyping and hybridization-intensity data from Illumina Infinium arrays.
 
@@ -17,3 +17,6 @@ library(argyle)
 data(snps)
 geno <- read.beadstudio("sample", snps, in.path = "./")
 ```
+
+Interface to `PLINK`
+--------------------
