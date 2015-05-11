@@ -116,6 +116,7 @@ pca.genotypes <- function(gty, extras = NULL, what = c("genotypes","intensity"),
 	
 	## add sample metatdata, if any
 	meta <- data.frame(iid = rownames(rez))
+	rownames(meta) <- rownames(rez)
 	if (.has.valid.ped(gty)) {
 		meta <- merge(meta, attr(gty, "ped"), by = "iid")
 		rownames(meta) <- as.character(meta$iid)

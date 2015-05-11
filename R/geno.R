@@ -31,7 +31,7 @@
 #' @export
 `[.genotypes` <- function(x, i = TRUE, j = TRUE, drop = FALSE, ...) {
 	
-	r <- NextMethod("[")
+	r <- NextMethod("[", drop = drop)
 	if (!is.null(attr(x, "map"))) {
 		attr(r, "map") <- attr(x, "map")[ i,,drop = FALSE ]
 	}
@@ -45,6 +45,12 @@
 		attr(r, "intensity") <- list(x = x.new, y = y.new)
 		if (!is.null(attr(x, "normalized")))
 			attr(r, "normalized") <- attr(x, "normalized")
+	}
+	if (.has.valid.baflrr(x)) {
+		baf.new <- attr(x, "baf")[ i,j, drop = FALSE ]
+		lrr.new <- attr(x, "lrr")[ i,j, drop = FALSE ]
+		attr(r, "baf") <- baf.new
+		attr(r, "lrr") <- lrr.new
 	}
 	
 	if (!is.null(attr(x, "alleles")))
@@ -89,6 +95,46 @@ filters.genotypes <- function(gty, ...) {
 intensity <- function(x) UseMethod("intensity")
 intensity.genotypes <- function(gty, ...) {
 	attr(gty, "intensity")
+}
+
+## grab intensities for given markers as nice dataframe for plotting
+get.intensity <- function(gty, markers, ...) {
+	
+	if (!(inherits(geno, "genotypes") && .has.valid.intensity(gty)))
+		stop("Please supply an object of class 'genotypes' with intensity information attached.")
+	
+	rez <- melt(attr(gty, "intensity")$x[ markers,,drop = FALSE ])
+	colnames(rez) <- c("marker","iid","x")
+	rez <- cbind(rez, y = melt(attr(gty, "intensity")$y[ markers,,drop = FALSE ])[ ,3 ])
+	
+	if (.has.valid.map(gty))
+		rez <- merge(rez, attr(gty, "map"))
+	
+	if (.has.valid.ped(gty))
+		rez <- merge(rez, attr(gty, "ped"))
+	
+	return(rez)
+	
+}
+
+## grab BAF+LRR for given markers as nice dataframe for plotting
+get.baf <- function(gty, markers, ...) {
+	
+	if (!inherits(gty, "genotypes") && .has.valid.baflrr(gty))
+		stop("Please supply an object of class 'genotypes' with BAF and LRR computed.")
+	
+	rez <- melt(attr(gty, "baf")[ markers,,drop = FALSE ])
+	colnames(rez) <- c("marker","iid","BAF")
+	rez <- cbind(rez, LRR = melt(attr(gty, "lrr")[ markers,,drop = FALSE ])[ ,3 ])
+	
+	if (.has.valid.map(gty))
+		rez <- merge(rez, attr(gty, "map"))
+	
+	if (.has.valid.ped(gty))
+		rez <- merge(rez, attr(gty, "ped"))
+	
+	return(rez)
+	
 }
 
 ## add a method to overload subset() on a genotypes object which
@@ -153,7 +199,7 @@ rbind.genotypes <- function(a, b, ...) {
 	cols.a <- colnames(a)
 	cols.b <- colnames(b)
 	if (length(setdiff(a,b)) || length(setdiff(b,a)))
-		stop("Number and names of markers don't match.  Try merging genotypes instead of cbind-ing.")
+		stop("Number and names of markers don't match.  Try merging genotypes instead of rbind-ing.")
 	
 	message(paste0("Adding ",nrow(b)," markers to the existing ",nrow(a),"."))
 	
@@ -249,6 +295,18 @@ merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
 	
 	## TODO
 	return( !is.null(attr(gty, "ped")) )
+	
+}
+
+.has.valid.baflrr <- function(gty, ...) {
+	
+	rez <- FALSE
+	if (!is.null(attr(gty, "baf")))
+		if (all( dim(attr(gty, "baf")) == dim(attr(gty, "lrr")),
+				 dim(gty) == dim(attr(gty, "baf"))))
+			rez <- TRUE
+	
+	return(rez)
 	
 }
 

@@ -40,20 +40,19 @@ summarize.calls <- function(gty, by = c("samples","markers"), ...) {
 	else
 		which.dim <- 1
 	
-	if (is.character(gty)) {
-		gty[ gty == "N" ] <- NA
-		ns <- apply(gty, which.dim, function(x) sum(is.na(x)))
-		hs <- apply(gty, which.dim, function(x) sum(x == "H", na.rm = TRUE))
-	}
-	else {
-		ns <- apply(gty, which.dim, function(x) sum(is.na(x)))
-		hs <- apply(gty, which.dim, function(x) sum(x == 1, na.rm = TRUE))
-	}
+	## convert genotypes to numeric for faster summaries
+	gty <- .copy.matrix.noattr(recode.genotypes(gty, "01"))
+	## convert NAs to special code
+	gty[ is.na(gty) ] <- 3
+	## fast summary with tabulate()
+	counts <- t(apply(gty, which.dim, function(x) tabulate(x+1, nbins = 4)))
 	
 	if (by == "samples")
-		return(data.frame(id = colnames(gty), N = ns, H = hs))
+		return(data.frame(id = colnames(gty),
+						  A = counts[,1], B = counts[,3], H = counts[,2], N = counts[,4]))
 	else
-		return(data.frame(marker = rownames(gty), N = ns, H = hs))
+		return(data.frame(marker = rownames(gty),
+						  A = counts[,1], B = counts[,3], H = counts[,2], N = counts[,4]))
 	
 }
 

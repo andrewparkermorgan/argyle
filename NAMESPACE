@@ -2,3 +2,5 @@
 
 S3method("[",genotypes)
 S3method(pca,genotypes)
+S3method(quantile,normalize)
+export(tQN)
