@@ -219,7 +219,7 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	}
 	
 	## sort by position
-	data.table::setcolorder(gty.mat, chr, pos, cM, marker)
+	data.table::setorder(gty.mat, chr, marker, cM, pos)
 	cn <- names(gty.mat)
 	cols <- c("chr","marker","cM","pos")
 	oth <- setdiff(cn, cols)
