@@ -248,8 +248,6 @@ subset.genotypes <- function(gty, expr, by = c("markers","samples"), ...) {
 	}
 	
 }
-#' @export
-subset <- function(x) UseMethod("subset")
 
 ## overload cbind() to join not only genotype matrix but also sample metadata
 ## NB: intensities and filters are dropped at this point
@@ -390,8 +388,6 @@ merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
 	return(rez)
 	
 }
-#' @export
-merge <- function(x, ...) UseMethod("merge")
 
 ## internal helpers for validating the 'genotypes' data structure and its parts
 
