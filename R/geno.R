@@ -114,6 +114,7 @@ summary.genotypes <- function(gty, ...) {
 #' 	rows of the genotypes matrix in the input.  If map is absent, returns \code{NULL.}
 #' @seealso Other accessor functions: \code{\link{samples}} (sample metadata), \code{\link{filters}}
 #' 	(site and sample filters), \code{\link{intensity}} (intensity matrices)
+#' @aliases markers
 #' @export
 markers.genotypes <- function(gty, ...) {
 	attr(gty, "map")
@@ -127,6 +128,7 @@ markers <- function(x) UseMethod("markers")
 #' 	columns of the genotypes matrix in the input.  If sample data is absent, returns \code{NULL.}
 #' @seealso Other accessor functions: \code{\link{markers}} (marker map), \code{\link{filters}}
 #' 	(site and sample filters), \code{\link{intensity}} (intensity matrices)
+#' @aliases samples
 #' @export
 samples.genotypes <- function(gty, ...) {
 	if (!is.null(attr(gty, "ped")))
@@ -145,6 +147,7 @@ samples <- function(x) UseMethod("samples")
 #' 	and column names of the genotypes matrix.
 #' @seealso Other accessor functions: \code{\link{markers}} (marker map), \code{\link{samples}}
 #' 	(sample metadata), \code{\link{intensity}} (intensity matrices)
+#' @aliases filters
 #' @export
 filters.genotypes <- function(gty, ...) {
 	get.filters(gty, ...)
@@ -158,6 +161,7 @@ filters <- function(x) UseMethod("filters")
 #' 	which both have dimensions and row/column names equal to those of the genotypes matrix in the input.
 #' @seealso Other accessor functions: \code{\link{markers}} (marker map), \code{\link{samples}}
 #' 	(sample metadata), \code{\link{filters}} (site and sample filters)
+#' @aliases intensity
 #' @export
 intensity.genotypes <- function(gty, ...) {
 	attr(gty, "intensity")

@@ -3,7 +3,7 @@
 
 ## internal function for actually doing PCA
 .do.pca.genotypes <- function(gty, extras = NULL, what = c("genotypes","intensity"),
-							  scale = TRUE, center = TRUE, eps = 1e-6, ...) {
+							  fast = FALSE, scale = TRUE, center = TRUE, eps = 1e-6, K = 1:3, ...) {
 	
 	if (!inherits(gty, "genotypes"))
 		stop("Please supply an object of class 'genotypes.'")
@@ -52,7 +52,14 @@
 
 	## finally do PCA
 	message(paste("Computing principal components of", what, "matrix..."))
-	pc <- prcomp(.make.pca.input(gty), center = center, scale. = scale)
+	if (fast) {
+		message("\t(using corpcor::fast.svd() ...)")
+		pc <- .fast.pca(.make.pca.input(gty), K = K, .center = center, .scale = scale)	
+	}
+	else {
+		message("\t(using base::prcomp() ...)")
+		pc <- prcomp(.make.pca.input(gty), center = center, scale. = scale)
+	}
 	proj <- predict(pc)
 	if (!is.null(extras)) {
 		message("Projecting extra samples onto existing PCs...")
@@ -70,6 +77,29 @@
 	
 }
 
+## do (faster?) PCA via SVD using corpcor::fast.svd()
+.fast.pca <- function(x, K = 1:3, .scale = TRUE, .center = TRUE, ...) {
+	
+	xx <- scale(x, scale = .scale, center = .center)
+	y <- xx/(ncol(xx)-1)
+	udv <- corpcor::fast.svd(y)
+	
+	proj <- udv$u
+	rownames(proj) <- rownames(x)
+	colnames(proj) <- paste0("PC", 1:ncol(proj)) 
+	rot <- udv$v
+	rownames(rot) <- rownames(rot)
+	colnames(rot) <- paste0("PC", 1:ncol(rot)) 
+	
+	rez <- list(sdev = udv$d,
+				rotation = rot,
+				x = proj,
+				center = .center, scale = .scale)
+	class(rez) <- c("prcomp", class(rez))
+	return(rez)
+	
+}
+
 #' Perform PCA on a \code{genotypes} object
 #'
 #' Performs principal components analysis (PCA) on either (numerically-coded) genotypes or
@@ -81,14 +111,15 @@
 #' @param what \code{"genotypes"} to do PCA on genotypes (coded 0/1/2); \code{"intensity"} to do PCA on
 #' 	underlying 2D intensities.  The latter triggers an error if intensity matrices are absent.
 #' @param K how many PCs to return.
+#' @param fast if \code{TRUE}, use \code{corpcor::fast.svd()} to speed up calculations
 #' @param \code{...} other parameters for call to \code{prcomp}, such as \code{center} and \code{scale}
 #' 	(both \code{TRUE} by default)
 #'
-#' @details Uses base-\code{R}'s \code{prcomp} under the hood. By default, columns are centered and scaled;
-#' 	not doing so will likely produce a strange result.  When doing PCA on genotypes, missing values are
-#' 	replaced with the column mean, which in many circumstances can be interpreted as the minor-allele frequency.
-#' 	(This is very similar to the behavior of PLINK.)  When doing PCA on intensities, missing values are set
-#' 	to zero -- but even no-call genotypes have nonmissing intensities on Illumina arrays, so this is unlikely
+#' @details Uses base-\code{R}'s \code{prcomp} under the hood (unless \code{fast = TRUE}). By default,
+#' 	columns are centered and scaled; not doing so will likely produce a strange result.  When doing PCA on genotypes,
+#' 	missing values are replaced with the column mean, which in many circumstances can be interpreted as the
+#' 	minor-allele frequency. (This is very similar to the behavior of PLINK.)  When doing PCA on intensities, missing
+#' 	values are set to zero -- but even no-call genotypes have nonmissing intensities on Illumina arrays, so this is unlikely
 #' 	to have any effect in practice.
 #'
 #' @return a dataframe with as many rows as samples, in which the first columns are sample IDs and any associated
@@ -96,6 +127,7 @@
 #' 	of variance explained) are provided as \code{attr(,"explained")}.
 #'
 #' @seealso \code{pca.plink()} for using PLINK's (much faster and more powerful) implementation
+#' @aliases pca
 #'
 #' @examples
 #' pca.genotypes(geno)
@@ -103,7 +135,7 @@
 #' pca(geno)
 #'
 #' @export
-pca.genotypes <- function(gty, extras = NULL, what = c("genotypes","intensity"), K = 3, ...) {
+pca.genotypes <- function(gty, extras = NULL, what = c("genotypes","intensity"), K = 3, fast = FALSE, ...) {
 	
 	if (!inherits(gty, "genotypes"))
 		stop("Please supply an object of class 'genotypes.'")
@@ -112,7 +144,7 @@ pca.genotypes <- function(gty, extras = NULL, what = c("genotypes","intensity"),
 		stop("You probably don't want to do PCA with <1 dimension.")
 	
 	## run the PCA
-	rez <- .do.pca.genotypes(gty, extras = extras, what = what, ...)
+	rez <- .do.pca.genotypes(gty, extras = extras, what = what, fast = fast, K = K, ...)
 	
 	## add sample metatdata, if any
 	meta <- data.frame(iid = rownames(rez))
