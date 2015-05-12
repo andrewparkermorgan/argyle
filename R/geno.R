@@ -189,7 +189,7 @@ get.intensity <- function(gty, markers, ...) {
 ## grab BAF+LRR for given markers as nice dataframe for plotting
 get.baf <- function(gty, markers, ...) {
 	
-	if (!inherits(gty, "genotypes") && .has.valid.baflrr(gty))
+	if (!(inherits(gty, "genotypes") && .has.valid.baflrr(gty)))
 		stop("Please supply an object of class 'genotypes' with BAF and LRR computed.")
 	
 	rez <- reshape2:::melt.matrix(attr(gty, "baf")[ markers,,drop = FALSE ])
