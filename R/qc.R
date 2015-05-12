@@ -15,7 +15,24 @@ column.quantiles <- function(x, q = seq(0,1,0.1), ..., .progress = "none") {
 	
 }
 
-## compute quantiles of sum-intensity by sample and report as dataframe
+#' Summarize hybridization intensity by sample
+#' 
+#' @param gty a \code{genotypes} object with intensity data attached
+#' @param q a vector of quantiles (in [0,1])
+#' @param .progress show a progress bar; passed through to \code{plyr}, see \code{\link{plyr::ddply}}
+#' 
+#' @return a dataframe containing intensity quantiles for each sample, merged with
+#' 	sample metadata (if present)
+#' 	
+#' @details The \code{q}th quantiles of "sum-intensity" are computed for each sample, across all markers
+#' 	in the input dataset.  Missing values are silently ignored.  We define "sum-intensity" as
+#' 	sum(sqrt(x_i^2 + y_i^2)), rather than sum(x_i + y_i), based on the intuition that distance from
+#' 	the origin represents total hybridization intensity after application of Illumina's proprietary
+#' 	affine-transformation scheme to the raw fluorescences.
+#'
+#' @seealso \code{\link{summarize.calls}}, \code{\link{intensity.vs.ref}}, \code{\link{run.qc.checks}}
+#' 	 	
+#' @export
 summarize.intensity <- function(gty, q = seq(0,1,0.1), ..., .progress = "none") {
 	
 	if (!inherits(gty, "genotypes") && .has.valid.intensity(gty))
@@ -31,7 +48,19 @@ summarize.intensity <- function(gty, q = seq(0,1,0.1), ..., .progress = "none") 
 	
 }
 
-## count Hs, Ns by sample or by marker
+#' Summarize genotype calls by sample or marker
+#' 
+#' @param gty a \code{genotypes} object with intensity data attached
+#' @param by get call rates by sample or by marker
+#' 
+#' @return a dataframe with counts of A (reference or major allele), B (alternate or minor allele),
+#' 	H (heterozygous) and N (missing/no-call) by either sample or marker.
+#' 	
+#' @details Any metadata associated with markers or samples is merged into the final result.
+#'
+#' @seealso \code{\link{summarize.intensity}}, \code{\link{intensity.vs.ref}}, \code{\link{run.qc.checks}}
+#' 	 	
+#' @export
 summarize.calls <- function(gty, by = c("samples","markers"), ...) {
 	
 	if (!inherits(gty, "genotypes"))
@@ -59,8 +88,32 @@ summarize.calls <- function(gty, by = c("samples","markers"), ...) {
 	
 }
 
-## apply Kolmogorov-Smirnov test for equality of distribution between sum-intensity of each sample
-## and some appropriate reference (NB: choice of reference is important)
+#' KS-test for difference in intensity distributions
+#' 
+#' @param gty a \code{genotypes} object with intensity data attached
+#' @param ref a matrix, vector or object coercible to such, containing sum-intensities from reference samples
+#' 
+#' @return a named vector of D_j, the Kolmogorov-Smirnov test statistic for each sample j
+#' 	
+#' @details This function detects potential failed arrays by performing the Kolmogorov-Smirnov test
+#' 	for difference between the "sum-intensities" (see \code{\link{summarize.intensity}}) of each sample
+#' 	and some reference distribution of "sum-intensities" of known good samples.  This test should (obviously)
+#' 	be performed *before* any normalizations are applied.  As such it may be useful for detecting batch
+#' 	effects, although that possibility has not been systematically explored.
+#' 	
+#' 	The distribution of "sum-intensity" across an array is expected to be approximately normal. Outliers for
+#' 	the D statistic come in two flavours (cf. Didion et al. (2014)): samples which fail completely, having a
+#' 	heavily right-skewed intensity distribution; and samples which are genetically diverged from the reference
+#' 	sample/species used in array design.  Divergent samples have a spike of intensities near zero, representing
+#' 	failed hybridization due to off-target variation, but an otherwise normal intensity distribution. 
+#'
+#' @references
+#' Didion JP et al. (2014) SNP array profiling of mouse cell lines identifies their strains of origin
+#' 	and reveals cross-contamination and widespread aneuploidy. BMC Genomics 15(1): 847. doi:10.1186/1471-2164-15-847.
+#'
+#' @seealso \code{\link{summarize.intensity}}, \code{\link{summarize.calls}}, \code{\link{run.qc.checks}}
+#' 	 	
+#' @export
 intensity.vs.ref <- function(gty, ref, ...) {
 	
 	if (!inherits(gty, "genotypes") && .has.valid.intensity(gty))
@@ -71,11 +124,31 @@ intensity.vs.ref <- function(gty, ref, ...) {
 	}
 	
 	si <- with(attr(gty, "intensity"), sqrt(x^2+y^2))
-	apply(si, 2, .colwise.ks, y = ref)
+	apply(si, 2, .colwise.ks, y = as.vector(ref))
 	
 }
 
-## wrapper function for call- and intensity-level QC, done sample-wise
+#' Perform basic sample-wise QC on genotype calls and intensities
+#'
+#' @param gty a \code{genotypes} object
+#' @param ref.intensity a vector of "sum-intensities" from known good reference samples
+#' @param max.H threshold for count of heterozygous calls, above which a sample is flagged
+#' @param max.N threshold for count of no-calls, above which a sample is flagged
+#' @param max.D upper threshold for D-statistic (see \code{\link{intensity.vs.ref}}) above which a
+#' 	sample is flagged
+#' @param min.D lower threshold for D-statistic (see \code{\link{intensity.vs.ref}}) above which a
+#' 	sample is flagged
+#' 
+#' @return a copy of the input with sample filters set, and an object of class \code{QC.result} in
+#' 	attr(,"qc")
+#' 	
+#' @details A wrapper for the sample-level QC functions, applied to genotype calls (always) and
+#' 	hybridization intensities (if present.)  Samplies which fail are flagged but not actually
+#' 	dropped from the result.
+#' 	
+#' @seealso \code{\link{summarize.calls}}, \code{\link{intensity.vs.ref}}, \code{\link{apply.filters}}
+#' 
+#' @export
 run.qc.checks <- function(gty, ref.intensity = NULL,
 						  max.H = Inf, max.N = Inf, max.D = Inf, min.D = Inf, ...) {
 	
@@ -119,7 +192,18 @@ run.qc.checks <- function(gty, ref.intensity = NULL,
 	
 }
 
-## apply filters to input object, dropping samples and/or sites flagged as low-quality
+#' Drop samples and/or markers flagged as low-quality
+#'
+#' @param gty a \code{genotypes} object
+#' @param apply.to dimensions along which to apply filters (samples, sites or both)
+#' 
+#' @return a copy of the input with flagged markers and/or samples dropped
+#' 	
+#' @details In the output object, all sample and marker filters are set to \code{FALSE}.
+#' 	
+#' @seealso \code{\link{run.qc.checks}}, \code{\link{apply.filters}}
+#' 
+#' @export
 apply.filters <- function(gty, apply.to = c("both","samples","markers"), ...) {
 	
 	if (!inherits(gty, "genotypes"))
@@ -184,7 +268,7 @@ get.filters <- function(gty, ...) {
 	
 }
 
-## count how many sites and samples are flagged for removal
+#' @export
 summarize.filters <- function(gty, ...) {
 	
 	filters <- get.filters(gty)

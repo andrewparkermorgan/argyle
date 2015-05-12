@@ -1,0 +1,56 @@
+#' argyle: An \code{R} package for import and QC of genotypes from Illumina Infinium arrays
+#' 
+#' @section The \code{genotypes} object:
+#' The \code{genotypes} class is just a matrix (sites x samples) with row and column names, and a dataframe
+#' (in \code{attr(,"map")}) describing marker positions.
+#'
+#' Attributes include:
+#' \itemize{
+#'	\item \code{map} -- marker metadata in PLINK format (chr, marker, cM, pos, A1, A2, ...)
+#'	\item \code{ped} -- pedigree/sample metadata in PLINK format (individual ID, family ID,
+#'		mom ID, dad ID, sex, phenotype, ...)
+#'	\item \code{intensity} -- \code{list}(\code{x} = [X-intensities], \code{y} = [y-intensities])
+#'	\item \code{normalized} -- have intensities been normalized?
+#'	\item \code{baf} -- matrix of B-allele frequencies (BAFs; see \code{\link{tQN}})
+#'	\item \code{lrr} -- matrix of log2 intensity rations (LRRs; see \code{\link{tQN}})
+#'	\item \code{filter.sites} -- homage to the FILTER field in VCF format, a flag for suppresing
+#'		sites (rows) in downstream analyses
+#'	\item \code{filter.samples} -- same as above, but along other dimension (columns)
+#'	\item \code{alleles} -- manner in which alleles are encoded: "native" (ACTGHN),
+#'		"01" (allele dosage wrt ALT allele), "relative" (allele dosage wrt MINOR allele)
+#' }
+#' All attributes are maintained "parallel" to the genotypes matrix itself, and additionally have names
+#' to avoid ambiguity.
+#' 
+#' Note that missing values (NAs/NaNs) are used for no-calls, in order to take advantage of R's behaviors on missing data.
+#'
+#' @section Accessing class attributes:
+#' The \code{`$`} operator is overloaded for the \code{genotypes} class, so that writing \code{attr(g, "normalized")}
+#' is equivalent to writing \code{g$normalized}.  But this works only in one direction: \code{g$normalized <- FALSE}
+#' fails.  Nefarious users can modify attributes directly using the standard and somewhat convoluted syntax
+#' \code{attr(,"x") <- y} but do so at their own risk.  For safety, always check that the resulting object remains
+#' valid (all internal parts having matching dimensions and names) with a call to \code{validate(g)}.
+#'
+#' Accessor functions are provided for the marker map (\code{markers(g)}), sample metadata (\code{samples(g)}),
+#' and intensity matrices (\code{intensity(g)}).
+#' 
+#' @section Allele encoding:
+#' For the purposes of this package, all markers on an array are treated as biallelic SNPs, and all samples are assumed
+#' to be diploid for the autosomes. Genotype calls are reported by Illumina BeadStudio as a two-character vector of
+#' nucleotides: eg. \code{AA}, \code{AG}, \code{GG} for an [A/G] SNP.  The \code{-} character indicates a missing call
+#' ("no-call").  On import, these calls are summarized to a single character, one of \code{ACGTHN}
+#' (\code{H} = heterozygous, \code{N} = no-call).
+#' 
+#' For most analyses a numeric representation of genotypes is desirable.  The function \code{recode.genotypes()}
+#' performs this conversion.  When reference alleles are provided in columns "A1" (REF) and "A2" (ALT) in the marker map,
+#' genotypes are recoded 0 (homozygous REF), 1 (heterozygous), 2 (homozygous ALT) or \code{NA} (missing).
+#' 
+#' Recoding can also be "relative": that is, performed with respect to the major and minor allele as defined by
+#' the dataset itself.  In this case the recoded 0 (homozygous major allele), 1 (heterozygous), 2 (homozygous
+#' minor allele) or \code{NA} (missing).
+#'
+#' The attribute \code{alleles} tracks the current allele encoding.
+#'
+#' @docType package
+#' @name argyle
+NULL

@@ -1,17 +1,6 @@
 ## geno.R
 ## utility functions for handling genotype matrices
 
-## The 'genotypes' class is a just a matrix (sites x samples) with row and column names.
-## Attributes include:
-##	* 'map' -- marker metadata in PLINK format (chr, marker, cM, pos, A1, A2, ...)
-##	* 'ped' -- pedigree/sample metadata in PLINK format (individual ID, family ID, mom ID, dad ID, sex, phenotype, ...)
-##	* 'inensity' -- list(x = [X-intensities], y = [y-intensities])
-##	* 'normalized' -- have intensities been normalized?
-##	* 'filter.sites' -- homage to the FILTER field in VCF format, a flag for suppresing sites (rows) in downstream analyses
-##	* 'filter.samples' -- same as above, but along other dimension (columns)
-##	* 'alleles' -- manner in which alleles are encoded: "native" (ACTGHN), "01" (allele dosage wrt ALT allele), "relative" (allele dosage wrt MINOR allele)
-## NB: I use missing values (NAs/NaNs) for no-calls, in order to take advantage of R's behaviors on missing data.
-
 #' Indexing into a \code{genotypes} object
 #'
 #' Allows indexing into a genotype matrix, trimming marker and sample metadata, filters,
@@ -77,13 +66,21 @@ summary.genotypes <- function(gty, ...) {
 	
 	nsamples <- ncol(gty)
 	nsites <- nrow(gty)
-	cat("'", substitute(gty), "': genotypes object with", nsites, "sites x", nsamples, "samples\n")
+	cat("---", substitute(gty), "---\nA genotypes object with", nsites, "sites x", nsamples, "samples\n")
 	
 	has.intens <- .has.valid.intensity(gty)
 	normed <- .null.false(attr(gty, "normalized"))
 	cat("Intensity data:", ifelse(has.intens, "yes","no"),
 		ifelse(has.intens, ifelse(normed, "(normalized)", "(raw)"), ""), "\n")
-	cat("Sample metadata:", ifelse(.has.valid.ped(gty), "yes", "no"), "\n")
+	cat("Sample metadata:", ifelse(.has.valid.ped(gty), "yes", "no"))
+	if (.has.valid.ped(gty) && "sex" %in% colnames(attr(gty, "ped"))) {
+		sex <- attr(gty, "ped")$sex
+		sexes <- tabulate(sex, nbins = 2)
+		cat(" (", sexes[1], "male /", sexes[2], "female /", length(sex)-sum(sexes), "unknown )\n")
+	}
+	else {
+		cat("\n")
+	}
 	
 	filt <- summarize.filters(gty)
 	cat("Filters set:", filt[1], "sites /", filt[2], "samples", "\n")
@@ -175,9 +172,9 @@ get.intensity <- function(gty, markers, ...) {
 	if (!(inherits(geno, "genotypes") && .has.valid.intensity(gty)))
 		stop("Please supply an object of class 'genotypes' with intensity information attached.")
 	
-	rez <- reshape2::melt.array(attr(gty, "intensity")$x[ markers,,drop = FALSE ])
+	rez <- reshape2:::melt.matrix(attr(gty, "intensity")$x[ markers,,drop = FALSE ])
 	colnames(rez) <- c("marker","iid","x")
-	rez <- cbind(rez, y = reshape2::melt.array(attr(gty, "intensity")$y[ markers,,drop = FALSE ])[ ,3 ])
+	rez <- cbind(rez, y = reshape2:::melt.matrix(attr(gty, "intensity")$y[ markers,,drop = FALSE ])[ ,3 ])
 	
 	if (.has.valid.map(gty))
 		rez <- merge(rez, attr(gty, "map"))
@@ -195,9 +192,9 @@ get.baf <- function(gty, markers, ...) {
 	if (!inherits(gty, "genotypes") && .has.valid.baflrr(gty))
 		stop("Please supply an object of class 'genotypes' with BAF and LRR computed.")
 	
-	rez <- reshape2::melt.array(attr(gty, "baf")[ markers,,drop = FALSE ])
+	rez <- reshape2:::melt.matrix(attr(gty, "baf")[ markers,,drop = FALSE ])
 	colnames(rez) <- c("marker","iid","BAF")
-	rez <- cbind(rez, LRR = reshape2::melt.array(attr(gty, "lrr")[ markers,,drop = FALSE ])[ ,3 ])
+	rez <- cbind(rez, LRR = reshape2:::melt.matrix(attr(gty, "lrr")[ markers,,drop = FALSE ])[ ,3 ])
 	
 	if (.has.valid.map(gty))
 		rez <- merge(rez, attr(gty, "map"))
