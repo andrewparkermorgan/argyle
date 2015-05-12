@@ -131,4 +131,5 @@ pca.genotypes <- function(gty, extras = NULL, what = c("genotypes","intensity"),
 	return(rez.df)
 	
 }
+#' @export
 pca <- function(x, ...) UseMethod("pca")

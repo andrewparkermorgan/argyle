@@ -118,6 +118,7 @@ summary.genotypes <- function(gty, ...) {
 markers.genotypes <- function(gty, ...) {
 	attr(gty, "map")
 }
+#' @export
 markers <- function(x) UseMethod("markers")
 
 #' Get sample metadata for a \code{genotypes} object
@@ -133,6 +134,7 @@ samples.genotypes <- function(gty, ...) {
 	else
 		colnames(gty)
 }
+#' @export
 samples <- function(x) UseMethod("samples")
 
 #' Get filters attached to a \code{genotypes} object
@@ -147,6 +149,7 @@ samples <- function(x) UseMethod("samples")
 filters.genotypes <- function(gty, ...) {
 	get.filters(gty, ...)
 }
+#' @export
 filters <- function(x) UseMethod("filters")
 
 #' Get intensity matrices attached to a \code{genotypes} object
@@ -159,6 +162,7 @@ filters <- function(x) UseMethod("filters")
 intensity.genotypes <- function(gty, ...) {
 	attr(gty, "intensity")
 }
+#' @export
 intensity <- function(x) UseMethod("intensity")
 
 ## grab intensities for given markers as nice dataframe for plotting
@@ -244,6 +248,8 @@ subset.genotypes <- function(gty, expr, by = c("markers","samples"), ...) {
 	}
 	
 }
+#' @export
+subset <- function(x) UseMethod("subset")
 
 ## overload cbind() to join not only genotype matrix but also sample metadata
 ## NB: intensities and filters are dropped at this point
@@ -384,6 +390,8 @@ merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
 	return(rez)
 	
 }
+#' @export
+merge <- function(x, ...) UseMethod("merge")
 
 ## internal helpers for validating the 'genotypes' data structure and its parts
 
@@ -562,6 +570,7 @@ validate.genotypes <- function(gty, ...) {
 	return(pass)
 	
 }
+#' @export
 validate <- function(x) UseMethod("validate")
 
 ## apply a function over samples in a genotype matrix, by sample groups
@@ -818,6 +827,7 @@ recode.genotypes <- function(gty, mode = c("pass","01","native","relative"),
 	return(rez)
 	
 }
+#' @export
 recode <- function(x, ...) UseMethod("recode", x)
 
 #' Swap out the marker map for a different one
