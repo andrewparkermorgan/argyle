@@ -44,42 +44,6 @@ setRepositories(1:2)
 install_github("andrewparkermorgan/argyle")
 ```
 
-## Usage
-```{r, eval=FALSE}
-library(argyle)
-
-data(snps)
-geno <- read.beadstudio("sample", snps, in.path = "./")
-
-## see marker map and sample metadata
-markers(geno)
-samples(geno)
-
-## subset operations: equivalent pairs
-subset(geno, chr == "chrX")
-geno[ markers(geno)$chr == "chrX", ]
-
-subset(geno, sex == 2, by = "samples")
-geno[ ,samples(geno)$sex == 2 ]
-
-## run QC checks and flag samples above thresholds
-geno <- run.qc.checks(geno, max.H = 3000, max.N = 5000)
-# how many samples fail QC?
-summarize.filters(geno)
-# remove samples failing QC
-filt <- apply.filters(geno)
-
-## compute BAF/LRR for copy-number analysis
-data(clusters)
-geno.norm <- tQN(geno, clusters = clusters)
-
-## grab intensity data for specific marker(s)
-ii <- get.intensity(geno, c("JAX00240610","JAX00240636"))
-
-## grab BAF/LRR
-blr <- get.baf(geno.norm, c("JAX00240610","JAX00240636"))
-```
-
 ## Performance
 For a realistic test of `argyle`'s performance, I use an Illumina BeadStudio dataset from the MegaMUGA array for mouse, containing 77808 markers x 96 samples (available from [do.jax.org](http://churchill.jax.org/research/cc/do_data/megamuga/raw/MegaMUGA_22Oct2012/)).  The relevant files, compressed with ZIP, have total size 149 MB.
 
@@ -100,6 +64,34 @@ sessionInfo()
 ```
 
 The final object is `r format(object.size(geno), units = "Mb")`, and is completely "self-contained" in that sample and marker metadata are stored alongside the genotypes and hybridization intensities.  It is worth noting that if the input files were decompressed they would occupy about 500 MB on disk.
+
+## Usage
+```{r, eval=TRUE}
+## overview of object's contents
+summary(geno)
+
+## see marker map and sample metadata
+head( markers(geno) )
+head( samples(geno) )
+
+## subset operations: equivalent pairs
+x <- subset(geno, chr == "chrM")
+x <- geno[ markers(geno)$chr == "chrM", ]
+print(x)
+
+x <- subset(geno, sex == 2, by = "samples")
+
+## run QC checks and flag samples above thresholds
+geno <- run.qc.checks(geno, max.H = 60e3, max.N = 5e3)
+# how many samples fail QC?
+summarize.filters(geno)
+## graphical summary
+qcplot(geno)
+
+## peek at a couple of markers
+plot.clusters(geno, 1:3)
+
+```
 
 ## Interface to [`R/DOQTL`](http://cgd.jax.org/apps/doqtl/DOQTL.shtml)
 Genotypes processed with `argyle` can be packaged into a set of `R` objects (bundled in an `*.Rdata` file) suitable for use as input to Dan Gatti's `DOQTL` software.  `DOQTL` performs haplotype reconstruction and genetic mapping (under both linkage/composite-interval and single-marker association models) in multifounder advanced intercross populations.  Its namesake is the Diversity Outbred (DO) mouse population (see [do.jax.org](http://do.jax.org/)).
