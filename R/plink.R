@@ -1,7 +1,25 @@
 ## plink.R
 ## wrappers for interacting with plink
 
-## read a plink binary fileset
+#' Read a PLINK binary fileset into a \code{genotypes} object
+#' 
+#' @param prefix path to a PLINK fileset, excluding \code{*.bed} suffix
+#' 
+#' @return a \code{genotypes} object, with alleles in the "01" encoding (see \code{\link{recode.genotypes}})
+#' 
+#' @details Reads a PLINK binary fileset using pure \code{R}.  The fileset should be generated in 
+#' 	the "variant-major" format (the default in all recent versions of PLINK.) Missing genotypes are
+#' 	represented as \code{NA}s.
+#' 	
+#' @seealso \code{\link{write.plink}}
+#' 
+#' @references
+#' PLINK v1.9: \url{https://www.cog-genomics.org/plink2}
+#' 
+#' Purcell S et al. (2007) PLINK: a toolset for whole-genome association and population-based 
+#' 	linkage analysis. Am J Hum Genet 81(3): 559-575. doi:10.1086/519795.
+#' 
+#' @export
 read.plink <- function(prefix, ...) {
 	
 	## construct filenames; check that all are present and accounted for
@@ -60,7 +78,33 @@ read.plink <- function(prefix, ...) {
 	
 }
 
-## write a plink binary fileset
+#' Write a \code{genotypes} object as a PLINK binary fileset
+#' 
+#' @param gty an \code{genotypes} object
+#' @param prefix path to the PLINK fileset to generate, excluding \code{*.bed} suffix
+#' @param map a valid marker map; overrides existing map
+#' @param fam sample metadata to override any existing metadata
+#' 
+#' @return \code{TRUE} on completion
+#' 
+#' @details Writes a PLINK binary fileset using pure \code{R}.  The fileset is generated in the
+#' 	"variant-major" format (the default in all recent versions of PLINK), with appropriate magic
+#' 	number.  Complete sample metadata and a complete marker map, including reference alleles (columns "A1"
+#' 	and "A2"), are both required.
+#' 	
+#' 	This function only supports writing from character (allele enconding \code{"native"}) genotypes,
+#' 	in order to avoid ambiguity around the correspondence between alleles and numeric genotypes.  But
+#' 	numeric genotypes can be converted back to character via \code{recode.genotypes(,"native")}.
+#' 	
+#' @seealso \code{\link{read.plink}}
+#' 
+#' @references
+#' PLINK v1.9: \url{https://www.cog-genomics.org/plink2}
+#' 
+#' Purcell S et al. (2007) PLINK: a toolset for whole-genome association and population-based 
+#' 	linkage analysis. Am J Hum Genet 81(3): 559-575. doi:10.1086/519795.
+#' 
+#' @export
 write.plink <- function(gty, prefix, map = NULL, fam = NULL, ...) {
 	
 	if (!inherits(gty, "genotypes"))
@@ -146,6 +190,8 @@ write.plink <- function(gty, prefix, map = NULL, fam = NULL, ...) {
 	}
 	close(bed)
 	
+	return(TRUE)
+	
 }
 
 ### utilities and internals
@@ -193,7 +239,32 @@ write.plink.file <- function(x, ..., fix.missing = NA) {
 	write.table(x, ..., col.names = FALSE, row.names = FALSE, quote = FALSE, sep = "\t")
 }
 
-## convert a genotype matrix to plink format on disk
+#' Create a pointer to a PLINK fileset
+#' 
+#' @param gty a length-1 character vector containing the path to an existing PLINK fileset, OR a
+#' 	\code{genotypes} object which will be converted to one
+#' @param map if \code{gty} a \code{genotypes} object, a marker map to override its current one
+#' @param map if \code{gty} a \code{genotypes} object, sample metadata to override any existing metadata
+#' @param where if \code{gty}, directory in which to write the new PLINK fileset
+#' @param prefix basename of the fileset to be created
+#' @param flags (ignored)
+#' 
+#' @return a length-1 character vector with path to a PLINK binary fileset, of class \code{"plink"}
+#' 
+#' @details Command-line PLINK takes its input from filesets on disk. This function creates a pointer to such
+#' 	a fileset after checking that all its members (\code{*.bed}, \code{*.bim}, \code{*.fam}) are present.
+#' 	Wrapper functions for various PLINK analyses accept this pointer as input.
+#' 	
+#' 	When the fileset alraedy exists, an additional attribute (\code{"where"}) is added to the result
+#' 	specifying where to place the output of any future PLINK calls.  By default such files are routed
+#' 	to the temporary directory corresponding to the current \code{R} session, to avoid cluttering the
+#' 	directory containing the source fileset.
+#' 	
+#'	When the fileset does not exist and \code{gty} is a \code{genotypes} object, a new fileset is created
+#'	in the location specified by \code{where} via a call to \code{write.plink(gty)}.  Then the path to
+#'	that fileset is returned. 
+#'
+#' @export
 plinkify <- function(gty, map = NULL, ped = NULL, where = tempdir(), prefix = "stuff", flags = "", ...) {
 	
 	## allow shortcut to bless paths of existing plink files
@@ -338,7 +409,22 @@ read.map <- function(f, ...) {
 	
 }
 
-## perform LD-pruning with plink
+#' Prune markers by pairwise LD with PLINK
+#' 
+#' @param prefix a pointer to a PLINK fileset (of class \code{plink})
+#' @param prune.by command-line flags to control LD-pruning
+#' 
+#' @return a pointer to a new, pruned PLINK fileset
+#' 
+#' @details See the relevant PLINK documentation for details of the underlying calculations.
+#'
+#' @references
+#' PLINK v1.9: \url{https://www.cog-genomics.org/plink2}
+#' 
+#' Purcell S et al. (2007) PLINK: a toolset for whole-genome association and population-based 
+#' 	linkage analysis. Am J Hum Genet 81(3): 559-575. doi:10.1086/519795.
+#' 
+#' @export
 prune.plink <- function(prefix, prune.by = "--make-founders --indep 50 5 2", ...) {
 	
 	success <- .plink.command(prefix, prune.by, list("prune.in"))
@@ -355,8 +441,46 @@ prune.plink <- function(prefix, prune.by = "--make-founders --indep 50 5 2", ...
 	
 }
 
-## run GWAS scan with plink
-assoc.plink <- function(prefix, out = NULL, model = c("assoc","linear","logistic"), test = c("additive","genotypic","hethom","dominant","recessive"),
+#' Perform a genome-wide association scan with PLINK
+#' 
+#' @param prefix a pointer to a PLINK fileset (of class \code{plink})
+#' @param model statistical model for association between genotype and phenotype (\code{"assoc"} for
+#' case-control contingency table; \code{"linear"} for linear model on quantitative trait;
+#' \code{"logistic"} for case-control logistic regression)
+#' @param test family of hypothesis test(s) to perform
+#' @param perms logical: establish significance thresholds using adaptive permutation, or skip it?
+#' @param geno.missing drop markers with call rate lower than this threshold
+#' @param ind.missing drop samples with call rate lower than this threshold
+#' @param maf drop markers with minor-allele frequency lower than this threhsold
+#' @param hwe drop markers p-value less than this threshold for test of Hardy-Weinbery equilibrium
+#' @param flags additional command-line flags passed directly to PLINK call
+#' 
+#' @return a dataframe with association results, having the following columns:
+#' \itemize{
+#' \item chr
+#' \item pos
+#' \item marker
+#' \item A1 -- reference allele (interpretation depends on dataset)
+#' \item p.value -- p-value for hypothesis test
+#' \item OR -- odds ratio (in case-control context)
+#' \item n -- count of non-missing genotypes at this marker
+#' \item test -- which family of hypothesis test this is
+#' \item p.value.perm -- empirical p-value from permutations, if applicable
+#' }
+#' 
+#' @details See the relevant PLINK documentation for details of the underlying calculations. Note
+#' 	that PLINK doesn't perform kinship correction.  There now exists other, smarter software for
+#' 	GWAS including \code{EMMAX}, \code{FastLMM} and \code{LIMIX}.
+#'
+#' @references
+#' PLINK v1.9: \url{https://www.cog-genomics.org/plink2}
+#' 
+#' Purcell S et al. (2007) PLINK: a toolset for whole-genome association and population-based 
+#' 	linkage analysis. Am J Hum Genet 81(3): 559-575. doi:10.1086/519795.
+#' 
+#' @export
+assoc.plink <- function(prefix, model = c("assoc","linear","logistic"),
+						test = c("additive","genotypic","hethom","dominant","recessive"),
 						perms = TRUE, geno.missing = 0, ind.missing = 0, maf = 0, hwe = 1,
 						flags = "--keep-allele-order --allow-no-sex --nonfounders", ...) {
 	
@@ -398,10 +522,12 @@ assoc.plink <- function(prefix, out = NULL, model = c("assoc","linear","logistic
 	if (is.character(success)) {
 		.df <- read.table(paste0(success, suffix), header = TRUE)
 		if (test == "assoc") {
-			df <- with(.df, data.frame(chr = CHR, pos = BP, marker = SNP, A1 = A1, p.value = P, OR = OR))
+			df <- with(.df, data.frame(chr = CHR, pos = BP, marker = SNP, A1 = A1,
+									   p.value = P, OR = OR))
 		}
 		else {
-			df <- with(.df, data.frame(chr = CHR, pos = BP, marker = SNP, A1 = A1, p.value = P, OR = OR, n = NMISS, test = TEST))
+			df <- with(.df, data.frame(chr = CHR, pos = BP, marker = SNP, A1 = A1,
+									   p.value = P, OR = OR, n = NMISS, test = TEST))
 		}
 		df$chr <- unplink.chroms(df$chr)
 		if (perms) {
@@ -451,7 +577,25 @@ ibd.plink <- function(prefix, flags = "--nonfounders", prune = FALSE, ...) {
 	
 }
 
-## compute genetic relationship matrix (ie. kinship matrix) with plink
+#' Compute realized kinship matrix (aka GRM) with PLINK
+#' 
+#' @param prefix a pointer to a PLINK fileset (of class \code{plink})
+#' @param flags command-line flags passed directly to underlying PLINK call
+#' 
+#' @return a square matrix of genetic distances (or similarities), with row and column names
+#' 	equal to the sample IDs
+#' 
+#' @details See the relevant PLINK documentation for details of the underlying calculations.
+#' 	The default is to compute the 'Mahnattan distance' between samples, ie. 1 minus the mean
+#' 	number alleles shared identical-by-state across all markers.
+#'
+#' @references
+#' PLINK v1.9: \url{https://www.cog-genomics.org/plink2}
+#' 
+#' Purcell S et al. (2007) PLINK: a toolset for whole-genome association and population-based 
+#' 	linkage analysis. Am J Hum Genet 81(3): 559-575. doi:10.1086/519795.
+#' 
+#' @export
 kinship.plink <- function(prefix, method = "--distance square 1-ibs", flags = "", prune = FALSE, ...) {
 	
 	prefix.new <- prefix
@@ -478,7 +622,33 @@ kinship.plink <- function(prefix, method = "--distance square 1-ibs", flags = ""
 	
 }
 
-## compute pariwise Fst between groups with plink
+#' Compute Weir & Cockerham's F_st estimator using PLINK
+#' 
+#' @param prefix a pointer to a PLINK fileset (of class \code{plink})
+#' @param by a vector of population labels; if not specified, family ID is used
+#' @param per.locus logical: if \code{TRUE}, return one value per marker; else return aggregate
+#' @param chr restrict analysis to this chromosome (if \code{NULL}, all chromosomes)
+#' @param flags command-line flags passed directly to underlying PLINK call
+#' 
+#' @return a square matrix of pairwise F_st values; diagonal has mean heterozygosity within
+#' 	each population as defined by the labels in \code{by}
+#' 
+#' @details The F_st statistic as proposed by Sewall Wright is a measure of allele-frequency
+#' 	differentiation between two populations. See the relevant PLINK documentation for details
+#' 	of the underlying calculations, and Weir & Cockerham (1984) for derivation of the estimator.
+#'
+#' @references
+#' PLINK v1.9: \url{https://www.cog-genomics.org/plink2}
+#' 
+#' Purcell S et al. (2007) PLINK: a toolset for whole-genome association and population-based 
+#' 	linkage analysis. Am J Hum Genet 81(3): 559-575. doi:10.1086/519795.
+#' 	
+#' Wright S (1931) Evolution in Mendelian populations. Genetics 16: 97-159.
+#' 
+#' Weir BS & Cockerham CC (1984) Estimating F-statistics for the analysis of population
+#' 	structure. Evolution 38(6): 1358-1370.
+#' 
+#' @export
 weir.fst.plink <- function(prefix, by = NULL, per.locus = FALSE, chr = NULL, flags = "", ...) {
 	
 	if (!inherits(prefix, "plink"))
@@ -582,7 +752,37 @@ qc.plink <- function(prefix, flags = "--nonfounders", ...) {
 	
 }
 
-## do LD calculation with plink
+#' Compute pairwise LD between markers with PLINK
+#' 
+#' @param prefix a pointer to a PLINK fileset (of class \code{plink})
+#' @param index.snp name of the marker used to anchor the calculation
+#' @param markers compute all pairwise LD values between markers in this list
+#' @param chr limit analysis to this chromosome
+#' @param from with \code{chr}, limit analysis to window starting at this position
+#' @param to with \code{chr}, limit analysis to window ending at this position
+#' @param window (ignored)
+#' @param window.r2 keep calculating until pairwise LD falls below this threshold
+#' @param flags command-line flags passed directly to underlying PLINK call
+#' 
+#' @return a \code{data.table} of pairwise LD values, one marker pair per row
+#' 
+#' @details Linkage disequlibrium (LD) is estimated here via the squared genetic correlation (r^2)
+#' 	between loci.  Since the size of the output scales with the square of the number of markers and
+#' 	can easily grow to gigabytes for a dataset with >10k markers, it is highly recommended
+#' 	to limit the calculation using the parameters above.
+#' 	
+#' 	See the relevant PLINK documentation for details of the underlying calculations.
+#'
+#' @references
+#' PLINK v1.9: \url{https://www.cog-genomics.org/plink2}
+#' 
+#' Purcell S et al. (2007) PLINK: a toolset for whole-genome association and population-based 
+#' 	linkage analysis. Am J Hum Genet 81(3): 559-575. doi:10.1086/519795.
+#' 	
+#' Lewontin RC (1960) The interaction of selection and linkage. I. General considerations; heterotic
+#' 	models. Genetics 49(1): 49-67.
+#' 
+#' @export
 ld.plink <- function(prefix, index.snp = NULL, markers = NULL, chr = NULL, from = NULL, to = NULL,
 					 window = NULL, window.r2 = 0, flags = "", ...) {
 	
@@ -696,6 +896,28 @@ filter.plink <- function(prefix, chr = NULL, from = NULL, to = NULL,
 	
 }
 
+#' Perform classical multidimensional scaling (MDS) with PLINK
+#' 
+#' @param prefix a pointer to a PLINK fileset (of class \code{plink})
+#' @param flags command-line flags passed directly to underlying PLINK call
+#' @param K project samples onto this many dimensions
+#' 
+#' @return a dataframe with individual IDs, family IDs, and then projections in columns
+#' 	"MDS1"..."MDS{k}".
+#' 
+#' @details See the relevant PLINK documentation for details of the underlying calculations.
+#' 	The default is to perform MDS on autosomal genotypes only.  Scaled eigenvalues (ie. percent
+#' 	variance explained by each dimension) are provided in \code{attr(,"eigvals")}.
+#'
+#' @references
+#' PLINK v1.9: \url{https://www.cog-genomics.org/plink2}
+#' 
+#' Purcell S et al. (2007) PLINK: a toolset for whole-genome association and population-based 
+#' 	linkage analysis. Am J Hum Genet 81(3): 559-575. doi:10.1086/519795.
+#' 
+#' @seealso \code{\link{pca.plink}}
+#' 
+#' @export
 mds.plink <- function(prefix, flags = "--autosome", K = 3, ...) {
 	
 	if (!inherits(prefix, "plink"))
@@ -721,7 +943,38 @@ mds.plink <- function(prefix, flags = "--autosome", K = 3, ...) {
 	
 }
 
-pca.plink <- function(prefix, flag = "--autosome", K = 20, by = c("indiv","var"), ...) {
+#' Perform PCA on genotypes with PLINK
+#' 
+#' @param prefix a pointer to a PLINK fileset (of class \code{plink})
+#' @param flags command-line flags passed directly to underlying PLINK call
+#' @param K return the projection of samples onto the top K PCs
+#' @param by project individuals (\code{"indiv"}) or markers (\code{"var"}) onto PCs?
+#' 
+#' @return When \code{by = "indiv"} (the default), a dataframe with individual IDs, family IDs,
+#' and then projections in columns "PC1"..."PC{k}".  When \code{by == "var"}, a dataframe with
+#' columns chromosome and marker name followed by PCs.
+#' 
+#' @details See the relevant PLINK documentation for details of the underlying calculations.
+#' 	The default is to perform PCA on autosomal genotypes only.  Scaled eigenvalues (ie. percent
+#' 	variance explained by each dimension) are provided in \code{attr(,"eigvals")}.
+#' 	
+#' 	A recently-proposed test for natural selection uses the squared loadings of each marker
+#' 	against the top PCs as an analog of F_st.  To obtain those loadings use \code{by = "var"}.
+#'
+#' @references
+#' PLINK v1.9: \url{https://www.cog-genomics.org/plink2}
+#' 
+#' Purcell S et al. (2007) PLINK: a toolset for whole-genome association and population-based 
+#' 	linkage analysis. Am J Hum Genet 81(3): 559-575. doi:10.1086/519795.
+#' 	
+#' Duforet-Frebourg N et al. (2015) Detecting genomic signatures of natural selection with
+#' 	principal componentanalysis: application to the 1000 Genomes data
+#' 	\url{http://arxiv.org/abs/1504.04543}
+#' 
+#' @seealso \code{\link{mds.plink}}
+#' 
+#' @export
+pca.plink <- function(prefix, flags = "--autosome", K = 20, by = c("indiv","var"), ...) {
 	
 	if (!inherits(prefix, "plink"))
 		stop("Not convinced the input is a pointer to a plink fileset.")
@@ -731,7 +984,7 @@ pca.plink <- function(prefix, flag = "--autosome", K = 20, by = c("indiv","var")
 		stop("You probably don't want a PCA result with no dimensions; specify a number K > 0.")
 	
 	by <- match.arg(by)
-	cmd <- paste("--pca", K)
+	cmd <- paste(flags, "--pca", K)
 	if (by == "indiv") {
 		cols <- c("fid","iid", paste0("PC", seq_len(K)))
 		expect <- list("eigenvec","eigenval")
