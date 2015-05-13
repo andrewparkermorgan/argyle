@@ -146,33 +146,35 @@ blr &lt;- get.baf(geno.norm, c(&quot;JAX00240610&quot;,&quot;JAX00240636&quot;))
 #&gt; Reading genotypes and intensities from &lt; ./data/MM_sample/FinalReport.zip &gt; ...
 #&gt; 
 Read 0.0% of 7469568 rows
-Read 12.3% of 7469568 rows
-Read 24.6% of 7469568 rows
-Read 36.9% of 7469568 rows
+Read 11.8% of 7469568 rows
+Read 24.2% of 7469568 rows
+Read 36.3% of 7469568 rows
 Read 48.9% of 7469568 rows
-Read 61.2% of 7469568 rows
+Read 61.0% of 7469568 rows
 Read 73.5% of 7469568 rows
 Read 85.8% of 7469568 rows
-Read 98.0% of 7469568 rows
+Read 98.1% of 7469568 rows
 Read 7469568 rows and 11 (of 11) columns from 0.478 GB file in 00:00:12
 #&gt; Constructing genotype matrix...
 #&gt; Constructing intensity matrices...
 #&gt;   77725 sites x 96 samples
+#&gt; Warning in if (check) {: the condition has length &gt; 1 and only the first
+#&gt; element will be used
 #&gt; Done.
 #&gt;    user  system elapsed 
-#&gt;  33.959   4.771  41.859
+#&gt;  35.093   5.065  43.293
 
 summary(geno)
 #&gt; --- geno ---
 #&gt; A genotypes object with 77725 sites x 96 samples
-#&gt; Intensity data: no  
+#&gt; Intensity data: yes (raw) 
 #&gt; Sample metadata: no
 #&gt; Filters set: 0 sites / 0 samples 
-#&gt; File source: /Users/apm/Dropbox/pmdvlab/argyle/data/MM_sample (on 2015-05-13 14:48:54 )
-#&gt; Checksum: bd98520fb7f0dae385eda5d1fa7143c4
+#&gt; File source: /Users/apm/Dropbox/pmdvlab/argyle/data/MM_sample (on 2015-05-13 15:01:48 )
+#&gt; Checksum: 19dcdf622a18c07451c1ee98aba8fafd
 
 print(object.size(geno), units = &quot;Mb&quot;)
-#&gt; 77.5 Mb
+#&gt; 200.9 Mb
 
 sessionInfo()
 #&gt; R version 3.1.3 (2015-03-09)
@@ -194,7 +196,7 @@ sessionInfo()
 #&gt;  [1] chron_2.3-45    evaluate_0.5.5  formatR_1.0     htmltools_0.2.6
 #&gt;  [5] knitr_1.9       Rcpp_0.11.5     rmarkdown_0.5.1 roxygen2_4.1.1 
 #&gt;  [9] stringr_0.6.2   tools_3.1.3     yaml_2.1.13</code></pre>
-<p>The final object is, at 78 MB, about half the size of the input. Peak memory usage for parsing BeadStudio output is about 150 MB (as determined by line-by-line profiling not shown here), or on the order of the size of the input. It is worth noting that if the input files were decompressed they would occupy about 500 MB on disk.</p>
+<p>The final object is 200.9 Mb, and is completely “self-contained” in that sample and marker metadata are stored alongside the genotypes and hybridization intensities. It is worth noting that if the input files were decompressed they would occupy about 500 MB on disk.</p>
 </div>
 <div id="interface-to-rdoqtl" class="section level2">
 <h2>Interface to <a href="http://cgd.jax.org/apps/doqtl/DOQTL.shtml"><code>R/DOQTL</code></a></h2>
@@ -215,7 +217,7 @@ export.doqtl(geno, &quot;./doqtl.objects.Rdata&quot;)</code></pre>
 <pre class="r"><code>## this command produces files 'sample.bed', 'sample.bim' and 'sample.fam'
 write.plink(geno, &quot;./sample&quot;)
 ## ... and this one reads them back in
-geno &lt;- read.plink(&quot;/sample&quot;)</code></pre>
+geno &lt;- read.plink(&quot;./sample&quot;)</code></pre>
 <p>Also included are thin wrappers around some <code>PLINK</code> utilities. These of course require a working executable named <code>plink</code> in the user’s path. [<strong>TODO</strong>]</p>
 </div>
 </div>

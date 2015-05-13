@@ -72,13 +72,13 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 		calls <- genotypes(.copy.matrix.noattr(calls),
 						   map = attr(calls, "map"), ped = fam,
 						   alleles = "native",
+						   intensity = list(x = x, y = y), normalized = FALSE,
 						   check = FALSE)
 	}
 	else {
 		calls <- genotypes(.copy.matrix.noattr(calls),
 						   map = attr(calls, "map"), ped = fam,
 						   alleles = "native",
-						   intensity = list(x = x, y = y), normalized = FALSE,
 						   check = FALSE)
 	}
 	
@@ -106,7 +106,7 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	## Get the sample IDs from the Sample_Map.txt file.
 	samplefile <- dir(path = in.path, pattern = "Sample_Map.zip", full.names = TRUE)
 	## If not found, then quit.
-	if(length(samplefile) == 0) {
+	if (length(samplefile) == 0) {
 		stop(paste("No file called 'Sample_Map.txt' was found in directory",
 				   in.path[i], ".  Please make sure that the Sample_Map file is unzipped and",
 				   "in the specified directory."))

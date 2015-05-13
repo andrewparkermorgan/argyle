@@ -97,33 +97,35 @@ system.time( geno <- read.beadstudio("", snps, "./data/MM_sample") )
 #> Reading genotypes and intensities from < ./data/MM_sample/FinalReport.zip > ...
 #> 
 Read 0.0% of 7469568 rows
-Read 12.3% of 7469568 rows
-Read 24.6% of 7469568 rows
-Read 36.9% of 7469568 rows
+Read 11.8% of 7469568 rows
+Read 24.2% of 7469568 rows
+Read 36.3% of 7469568 rows
 Read 48.9% of 7469568 rows
-Read 61.2% of 7469568 rows
+Read 61.0% of 7469568 rows
 Read 73.5% of 7469568 rows
 Read 85.8% of 7469568 rows
-Read 98.0% of 7469568 rows
+Read 98.1% of 7469568 rows
 Read 7469568 rows and 11 (of 11) columns from 0.478 GB file in 00:00:12
 #> Constructing genotype matrix...
 #> Constructing intensity matrices...
 #>   77725 sites x 96 samples
+#> Warning in if (check) {: the condition has length > 1 and only the first
+#> element will be used
 #> Done.
 #>    user  system elapsed 
-#>  33.959   4.771  41.859
+#>  35.093   5.065  43.293
 
 summary(geno)
 #> --- geno ---
 #> A genotypes object with 77725 sites x 96 samples
-#> Intensity data: no  
+#> Intensity data: yes (raw) 
 #> Sample metadata: no
 #> Filters set: 0 sites / 0 samples 
-#> File source: /Users/apm/Dropbox/pmdvlab/argyle/data/MM_sample (on 2015-05-13 14:48:54 )
-#> Checksum: bd98520fb7f0dae385eda5d1fa7143c4
+#> File source: /Users/apm/Dropbox/pmdvlab/argyle/data/MM_sample (on 2015-05-13 15:01:48 )
+#> Checksum: 19dcdf622a18c07451c1ee98aba8fafd
 
 print(object.size(geno), units = "Mb")
-#> 77.5 Mb
+#> 200.9 Mb
 
 sessionInfo()
 #> R version 3.1.3 (2015-03-09)
@@ -147,7 +149,7 @@ sessionInfo()
 #>  [9] stringr_0.6.2   tools_3.1.3     yaml_2.1.13
 ```
 
-The final object is, at 78 MB, about half the size of the input. Peak memory usage for parsing BeadStudio output is about 150 MB (as determined by line-by-line profiling not shown here), or on the order of the size of the input. It is worth noting that if the input files were decompressed they would occupy about 500 MB on disk.
+The final object is 200.9 Mb, and is completely "self-contained" in that sample and marker metadata are stored alongside the genotypes and hybridization intensities. It is worth noting that if the input files were decompressed they would occupy about 500 MB on disk.
 
 Interface to [`R/DOQTL`](http://cgd.jax.org/apps/doqtl/DOQTL.shtml)
 -------------------------------------------------------------------
@@ -176,7 +178,7 @@ Note that order matters: genotypes from the `*.bed` file are mapped to samples a
 ## this command produces files 'sample.bed', 'sample.bim' and 'sample.fam'
 write.plink(geno, "./sample")
 ## ... and this one reads them back in
-geno <- read.plink("/sample")
+geno <- read.plink("./sample")
 ```
 
 Also included are thin wrappers around some `PLINK` utilities. These of course require a working executable named `plink` in the user's path. [**TODO**]

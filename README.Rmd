@@ -99,7 +99,7 @@ print(object.size(geno), units = "Mb")
 sessionInfo()
 ```
 
-The final object is, at 78 MB, about half the size of the input.  Peak memory usage for parsing BeadStudio output is about 150 MB (as determined by line-by-line profiling not shown here), or on the order of the size of the input.  It is worth noting that if the input files were decompressed they would occupy about 500 MB on disk.
+The final object is `r format(object.size(geno), units = "Mb")`, and is completely "self-contained" in that sample and marker metadata are stored alongside the genotypes and hybridization intensities.  It is worth noting that if the input files were decompressed they would occupy about 500 MB on disk.
 
 ## Interface to [`R/DOQTL`](http://cgd.jax.org/apps/doqtl/DOQTL.shtml)
 Genotypes processed with `argyle` can be packaged into a set of `R` objects (bundled in an `*.Rdata` file) suitable for use as input to Dan Gatti's `DOQTL` software.  `DOQTL` performs haplotype reconstruction and genetic mapping (under both linkage/composite-interval and single-marker association models) in multifounder advanced intercross populations.  Its namesake is the Diversity Outbred (DO) mouse population (see [do.jax.org](http://do.jax.org/)).
@@ -122,7 +122,7 @@ Note that order matters: genotypes from the `*.bed` file are mapped to samples a
 ## this command produces files 'sample.bed', 'sample.bim' and 'sample.fam'
 write.plink(geno, "./sample")
 ## ... and this one reads them back in
-geno <- read.plink("/sample")
+geno <- read.plink("./sample")
 ```
 
 Also included are thin wrappers around some `PLINK` utilities.  These of course require a working executable named `plink` in the user's path. [**TODO**]
