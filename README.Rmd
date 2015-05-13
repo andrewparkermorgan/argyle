@@ -22,11 +22,27 @@ An `R` package for import, QC and (some) analysis of genotyping and hybridizatio
 Effort has been made to keep to a minimum the number of package dependencies, subject to the constraint that I don't want to re-implement from scratch what others have done better.
 
 * `data.table`: really fast and efficient handling of big (multi-GB scale) table-style data with low overhead
-* `preprocessCore` (from Biodoncuctor): robust quantile normalization routine written in `C`, faster than `limma`'s
-* `ggplot2`: flexible graphics
-* `reshape2`: easy interconversion between matrices (good for storage) and dataframes (useful for summaries and plotting)
+* `preprocessCore` (Biodoncuctor): robust quantile normalization routine written in `C`
+* `plyr`: generalizations of base-`R`'s `apply()` family
+* `reshape2`: easy "flattening" of matrices to dataframes
 * `digest`: for computing MD5 checksums to check data integrity
 
+The following are required for some functions but one could get by without them:
+
+* `ggplot2`: required for the plotting functions
+* `corpcor`: required for "fast"-mode PCA
+
+## Installation
+Installation of the package directly from Github requires `devtools`.
+```{r, eval=FALSE}
+library(devtools)
+
+## allow R to look for pacakges in both CRAN and Bioconductor
+setRepositories(1:2)
+
+## install from Github source
+install_github("andrewparkermorgan/argyle")
+```
 
 ## Usage
 ```{r, eval=FALSE}
@@ -64,8 +80,36 @@ ii <- get.intensity(geno, c("JAX00240610","JAX00240636"))
 blr <- get.baf(geno.norm, c("JAX00240610","JAX00240636"))
 ```
 
-## Interface to `PLINK`
-Computation on large SNP array genotyping datasets is not a new problem.  Many common operations -- frequency statistics (sample-wise and marker-wise), differentiation statistics ($F_st$ et al), homozygosity checks, association testing, multivariate clustering by PCA and MDS -- are implemented efficiently in the `PLINK` package.  The input formats popularized by `PLINK` are now used by other software in population genetics.
+## Performance
+For a realistic test of `argyle`'s performance, I use an Illumina BeadStudio dataset from the MegaMUGA array for mouse, containing 77808 markers x 96 samples (available from [do.jax.org](http://churchill.jax.org/research/cc/do_data/megamuga/raw/MegaMUGA_22Oct2012/)).  The relevant files, compressed with ZIP, have total size 149 MB.
+
+Testing on my Mac Pro desktop (OS X 10.6.8.10K549, 2x2.26 GHz quad-core Xeon, 24 GB DDR3 RAM) under  `R` 3.1.3:
+```{r, echo=FALSE, results="hide", error=FALSE, warning=FALSE, eval=TRUE}
+library(devtools)
+load_all()
+load("~/db/arrays/megamuga/snps.megamuga.Rdata")
+```
+```{r, eval=TRUE}
+system.time( geno <- read.beadstudio("", snps, "./data/MM_sample") )
+
+summary(geno)
+
+print(object.size(geno), units = "Mb")
+
+sessionInfo()
+```
+
+The final object is, at 78 MB, about half the size of the input.  Peak memory usage for parsing BeadStudio output is about 150 MB (as determined by line-by-line profiling not shown here), or on the order of the size of the input.  It is worth noting that if the input files were decompressed they would occupy about 500 MB on disk.
+
+## Interface to [`R/DOQTL`](http://cgd.jax.org/apps/doqtl/DOQTL.shtml)
+Genotypes processed with `argyle` can be packaged into a set of `R` objects (bundled in an `*.Rdata` file) suitable for use as input to Dan Gatti's `DOQTL` software.  `DOQTL` performs haplotype reconstruction and genetic mapping (under both linkage/composite-interval and single-marker association models) in multifounder advanced intercross populations.  Its namesake is the Diversity Outbred (DO) mouse population (see [do.jax.org](http://do.jax.org/)).
+```{r, eval=FALSE}
+## export for DOQTL
+export.doqtl(geno, "./doqtl.objects.Rdata")
+```
+
+## Interface to [`PLINK`](https://www.cog-genomics.org/plink2/)
+Computation on large SNP array genotyping datasets is not a new problem.  Many common operations -- frequency statistics (sample-wise and marker-wise), differentiation statistics ($F_{st}$ et al), homozygosity checks, association testing, multivariate clustering by PCA and MDS -- are implemented efficiently in the `PLINK` package.  The input formats popularized by `PLINK` are now used by other software in population genetics.
 
 This package provides functions to read and write **binary** `PLINK` filesets.  The binary fileset consists of three files:
 

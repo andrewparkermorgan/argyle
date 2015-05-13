@@ -4,7 +4,9 @@
 \alias{genotypes}
 \title{Constructor for a \code{genotypes} object}
 \usage{
-genotypes(G, map, ped = NULL, alleles = c("auto", "native", ""))
+genotypes(G, map, ped = NULL, alleles = c("auto", "native", "01",
+  "relative"), intensity = NULL, normalized = FALSE, filter.sites = NULL,
+  filter.samples = NULL, check = TRUE, ...)
 }
 \arguments{
 \item{G}{a genotype matrix with markers in rows and samples in columns, with both row and column names}
@@ -24,6 +26,8 @@ is a matrix with same dimensions and same row/column names as \code{G}}
 \item{filter.sites}{logical vector indicating which markers to flag as low-quality}
 
 \item{filter.samples}{logical vector indicating which samples to flag as low-quality}
+
+\item{check}{logical; if \code{TRUE}, do sanity checks on input}
 }
 \value{
 a new \code{genotypes} object
@@ -72,8 +76,8 @@ required for some downstream operations.
 \item \code{marker} -- (character, factor) *globally-unique* marker name, cannot be missing
 \item \code{cM} -- (numeric) genetic position of this marker in cM; use zero for missing
 \item \code{pos} -- (integer) position of this marker in basepairs; use zero for missing
-\item \code{A1}* -- (character, factor) REFERENCE allele, cannot be missing
-\item \code{A2}* -- (character, factor) ALTERNATE allele, cannot be missing
+\item \code{A1}* -- (character, factor) REFERENCE allele, case-insensitive, cannot be missing
+\item \code{A2}* -- (character, factor) ALTERNATE allele, case-insensitive, cannot be missing
 }
 Rownames must be present and must match the contents of column "marker".
 }

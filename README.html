@@ -72,9 +72,29 @@ img {
 <div id="dependencies" class="section level2">
 <h2>Dependencies</h2>
 <p>Effort has been made to keep to a minimum the number of package dependencies, subject to the constraint that I don’t want to re-implement from scratch what others have done better.</p>
-<p>The list of dependencies accumulated (so far) is:</p>
-<p><em><code>data.table</code>: really fast and efficient handling of big (multi-GB scale) table-style data with low overhead </em><code>preprocessCore</code> (from Biodoncuctor): robust quantile normalization routine written in <code>C</code>, faster than <code>limma</code>’s <em><code>ggplot2</code>: flexible graphics </em><code>reshape2</code>: easy interconversion between matrices (good for storage) and dataframes (useful for summaries and plotting) *<code>digest</code>: for computing MD5 checksums to check data integrity</p>
-<p>Others may be added in future.</p>
+<ul>
+<li><code>data.table</code>: really fast and efficient handling of big (multi-GB scale) table-style data with low overhead</li>
+<li><code>preprocessCore</code> (Biodoncuctor): robust quantile normalization routine written in <code>C</code></li>
+<li><code>plyr</code>: generalizations of base-<code>R</code>’s <code>apply()</code> family</li>
+<li><code>reshape2</code>: easy “flattening” of matrices to dataframes</li>
+<li><code>digest</code>: for computing MD5 checksums to check data integrity</li>
+</ul>
+<p>The following are required for some functions but one could get by without them:</p>
+<ul>
+<li><code>ggplot2</code>: required for the plotting functions</li>
+<li><code>corpcor</code>: required for “fast”-mode PCA</li>
+</ul>
+</div>
+<div id="installation" class="section level2">
+<h2>Installation</h2>
+<p>Installation of the package directly from Github requires <code>devtools</code>.</p>
+<pre class="r"><code>library(devtools)
+
+## allow R to look for pacakges in both CRAN and Bioconductor
+setRepositories(1:2)
+
+## install from Github source
+install_github(&quot;andrewparkermorgan/argyle&quot;)</code></pre>
 </div>
 <div id="usage" class="section level2">
 <h2>Usage</h2>
@@ -111,9 +131,80 @@ ii &lt;- get.intensity(geno, c(&quot;JAX00240610&quot;,&quot;JAX00240636&quot;))
 ## grab BAF/LRR
 blr &lt;- get.baf(geno.norm, c(&quot;JAX00240610&quot;,&quot;JAX00240636&quot;))</code></pre>
 </div>
+<div id="performance" class="section level2">
+<h2>Performance</h2>
+<p>For a realistic test of <code>argyle</code>’s performance, I use an Illumina BeadStudio dataset from the MegaMUGA array for mouse, containing 77808 markers x 96 samples (available from <a href="http://churchill.jax.org/research/cc/do_data/megamuga/raw/MegaMUGA_22Oct2012/">do.jax.org</a>). The relevant files, compressed with ZIP, have total size 149 MB.</p>
+<p>Testing on my Mac Pro desktop (OS X 10.6.8.10K549, 2x2.26 GHz quad-core Xeon, 24 GB DDR3 RAM) under <code>R</code> 3.1.3:</p>
+<pre><code>#&gt; Loading argyle
+#&gt; Loading required package: data.table
+#&gt; Loading required package: digest
+#&gt; Loading required package: preprocessCore
+#&gt; Loading required package: reshape2
+#&gt; Loading required package: plyr</code></pre>
+<pre class="r"><code>system.time( geno &lt;- read.beadstudio(&quot;&quot;, snps, &quot;./data/MM_sample&quot;) )
+#&gt; Reading sample manifest from &lt; ./data/MM_sample/Sample_Map.zip &gt; ...
+#&gt; Reading genotypes and intensities from &lt; ./data/MM_sample/FinalReport.zip &gt; ...
+#&gt; 
+Read 0.0% of 7469568 rows
+Read 12.3% of 7469568 rows
+Read 24.6% of 7469568 rows
+Read 36.9% of 7469568 rows
+Read 48.9% of 7469568 rows
+Read 61.2% of 7469568 rows
+Read 73.5% of 7469568 rows
+Read 85.8% of 7469568 rows
+Read 98.0% of 7469568 rows
+Read 7469568 rows and 11 (of 11) columns from 0.478 GB file in 00:00:12
+#&gt; Constructing genotype matrix...
+#&gt; Constructing intensity matrices...
+#&gt;   77725 sites x 96 samples
+#&gt; Done.
+#&gt;    user  system elapsed 
+#&gt;  33.959   4.771  41.859
+
+summary(geno)
+#&gt; --- geno ---
+#&gt; A genotypes object with 77725 sites x 96 samples
+#&gt; Intensity data: no  
+#&gt; Sample metadata: no
+#&gt; Filters set: 0 sites / 0 samples 
+#&gt; File source: /Users/apm/Dropbox/pmdvlab/argyle/data/MM_sample (on 2015-05-13 14:48:54 )
+#&gt; Checksum: bd98520fb7f0dae385eda5d1fa7143c4
+
+print(object.size(geno), units = &quot;Mb&quot;)
+#&gt; 77.5 Mb
+
+sessionInfo()
+#&gt; R version 3.1.3 (2015-03-09)
+#&gt; Platform: x86_64-apple-darwin10.8.0 (64-bit)
+#&gt; Running under: OS X 10.6.8 (Snow Leopard)
+#&gt; 
+#&gt; locale:
+#&gt; [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+#&gt; 
+#&gt; attached base packages:
+#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     
+#&gt; 
+#&gt; other attached packages:
+#&gt; [1] argyle_0.1            plyr_1.8.1            reshape2_1.4.1       
+#&gt; [4] preprocessCore_1.28.0 digest_0.6.8          data.table_1.9.4     
+#&gt; [7] devtools_1.7.0       
+#&gt; 
+#&gt; loaded via a namespace (and not attached):
+#&gt;  [1] chron_2.3-45    evaluate_0.5.5  formatR_1.0     htmltools_0.2.6
+#&gt;  [5] knitr_1.9       Rcpp_0.11.5     rmarkdown_0.5.1 roxygen2_4.1.1 
+#&gt;  [9] stringr_0.6.2   tools_3.1.3     yaml_2.1.13</code></pre>
+<p>The final object is, at 78 MB, about half the size of the input. Peak memory usage for parsing BeadStudio output is about 150 MB (as determined by line-by-line profiling not shown here), or on the order of the size of the input. It is worth noting that if the input files were decompressed they would occupy about 500 MB on disk.</p>
+</div>
+<div id="interface-to-rdoqtl" class="section level2">
+<h2>Interface to <a href="http://cgd.jax.org/apps/doqtl/DOQTL.shtml"><code>R/DOQTL</code></a></h2>
+<p>Genotypes processed with <code>argyle</code> can be packaged into a set of <code>R</code> objects (bundled in an <code>*.Rdata</code> file) suitable for use as input to Dan Gatti’s <code>DOQTL</code> software. <code>DOQTL</code> performs haplotype reconstruction and genetic mapping (under both linkage/composite-interval and single-marker association models) in multifounder advanced intercross populations. Its namesake is the Diversity Outbred (DO) mouse population (see <a href="http://do.jax.org/">do.jax.org</a>).</p>
+<pre class="r"><code>## export for DOQTL
+export.doqtl(geno, &quot;./doqtl.objects.Rdata&quot;)</code></pre>
+</div>
 <div id="interface-to-plink" class="section level2">
-<h2>Interface to <code>PLINK</code></h2>
-<p>Computation on large SNP array genotyping datasets is not a new problem. Many common operations – frequency statistics (sample-wise and marker-wise), differentiation statistics (<span class="math">\(F_st\)</span> et al), homozygosity checks, association testing, multivariate clustering by PCA and MDS – are implemented efficiently in the <code>PLINK</code> package. The input formats popularized by <code>PLINK</code> are now used by other software in population genetics.</p>
+<h2>Interface to <a href="https://www.cog-genomics.org/plink2/"><code>PLINK</code></a></h2>
+<p>Computation on large SNP array genotyping datasets is not a new problem. Many common operations – frequency statistics (sample-wise and marker-wise), differentiation statistics (<span class="math">\(F_{st}\)</span> et al), homozygosity checks, association testing, multivariate clustering by PCA and MDS – are implemented efficiently in the <code>PLINK</code> package. The input formats popularized by <code>PLINK</code> are now used by other software in population genetics.</p>
 <p>This package provides functions to read and write <strong>binary</strong> <code>PLINK</code> filesets. The binary fileset consists of three files:</p>
 <ul>
 <li><code>*.fam</code>: the ``family file’’ describing samples (6 columns): family ID, sample ID, mom ID, dad ID, sex (0=unknown, 1=male, 2=female), phenotype (-9=missing)</li>

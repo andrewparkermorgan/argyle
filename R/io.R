@@ -245,7 +245,7 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	
 }
 
-#' Export genotyping result in format suitable for DOQTL.
+#' Export genotyping result in format suitable for DOQTL
 #'
 #' @param gty a \code{genotypes} object with intensity data attached
 #' @param where name of output file, including path (else it goes in working directory)
@@ -253,13 +253,21 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 #' 	before the genotypes matrix is saved
 #' 
 #' @return Returns \code{TRUE} on completion.  The Rdata file at \code{where} contains the following
-#' 	objects: \code{G}, genotype calls matrix; \code{x}, matrix of x-intensities; \code{y}, matrix of
-#' 	y-intensities; \code{sex}, named vector of sample sexes (\code{NA} if missing); and \code{snps},
-#' 	the marker map attached to the input object.  All matrices are sites x samples, following the
-#' 	convention of this pacakge, and have both row and column names.
+#' 	objects:
+#' 	\itemize{
+#' 	\code{G} -- genotype calls matrix
+#' 	\code{x} -- matrix of x-intensities
+#' 	\code{y} -- matrix of y-intensities
+#' 	\code{sex} -- named vector of sample sexes (\code{NA} if missing)
+#' 	\code{snps} -- the marker map attached to the input object
+#' 	}
+#' 	All matrices are sites x samples, following the convention of this pacakge, and have both row and column names.
 #'
 #' @references
+#' DOQTL home: \url{http://cgd.jax.org/apps/doqtl/DOQTL.shtml}
+#' 
 #' Gatti DM et al. (2014) Quantitative trait locus mapping methods for Diversity Outbred mice. G3 4(9): 1623-1633. doi:10.1534/g3.114.013748.
+#' 
 #' Svenson KL et al. (2012) High-resolution genetic mapping using the mouse Diversity Outbred population. Genetics 190(2): 437-447. doi:10.1534/genetics.111.132597.
 #'
 #' @export
