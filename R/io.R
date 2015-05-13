@@ -166,15 +166,12 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	}
 	nsamples <- length(samples)
 	data.table::setnames(data, c("marker","iid","call1","call2","x","y","gc","theta","x.raw","y.raw","R"))
-	print(head(data))
-	data[ , data.table::`:=`(call = paste0(call1, call2)) ]
-	data[ , data.table::`:=`(is.het = (call1 != call2)) ]
-	data[ , data.table::`:=`(is.na = (call1 == "-" | call2 == "-")) ]
-	data.table::setkey(data, is.het)
-	data[ is.het == TRUE, data.table::`:=`(call = "H") ]
-	data.table::setkey(data, is.na)
-	data[ is.na == TRUE, data.table::`:=`(call = "N") ]
-	data[ , data.table::`:=`(call = substr(call, 1, 1)) ]
+	data.table::set(data, i = NULL, "call", paste0(data$call1, data$call2))
+	data.table::set(data, i = NULL, "is.het", (data$call1 != data$call2))
+	data.table::set(data, i = NULL, "is.na", (data$call1 == "-" | data$call2 == "-"))
+	data.table::set(data, i = which(data$is.het), "call", "H")
+	data.table::set(data, i = which(data$is.na), "call", "N")
+	data.table::set(data, i = NULL, "call", substr(data$call, 1, 1))
 	data.table::setkey(data, marker)
 	
 	return( list(samples = samples.df, intens = data) )
@@ -196,20 +193,21 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	if ("pos" %in% colnames(data))
 		data[ ,pos := NULL ]
 	if (make.names)
-		data$marker <- make.names(data$marker)
+		data.table::set(data, i = NULL, "marker", make.names(data$marker))
 	
 	## reshape to big matrix
 	fm <- paste("marker ~", sample.id.col)
 	gty.mat <- data.table::dcast.data.table(data, as.formula(fm), value.var = value.col)
-	setkey(gty.mat, "marker")
+	setkey(gty.mat, marker)
 	
 	before <- unique(gty.mat$marker)
 	nsnps.before <- length(unique(gty.mat$marker))
-	.map <- data.table(snps[ ,c("chr","marker","cM","pos") ])
-	setkey(.map, "marker")
+	.map <- data.table::data.table(snps[ ,c("chr","marker","cM","pos") ])
+	setkey(.map, marker)
+
 	if (verbose)
 		message(paste("Attaching map: started with", nsnps.before, "markers"))
-	gty.mat <- gty.mat[.map]
+	gty.mat <- data.table:::merge.data.table(gty.mat, .map)
 	nsnps.after <- length(unique(gty.mat$marker))
 	if (verbose)
 		message(paste("Done attaching map: ended with", nsnps.after, "markers"))

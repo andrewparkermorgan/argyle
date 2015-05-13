@@ -438,7 +438,7 @@ merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
 	pass <- is.data.frame(ped)
 	pass <- pass && all(colnames(ped)[1:6] == c("fid","iid","mom","dad","sex","pheno"))
 	if ("iid" %in% colnames(ped))
-		pass <- (rownames(ped) == as.character(ped$iid))
+		pass <- all(rownames(ped) == as.character(ped$iid))
 	else
 		pass <- FALSE
 	

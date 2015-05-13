@@ -135,13 +135,15 @@ genotypes <- function(G, map, ped = NULL, alleles = c("auto","native","01","rela
 	map$cM <- as.numeric(map$cM)
 	map$pos <- as.integer(map$pos)
 	## check alleles
-	if (all(colnames(map)[5:6] == c("A1","A2"))) {
-		map$A1 <- as.character(toupper(map$A1))
-		map$A2 <- as.character(toupper(map$A2))
-		monomorphic <- (map$A1 == map$A2)
-		if (any(monomorphic)) {
-			stop( paste("REF and ALT alleles can't match, but they do at these markers:\n",
-						paste(rownames(map)[ which(monomorphic) ], collapse = ",")) )
+	if (ncol(map) >= 6) {
+		if (all(colnames(map)[5:6] == c("A1","A2"))) {
+			map$A1 <- as.character(toupper(map$A1))
+			map$A2 <- as.character(toupper(map$A2))
+			monomorphic <- (map$A1 == map$A2)
+			if (any(monomorphic)) {
+				stop( paste("REF and ALT alleles can't match, but they do at these markers:\n",
+							paste(rownames(map)[ which(monomorphic) ], collapse = ",")) )
+			}
 		}
 	}
 	mk <- rownames(G)
@@ -172,7 +174,7 @@ genotypes <- function(G, map, ped = NULL, alleles = c("auto","native","01","rela
 			stop(paste("The sample metadata provided is invalid; it should be a dataframe with",
 					   "these columns: fid, iid, mom, dad, sex, pheno.  See ?genotypes."))
 		sm <- colnames(G)
-		if (length(intersect(rownames(map), sm)) != ncol(G))
+		if (length(intersect(rownames(ped), sm)) != ncol(G))
 			stop("All samples in genotypes matrix should be present in marker map.")
 	}
 	else {
@@ -201,7 +203,7 @@ genotypes <- function(G, map, ped = NULL, alleles = c("auto","native","01","rela
 	
 	## construct the new 'genotypes' object
 	rez <- structure(G, map = map[ mk, ], ped = ped[ sm, ], alleles = alleles,
-					 filter.sites = filter.sites[sm], filter.samples = filter.samples[sm])
+					 filter.sites = filter.sites[mk], filter.samples = filter.samples[sm])
 	class(rez) <- c("genotypes", class(rez))
 	
 	## --- intensity matrices --- ##
