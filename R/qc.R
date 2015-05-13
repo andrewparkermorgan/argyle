@@ -15,6 +15,12 @@ column.quantiles <- function(x, q = seq(0,1,0.1), ..., .progress = "none") {
 	
 }
 
+## helper function to compute sum-intensity
+## NB: no sanity checks here!!
+.si <- function(gty, ...) {
+	with(attr(gty, "intensity"), sqrt(x^2 + y^2))
+}
+
 #' Summarize hybridization intensity by sample
 #' 
 #' @param gty a \code{genotypes} object with intensity data attached
@@ -26,7 +32,7 @@ column.quantiles <- function(x, q = seq(0,1,0.1), ..., .progress = "none") {
 #' 	
 #' @details The \code{q}th quantiles of "sum-intensity" are computed for each sample, across all markers
 #' 	in the input dataset.  Missing values are silently ignored.  We define "sum-intensity" as
-#' 	sum(sqrt(x_i^2 + y_i^2)), rather than sum(x_i + y_i), based on the intuition that distance from
+#' 	sqrt(x_i^2 + y_i^2), rather than sum(x_i + y_i), based on the intuition that distance from
 #' 	the origin represents total hybridization intensity after application of Illumina's proprietary
 #' 	affine-transformation scheme to the raw fluorescences.
 #'
@@ -38,7 +44,7 @@ summarize.intensity <- function(gty, q = seq(0,1,0.1), ..., .progress = "none") 
 	if (!inherits(gty, "genotypes") && .has.valid.intensity(gty))
 		stop("Please supply an object of class 'genotypes' with valid intensity information.")
 	
-	si <- with(attr(gty, "intensity"), sqrt(x^2 + y^2))
+	si <- .si(gty)
 	rez <- column.quantiles(si, q = q, .progress = .progress)
 	
 	if (.has.valid.ped(gty))
@@ -123,7 +129,7 @@ intensity.vs.ref <- function(gty, ref, ...) {
 		ks.test(x, y, alternative = "less")$statistic
 	}
 	
-	si <- with(attr(gty, "intensity"), sqrt(x^2+y^2))
+	si <- .si(gty)
 	apply(si, 2, .colwise.ks, y = as.vector(ref))
 	
 }
@@ -155,38 +161,39 @@ run.qc.checks <- function(gty, ref.intensity = NULL,
 	if (!inherits(gty, "genotypes"))
 		stop("Please supply an object of class 'genotypes'.")
 	
-	sites <- rep(FALSE, nrow(gty))
-	samples <- rep(FALSE, ncol(gty))
+	fsites <- setNames( rep(FALSE, nrow(gty)), rownames(gty) )
+	fsamples <- setNames( rep(FALSE, ncol(gty)), colnames(gty) )
 	if (!is.null(attr(gty, "filter.sites")))
-		sites <- attr(gty, "filter.sites")
+		fsites <- attr(gty, "filter.sites")
 	if (!is.null(attr(gty, "filter.samples")))
-		samples <- attr(gty, "filter.samples")
+		fsamples <- attr(gty, "filter.samples")
 	
-	if (length(sites) != nrow(gty))
+	if (length(fsites) != nrow(gty))
 		warning("Site filters don't match dimensions of genotype matrix.")
-	if (length(samples) != ncol(gty))
+	if (length(fsamples) != ncol(gty))
 		warning("Sample filters don't match dimensions of genotype matrix.")
 	
 	qc.rez <- list()
 	message("Performing QC checks on genotype calls...")
 	qc.rez$calls <- summarize.calls(gty, "samples")
-	samples <- samples | with(qc.rez$calls, H > max.H | N > max.N)
+	fsamples <- fsamples | with(qc.rez$calls, H > max.H | N > max.N)
 	
 	if (.has.valid.intensity(gty)) {
 		message("Performing QC checks on hybridization intensities...")
 		qc.rez$intensity <- summarize.intensity(gty, q = seq(0.05, 0.95, 0.05))
 		if (!is.null(ref.intensity)) {
 			qc.rez$D <- intensity.vs.ref(gty, ref.intensity)
-			samples <- samples | (qc.rez$D > max.D | qc.rez$D < min.D)
+			fsamples <- fsamples | (qc.rez$D > max.D | qc.rez$D < min.D)
 		}
 	}
 	
-	message(paste(sum(sites),"markers and", sum(samples), "samples now flagged as low-quality."))
+	qc.rez$calls$filter <- fsamples
+	message(paste(sum(fsites),"markers and", sum(fsamples), "samples now flagged as low-quality."))
 	class(qc.rez) <- c("QC.result", class(qc.rez))
 	
 	attr(gty, "qc") <- qc.rez
-	attr(gty, "filter.sites") <- sites
-	attr(gty, "filter.samples") <- samples
+	attr(gty, "filter.sites") <- fsites
+	attr(gty, "filter.samples") <- fsamples
 	
 	return(gty)
 	

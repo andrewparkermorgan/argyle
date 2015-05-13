@@ -53,8 +53,8 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	calls <- .raw.to.matrix(data$intens, snps, keep.map = TRUE, value.col = "call")
 	if (keep.intensity) {
 		message("Constructing intensity matrices...")
-		x <- .raw.to.matrix(data$intens, snps, value.col = "x")
-		y <- .raw.to.matrix(data$intens, snps, value.col = "y")
+		x <- .raw.to.matrix(data$intens, snps, value.col = "x", keep.map = FALSE)
+		y <- .raw.to.matrix(data$intens, snps, value.col = "y", keep.map = FALSE)
 		## verify that shapes match
 		all(dim(calls) == dim(x), dim(calls) == dim(y))
 		## verify that sample names are in sync
@@ -223,7 +223,7 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	}
 	
 	## sort by position
-	data.table::setorder(gty.mat, chr, marker, cM, pos)
+	data.table::setorder(gty.mat, chr, pos, cM, marker)
 	cn <- names(gty.mat)
 	cols <- c("chr","marker","cM","pos")
 	oth <- setdiff(cn, cols)
@@ -233,6 +233,7 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	gty.mat <- as.data.frame(gty.mat)
 	newmap <- gty.mat[ ,1:4 ]
 	rownames(newmap) <- as.character(newmap$marker)
+	newmap <- data.frame(newmap, snps[ rownames(newmap),!(colnames(snps) %in% c("chr","marker","cM","pos")) ])
 	gty.mat <- as.matrix(gty.mat[ ,-(1:4) ])
 	
 	rownames(gty.mat) <- as.character(newmap$marker)

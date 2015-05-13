@@ -169,11 +169,11 @@ genotypes <- function(G, map, ped = NULL, alleles = c("auto","native","01","rela
 	}
 	
 	## --- pedigree --- ##
+	sm <- colnames(G)
 	if (!is.null(ped)) {
 		if (!.is.valid.ped(ped))
 			stop(paste("The sample metadata provided is invalid; it should be a dataframe with",
 					   "these columns: fid, iid, mom, dad, sex, pheno.  See ?genotypes."))
-		sm <- colnames(G)
 		if (length(intersect(rownames(ped), sm)) != ncol(G))
 			stop("All samples in genotypes matrix should be present in marker map.")
 	}
@@ -209,13 +209,13 @@ genotypes <- function(G, map, ped = NULL, alleles = c("auto","native","01","rela
 	## --- intensity matrices --- ##
 	if (!is.null(intensity)) {
 		if (is.list(intensity) && length(intensity) == 2) {
-			check <- sapply(intensity, function(x) {
+			pass <- sapply(intensity, function(x) {
 				pass <- all(ncol(x) == ncol(G), nrow(x) == nrow(G))
 				pass <- pass && !any(sapply(dimnames(x), is.null))
 				pass <- pass && all(sm %in% colnames(x)) && all(mk %in% rownames(x))
 				return(pass)
 			})
-			if (!all(check))
+			if (!all(pass))
 				stop("Intensity matrices are invalid: they should have same dimensions as the",
 					 "genotypes matrix, and matching row and column names.")
 			else

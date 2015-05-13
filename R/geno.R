@@ -169,12 +169,31 @@ intensity <- function(x) UseMethod("intensity")
 ## grab intensities for given markers as nice dataframe for plotting
 get.intensity <- function(gty, markers, ...) {
 	
-	if (!(inherits(geno, "genotypes") && .has.valid.intensity(gty)))
+	if (!(inherits(gty, "genotypes") && .has.valid.intensity(gty)))
 		stop("Please supply an object of class 'genotypes' with intensity information attached.")
 	
 	rez <- reshape2:::melt.matrix(attr(gty, "intensity")$x[ markers,,drop = FALSE ])
 	colnames(rez) <- c("marker","iid","x")
 	rez <- cbind(rez, y = reshape2:::melt.matrix(attr(gty, "intensity")$y[ markers,,drop = FALSE ])[ ,3 ])
+	
+	if (.has.valid.map(gty))
+		rez <- merge(rez, attr(gty, "map"))
+	
+	if (.has.valid.ped(gty))
+		rez <- merge(rez, attr(gty, "ped"))
+	
+	return(rez)
+	
+}
+
+## grab genotype calls at specified marker(s)
+get.call <- function(gty, markers, ...) {
+	
+	if (!(inherits(gty, "genotypes")))
+		stop("Please supply an object of class 'genotypes' with intensity information attached.")
+	
+	rez <- reshape2:::melt.matrix(gty[ markers,,drop = FALSE ])
+	colnames(rez) <- c("marker","iid","call")
 	
 	if (.has.valid.map(gty))
 		rez <- merge(rez, attr(gty, "map"))

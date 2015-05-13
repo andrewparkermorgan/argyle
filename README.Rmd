@@ -29,7 +29,7 @@ Effort has been made to keep to a minimum the number of package dependencies, su
 
 The following are required for some functions but one could get by without them:
 
-* `ggplot2`: required for the plotting functions
+* `ggplot2` (and friends): required for the plotting functions
 * `corpcor`: required for "fast"-mode PCA
 
 ## Installation
