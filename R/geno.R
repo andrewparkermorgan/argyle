@@ -393,7 +393,16 @@ merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
 ## internal helpers for validating the 'genotypes' data structure and its parts
 
 .is.valid.map <- function(map, ...) {
-	return( all(colnames(map)[1:4] == c("chr","marker","cM","pos")) )
+	
+	pass <- is.data.frame(map)
+	pass <- pass && all(colnames(map)[1:4] == c("chr","marker","cM","pos"))
+	if ("marker" %in% colnames(map))
+		pass <- all(rownames(map) == as.character(map$marker))
+	else
+		pass <- FALSE
+	
+	return(pass)
+	
 }
 
 .has.valid.map <- function(gty, ...) {
@@ -412,8 +421,28 @@ merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
 
 .has.valid.ped <- function(gty, ...) {
 	
-	## TODO
-	return( !is.null(attr(gty, "ped")) )
+	ped <- attr(gty, "ped")
+	pass <- FALSE
+	
+	if (!is.null(ped))
+		pass <- .is.valid.ped(ped) && (nrow(ped) == nrow(gty))
+	if (is.na(pass))
+		pass <- FALSE
+	
+	return(pass)
+	
+}
+
+.is.valid.ped <- function(ped, ...) {
+	
+	pass <- is.data.frame(ped)
+	pass <- pass && all(colnames(ped)[1:6] == c("fid","iid","mom","dad","sex","pheno"))
+	if ("iid" %in% colnames(ped))
+		pass <- (rownames(ped) == as.character(ped$iid))
+	else
+		pass <- FALSE
+	
+	return(pass)
 	
 }
 

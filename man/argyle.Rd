@@ -11,30 +11,11 @@ argyle: An \code{R} package for import and QC of genotypes from Illumina Infiniu
 \section{The \code{genotypes} object}{
 
 The \code{genotypes} class is just a matrix (sites x samples) with row and column names, and a dataframe
-(in \code{attr(,"map")}) describing marker positions.
-
-Attributes include:
-\itemize{
-	\item \code{map} -- marker metadata in PLINK format (chr, marker, cM, pos, A1, A2, ...)
-	\item \code{ped} -- pedigree/sample metadata in PLINK format (individual ID, family ID,
-		mom ID, dad ID, sex, phenotype, ...)
-	\item \code{intensity} -- \code{list}(\code{x} = [X-intensities], \code{y} = [y-intensities])
-	\item \code{normalized} -- have intensities been normalized?
-	\item \code{baf} -- matrix of B-allele frequencies (BAFs; see \code{\link{tQN}})
-	\item \code{lrr} -- matrix of log2 intensity rations (LRRs; see \code{\link{tQN}})
-	\item \code{filter.sites} -- homage to the FILTER field in VCF format, a flag for suppresing
-		sites (rows) in downstream analyses
-	\item \code{filter.samples} -- same as above, but along other dimension (columns)
-	\item \code{alleles} -- manner in which alleles are encoded: "native" (ACTGHN),
-		"01" (allele dosage wrt ALT allele), "relative" (allele dosage wrt MINOR allele)
-}
-All attributes are maintained "parallel" to the genotypes matrix itself, and additionally have names
-to avoid ambiguity.
-
-Note that missing values (NAs/NaNs) are used for no-calls, in order to take advantage of R's behaviors on missing data.
+(in \code{attr(,"map")}) describing marker positions.  Nearly all the functions in this package expect
+a \code{genotypes} object as input.  For details, see \code{\link{genotypes}}.
 }
 
-\section{Accessing class attributes}{
+\section{Accessing metadata}{
 
 The \code{`$`} operator is overloaded for the \code{genotypes} class, so that writing \code{attr(g, "normalized")}
 is equivalent to writing \code{g$normalized}.  But this works only in one direction: \code{g$normalized <- FALSE}
@@ -46,7 +27,7 @@ Accessor functions are provided for the marker map (\code{markers(g)}), sample m
 and intensity matrices (\code{intensity(g)}).
 }
 
-\section{Allele encoding}{
+\section{Notes on allele encoding}{
 
 For the purposes of this package, all markers on an array are treated as biallelic SNPs, and all samples are assumed
 to be diploid for the autosomes. Genotype calls are reported by Illumina BeadStudio as a two-character vector of

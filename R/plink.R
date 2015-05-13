@@ -822,7 +822,37 @@ ld.plink <- function(prefix, index.snp = NULL, markers = NULL, chr = NULL, from 
 	
 }
 
-## filter markers and invididuals by MAF, missingness, position, ....
+#' Filter markers and samples from a dataset with PLINK
+#' 
+#' @param prefix a pointer to a PLINK fileset (of class \code{plink})
+#' @param chr keep only markers on this chromosome
+#' @param from with \code{chr}, keep only markers with position greater than this
+#' @param to with \code{chr}, keep only markers with position less than this
+#' @param maf drop markers with minor-allele frequency lower than this threhsold
+#' @param hwe drop markers p-value less than this threshold for test of Hardy-Weinbery equilibrium
+#' @param geno.missing drop markers with call rate lower than this threshold
+#' @param ind.missing drop samples with call rate lower than this threshold
+#' @param attrib with \code{attrib.file}, keep only samples with these attribute(s) (labels)
+#' @param attrib.file with \code{attrib}, a file containing family IDs, sample IDs and attribute(s)
+#' @param remove character vector of samples to exclude
+#' @param keep character vector of samples to keep
+#' @param remove.fam character vector of family IDs to exclude
+#' @param keep.fam character vector of family IDs to keep
+#' @param flags additional command-line flags passed directly to PLINK call
+#' 
+#' @return a pointer (of class \code{plink}) to a new PLINK binary fileset after application
+#' 	of the above filters
+#' 	
+#' @details See the relevant PLINK documentation for details of the filters and precedence rules
+#' 	governing how they are applied.
+#'
+#' @references
+#' PLINK v1.9: \url{https://www.cog-genomics.org/plink2}
+#' 
+#' Purcell S et al. (2007) PLINK: a toolset for whole-genome association and population-based 
+#' 	linkage analysis. Am J Hum Genet 81(3): 559-575. doi:10.1086/519795.
+#' 
+#' @export
 filter.plink <- function(prefix, chr = NULL, from = NULL, to = NULL,
 						 maf = 0, hwe = 0, geno.missing = 0,
 						 ind.missing = 0, attrib = NULL, attrib.file = NULL,
@@ -836,7 +866,7 @@ filter.plink <- function(prefix, chr = NULL, from = NULL, to = NULL,
 	cmd <- "--make-bed"
 	if (!is.null(attrib)) {
 		if (file.exists(attrib.file))
-			cmd <- paste(cmd, "--attrib-indiv", attrib.file, attrib)
+			cmd <- paste(cmd, "--attrib-indiv", attrib.file, paste(attrib, collapse = ","))
 		else
 			stop("Filtering of individuals by attributes was requested but attribute file couldn't be found.")
 	}

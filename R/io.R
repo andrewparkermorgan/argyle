@@ -67,15 +67,20 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	samples.kept <- colnames(calls)
 	fam <- make.fam(samples.kept, sex = data$samples[ samples.kept,"Gender" ])
 	
-	class(calls) <- c("genotypes", class(calls))
-	attr(calls, "ped") <- fam
+	## construct the return 'genotypes' object
 	if (keep.intensity) {
-		attr(calls, "intensity") <- list(x = x, y = y)
-		attr(calls, "normalized") <- FALSE
+		calls <- genotypes(.copy.matrix.noattr(calls),
+						   map = attr(calls, "map"), ped = fam,
+						   alleles = "native",
+						   check = FALSE)
 	}
-	attr(calls, "alleles") <- "native"
-	attr(calls, "filter.samples") <- rep(FALSE, ncol(calls))
-	attr(calls, "filter.sites") <- rep(FALSE, nrow(calls))
+	else {
+		calls <- genotypes(.copy.matrix.noattr(calls),
+						   map = attr(calls, "map"), ped = fam,
+						   alleles = "native",
+						   intensity = list(x = x, y = y), normalized = FALSE,
+						   check = FALSE)
+	}
 	
 	## make a checksum, then record file source and timestamp (which would mess up checksum comparisons)
 	attr(calls, "md5") <- digest::digest(calls, algo = "md5")
@@ -161,14 +166,15 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	}
 	nsamples <- length(samples)
 	data.table::setnames(data, c("marker","iid","call1","call2","x","y","gc","theta","x.raw","y.raw","R"))
-	data[ , call := paste0(call1, call2) ]
-	data[ , is.het := (call1 != call2) ]
-	data[ , is.na := (call1 == "-" | call2 == "-") ]
+	print(head(data))
+	data[ , data.table::`:=`(call = paste0(call1, call2)) ]
+	data[ , data.table::`:=`(is.het = (call1 != call2)) ]
+	data[ , data.table::`:=`(is.na = (call1 == "-" | call2 == "-")) ]
 	data.table::setkey(data, is.het)
-	data[ is.het == TRUE, call := "H" ]
+	data[ is.het == TRUE, data.table::`:=`(call = "H") ]
 	data.table::setkey(data, is.na)
-	data[ is.na == TRUE, call := "N" ]
-	data[ , call := substr(call, 1, 1) ]
+	data[ is.na == TRUE, data.table::`:=`(call = "N") ]
+	data[ , data.table::`:=`(call = substr(call, 1, 1)) ]
 	data.table::setkey(data, marker)
 	
 	return( list(samples = samples.df, intens = data) )
