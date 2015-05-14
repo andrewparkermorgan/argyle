@@ -653,15 +653,6 @@ genoapply <- function(gty, expr, fn = NULL, strip = FALSE, ...) {
 	
 }
 
-heterozygosity <- function(x, het.char = "H", ...) {
-	
-	if (is.factor(x) || is.character(x))
-		sum(x == het.char, na.rm = TRUE)/sum(!is.na(x))
-	else
-		sum(x == 1, na.rm = TRUE)/sum(!is.na(x))
-	
-}
-
 #' Switch between character and numeric representations of genotype calls
 #' 
 #' @param gty a \code{genotypes} object

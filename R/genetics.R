@@ -301,6 +301,21 @@ predict.f1 <- function(gty, na.rm = FALSE, ...) {
 	
 }
 
+#' Calculate the proportion of sites at which each sample is heterozygous
+#' 
+#' @param gty a \code{genotypes} object
+#' @param na.rm logical; ignore missing genotypes when counting heterozygous sites?
+#' 
+#' @return a named vector with the proportion of sites of heterozygous for each sample
+#' 
+#' @export
+heterozygosity <- function(gty, na.rm = TRUE, ...) {
+	
+	gty[ gty != 1 ] <- 0
+	colMeans(gty, na.rm = na.rm)
+	
+}
+
 ## cheap estimate of pairwise LD via genotypic correlation
 ld <- function(gty, force = FALSE, ...) {
 	
