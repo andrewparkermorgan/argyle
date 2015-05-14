@@ -23,7 +23,7 @@ Summarize hybridization intensity by sample
 \details{
 The \code{q}th quantiles of "sum-intensity" are computed for each sample, across all markers
 	in the input dataset.  Missing values are silently ignored.  We define "sum-intensity" as
-	sum(sqrt(x_i^2 + y_i^2)), rather than sum(x_i + y_i), based on the intuition that distance from
+	sqrt(x_i^2 + y_i^2), rather than sum(x_i + y_i), based on the intuition that distance from
 	the origin represents total hybridization intensity after application of Illumina's proprietary
 	affine-transformation scheme to the raw fluorescences.
 }

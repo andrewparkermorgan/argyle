@@ -69,11 +69,8 @@ read.plink <- function(prefix, ...) {
 	rownames(gty) <- as.character(bim$marker)
 	colnames(gty) <- as.character(fam$iid)
 	
-	## update class info; add map and family info
-	class(gty) <- c("genotypes", class(gty))
-	attr(gty, "map") <- bim
-	attr(gty, "ped") <- fam
-	
+	## make it a 'genotypes' object
+	gty <- genotypes(gty, map = map, ped = ped, alleles = "01")	
 	return(gty)
 	
 }

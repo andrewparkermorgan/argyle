@@ -158,7 +158,7 @@ genotypes <- function(G, map, ped = NULL, alleles = c("auto","native","01","rela
 	alleles <- match.arg(alleles)
 	if (check) {
 		alleles.final <- "native"
-		pass <- .check.encoding(G, alleles)
+		pass <- .check.encoding(G, alleles, map)
 		if (!pass$result)
 			stop(pass$message)
 		else
@@ -169,7 +169,7 @@ genotypes <- function(G, map, ped = NULL, alleles = c("auto","native","01","rela
 	}
 	
 	## --- pedigree --- ##
-	sm <- colnames(G)
+	sm <- gsub(" ","",colnames(G))
 	if (!is.null(ped)) {
 		if (!.is.valid.ped(ped))
 			stop(paste("The sample metadata provided is invalid; it should be a dataframe with",
@@ -178,7 +178,7 @@ genotypes <- function(G, map, ped = NULL, alleles = c("auto","native","01","rela
 			stop("All samples in genotypes matrix should be present in marker map.")
 	}
 	else {
-		ped <- make.fam(colnames(geno))
+		ped <- make.fam(colnames(G))
 	}
 	
 	## --- filters --- ##
@@ -244,7 +244,7 @@ genotypes <- function(G, map, ped = NULL, alleles = c("auto","native","01","rela
 }
 
 ## helper function to check allele encodings
-.check.encoding <- function(G, alleles = c("auto","native","01","relative"), ...) {
+.check.encoding <- function(G, alleles = c("auto","native","01","relative"), map, ...) {
 	
 	.reply <- function(msg, rez, ...) {
 		return(list(message = msg, result = rez, ...))

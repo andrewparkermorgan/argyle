@@ -66,7 +66,7 @@ summary.genotypes <- function(gty, ...) {
 	
 	nsamples <- ncol(gty)
 	nsites <- nrow(gty)
-	cat("---", substitute(gty), "---\nA genotypes object with", nsites, "sites x", nsamples, "samples\n")
+	cat("---", deparse(substitute(gty)), "---\nA genotypes object with", nsites, "sites x", nsamples, "samples\n")
 	
 	has.intens <- .has.valid.intensity(gty)
 	normed <- .null.false(attr(gty, "normalized"))
@@ -444,7 +444,7 @@ merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
 	pass <- FALSE
 	
 	if (!is.null(ped))
-		pass <- .is.valid.ped(ped) && (nrow(ped) == nrow(gty))
+		pass <- .is.valid.ped(ped) && (nrow(ped) == ncol(gty))
 	if (is.na(pass))
 		pass <- FALSE
 	
@@ -495,6 +495,15 @@ merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
 				pass <- TRUE
 	
 	return(pass)
+	
+}
+
+.fix.sex <- function(x) {
+	
+	if (is.character(x) || is.factor(x))
+		ifelse(grepl("^[fF]", x), 2, ifelse(grepl("^[mM]", x), 1, 0))
+	else
+		return(x)
 	
 }
 
@@ -619,96 +628,28 @@ validate.genotypes <- function(gty, ...) {
 validate <- function(x) UseMethod("validate")
 
 ## apply a function over samples in a genotype matrix, by sample groups
-gapply <- function(gty, expr, fn = NULL, unclass = FALSE, ...) {
+genoapply <- function(gty, expr, fn = NULL, strip = FALSE, ...) {
 	
 	if (!inherits(gty, "genotypes"))
 		stop("Only willing to subset an object of class 'genotypes.'")
 	
-	e <- substitute(expr)
+	#e <- eval(expr)
+	e <- expr
 	if (!is.null(attr(gty, "ped")))
-		r <- eval(e, attr(gty, "ped"), parent.frame())
+		r <- lapply(e, eval, envir = attr(gty, "ped"), enclos = parent.frame())
 	else
-		r <- eval(e)
+		r <- lapply(e, eval, envir = parent.frame())
 	
-	if (unclass)
-		gty <- unclass(gty)
+	if (strip)
+		gty <- bless(.copy.matrix.noattr(gty))
 	
-	vals <- unique(r)
+	vals <- split(seq_len(ncol(gty)), r)
 	rez <- lapply(vals, function(v) {
-		fn(gty[ ,(r == v), drop = FALSE ], ...)
+		x <- gty[ ,v,drop = FALSE ]
+		fn(x, ...)
 	})
-	names(rez) <- vals
+	names(rez) <- names(vals)
 	return(rez)
-	
-}
-
-maf <- function(x, ...) {
-	rowMeans(x, na.rm = TRUE)/2
-}
-
-consensus <- function(gty, nas.allowed = 0.0, ...) {
-	
-	if (!inherits(gty, "genotypes"))
-		stop("Please supply an object of class 'genotypes.'")
-	
-	rez <- apply(gty, 1, function(x) which.max(tabulate(x+1, nbins = 3))-1)
-	nas <- apply(gty, 1, function(x) sum(is.na(x))/length(x) > nas.allowed)
-	rez[nas] <- NA
-	
-	return(rez)
-	#return(as.matrix(rez))
-	
-}
-
-is.segregating <- function(x, ...) {
-	
-	if (is.character(x)) {
-		x <- factor(x)
-		if (any(!is.na(x)) | any(x != "N")) {
-			flag <- sum(tabulate(x, nbins = 3) > 0) > 1
-			return(flag | any(x == "H", na.rm = TRUE))
-		}
-		else
-			return(FALSE)
-	}
-	else {
-		if (any(!is.na(x))) {
-			flag <- sum(tabulate(x+1, nbins = 3) > 0) > 1
-			return(flag | any(x == 1, na.rm = TRUE))
-		}
-		else
-			return(FALSE)
-	}
-	
-}
-
-segregating <- function(gty, ...) {
-	
-	if (!inherits(gty, "genotypes"))
-		stop("Please supply an object of class 'genotypes.'")
-	
-	keep <- apply(gty, 1, is.segregating)
-	return(gty[ keep, ])
-	
-}
-
-is.fixed.diff <- function(gty, ...) {
-	
-	if (!inherits(gty, "genotypes"))
-		stop("Please supply an object of class 'genotypes.'")
-	
-	if (!is.numeric(gty) || ncol(gty) != 2)
-		stop("This function is for numeric genotypes for pairs of samples only.")
-	
-	gty <- unclass(gty)
-	#print(head(gty))
-	attr(gty, "map") <- NULL
-	
-	diffs <- (gty[ ,1 ] != gty[ ,2 ])
-	ns <- is.na(rowSums(gty))
-	hs <- (gty[ ,1 ] == 1) | (gty[ ,2 ] ==1)
-	
-	return(diffs & !ns & !hs)
 	
 }
 
@@ -812,7 +753,7 @@ recode.genotypes <- function(gty, mode = c("pass","01","native","relative"),
 		if ((is.null(coding) || coding == "01") && is.numeric(gty)) {
 			message("Nothing to do; genotypes already in requested coding.")
 			recode.as <- "01"
-			converter <- identity
+			converter <- function(x, ...) identity(x)
 		}
 		else if (!is.null(alleles)) {
 			converter <- .recode.numeric.by.ref

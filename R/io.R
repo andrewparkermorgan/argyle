@@ -187,11 +187,11 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	
 	## strip column names which might conflict between input and marker map
 	if ("cM" %in% colnames(data))
-		data[ ,cM := NULL ]
+		data.table::set(data, i = NULL, "cM", NULL)
 	if ("chr" %in% colnames(data))
-		data[ ,chr := NULL ]
+		data.table::set(data, i = NULL, "chr", NULL)
 	if ("pos" %in% colnames(data))
-		data[ ,pos := NULL ]
+		data.table::set(data, i = NULL, "pos", NULL)
 	if (make.names)
 		data.table::set(data, i = NULL, "marker", make.names(data$marker))
 	

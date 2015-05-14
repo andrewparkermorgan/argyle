@@ -25,3 +25,10 @@ colVars <- function(x, na.rm = TRUE, ...) {
 	return( n/(n-1) * (colMeans(x*x, na.rm = na.rm)-colMeans(x, na.rm = na.rm)^2) )
 	
 }
+
+## declare an object a 'genotypes'
+bless <- function(x) {
+	if (!inherits(x, "genotypes"))
+		class(x) <- c("genotypes", class(x))
+	return(x)
+}
