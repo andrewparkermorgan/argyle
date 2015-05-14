@@ -627,6 +627,25 @@ validate.genotypes <- function(gty, ...) {
 #' @export
 validate <- function(x) UseMethod("validate")
 
+#' Strip intensity matrices from a \code{genotypes} object
+#' 
+#' @param a \code{genotypes} object
+#' 
+#' @return a copy of \code{gty} without intensity data (but with any QC summaries still present)
+#' 
+#' @export
+drop.intensity <- function(gty, ...) {
+	
+	if (!inherits(gty, "genotypes"))
+		stop("Please supply an object of class 'genotypes'.")
+	
+	for (a in c("intensity","baf","lrr"))
+		attr(gty, a) <- NULL
+	
+	return(gty)
+	
+}
+
 ## apply a function over samples in a genotype matrix, by sample groups
 genoapply <- function(gty, expr, fn = NULL, strip = FALSE, ...) {
 	

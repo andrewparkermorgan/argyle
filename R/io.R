@@ -299,3 +299,87 @@ export.doqtl <- function(gty, where = "doqtl.Rdata", recode = FALSE, ...) {
 	return(TRUE)
 	
 }
+
+#' Convert a \code{genotypes} object to an \code{R/qtl} object
+#' 
+#' @param gty a \code{genotypes} object
+#' @param chroms vector of chromosome names to include in output (in order)
+#' 
+#' @return an object of class \code{cross}, with the specified cross type
+#' 
+#' @details Karl Broman's \code{R/qtl} is a widely-used package for mapping quantiative traits
+#' 	in experimental crosses of laboratory organisms and crop plants.  It expects genotypes to
+#' 	be coded with respect to parental lines: eg. AA, AB, BB for an F2 cross between (true-breeding)
+#' 	lines A and B.  Be sure to recode genotypes in that mannyer way before passing them to this function.
+#' 	
+#' 	Marker positions in \code{R/qtl} are expressed in centimorgans, not basepairs, so only markers with
+#' 	non-zero, non-missing genetic positions will be included in the output of this function.
+#' 
+#' @references
+#' \code{R/qtl}: \url{http://www.rqtl.org}
+#' 
+#' Broman KW, Wu H, Sen Ś, Churchill GA. (2003) R/qtl: QTL mapping in experimental crosses.
+#' 	Bioinformatics 19:889-890. doi:10.1093/bioinformatics/btg112.
+#' 
+#' Broman KW, Sen S. (2009) A Guide to QTL Mapping with R/qtl. Springer, New York.
+#' 
+#' @seealso \code{\link{qtl::read.cross}}
+#' 
+#' @export
+as.rqtl.genotypes <- function(gty, type = c("f2","bc"), chroms = paste0("chr", c(1:19,"X")), ...) {
+	
+	if (!(inherits(gty, "genotypes") && .has.valid.map(gty) && .has.valid.ped(gty)))
+		stop("Please supply an object of class 'genotypes' with valid marker map and sample metadata.")
+	
+	if (!is.numeric(gty))
+		stop(paste("For export to R/qtl, genotypes should be encoded numerically, and by reference to",
+				   "the parental strains of a cross.  See ?recode.to.parents."))
+	
+	## dump intensity data
+	gty <- drop.intensity(gty)
+	
+	## drop unfamiliar chromosomes and positionless markers
+	gty <- subset(gty, chr %in% chroms & !is.na(cM) & cM > 0)
+	map <- attr(gty, "map")
+	map$chr <- factor(map$chr, levels = chroms)
+	map <- droplevels(map)
+	
+	message(paste("Exporting genotypes at", nrow(gty), "markers on",
+				  length(unique(map$chr)), "chromosomes."))
+	
+	## make sure sex is right
+	sex <- .fix.sex(attr(gty, "ped")$sex)
+	sex <- factor(c("male","female",NA)[ sex+1 ],
+				  levels = c("female","male"))
+	
+	.make.rqtl <- function(cc) {
+		g <- .copy.matrix.noattr(subset(gty, chr == cc))
+		g <- matrix(c("A","H","B")[ t(g)+1 ],
+					nrow = ncol(g), ncol = nrow(g),
+					dimnames = list(colnames(g), rownames(g)))
+		m <- subset(map, chr == cc)
+		this.chr <- list(data = g,
+			 			map = setNames( as.vector(m$cM), as.character(m$marker) ))
+		if (grepl("X", cc))
+			class(this.chr) <- "X"
+		else
+			class(this.chr) <- "A"
+		return(this.chr)
+	}
+	
+	## loop on chromosomes
+	message("Converting genotypes...")
+	geno <- lapply(levels(map$chr), .make.rqtl)
+	names(geno) <- gsub("^chr","", levels(map$chr))
+	rez <- list(geno = geno)
+	rez$pheno <- attr(gty, "ped")
+	rez$pheno$sex <- sex
+	class(rez) <- c("f2","cross")
+	attr(rez, "alleles") <- c("A","B")
+	
+	message("Done.")
+	return(rez)
+	
+	
+}
+as.rqtl <- function(x, ...) UseMethod("as.rqtl")
