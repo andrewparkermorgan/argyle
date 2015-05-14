@@ -411,12 +411,12 @@ merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
 
 ## internal helpers for validating the 'genotypes' data structure and its parts
 
-.is.valid.map <- function(map, ...) {
+.is.valid.map <- function(mm, ...) {
 	
-	pass <- is.data.frame(map)
-	pass <- pass && all(colnames(map)[1:4] == c("chr","marker","cM","pos"))
-	if ("marker" %in% colnames(map))
-		pass <- all(rownames(map) == as.character(map$marker))
+	pass <- is.data.frame(mm)
+	pass <- pass && all(colnames(mm)[1:4] == c("chr","marker","cM","pos"))
+	if ("marker" %in% colnames(mm))
+		pass <- all(rownames(mm) == as.character(mm$marker))
 	else
 		pass <- FALSE
 	
@@ -733,6 +733,18 @@ recode.genotypes <- function(gty, mode = c("pass","01","native","relative"),
 		
 	}
 	
+	.recode.numeric.by.freq.from.numeric <- function(calls, alleles = NULL) {
+		
+		maj <- which.max(tabulate(calls+1, nbins = 3)[ c(1,3) ])-1
+		new.calls <- rep(0, length(calls))
+		#new.calls[ calls == maj ] <- 0
+		new.calls[ calls == 1 ] <- 1
+		new.calls[ abs(calls-maj) == 2 ] <- 2
+		new.calls[ is.na(calls) ] <- NA
+		return(new.calls)
+		
+	}
+	
 	# recode 0=A1, 1=het, 2=A2
 	.recode.numeric.by.ref <- function(calls, alleles = NULL) {
 		
@@ -771,7 +783,6 @@ recode.genotypes <- function(gty, mode = c("pass","01","native","relative"),
 			message("Recoding to 0/1/2 using reference alleles.")
 		}
 		else {
-			converter <- .recode.numeric.by.freq
 			recode.as <- "relative"
 			message("Recoding to 0/1/2 using empirical frequencies.")
 		}
@@ -783,7 +794,10 @@ recode.genotypes <- function(gty, mode = c("pass","01","native","relative"),
 			converter <- identity
 		}
 		else {
-			converter <- .recode.numeric.by.freq
+			if (is.character(gty))
+				converter <- .recode.numeric.by.freq
+			else
+				converter <- .recode.numeric.by.freq.from.numeric
 			recode.as <- "relative"
 			message("Recoding to 0/1/2 using empirical frequencies.")
 		}

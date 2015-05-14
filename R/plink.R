@@ -50,7 +50,9 @@ read.plink <- function(prefix, ...) {
 		stop("Wrong magic number for bed file; should be -- 0x6c 0x1b 0x01 --.")
 	
 	## now actually read genotypes block by block
-	pb <- txtProgressBar(min = 0, max = nr, style = 3)
+	intr <- interactive()
+	if (intr)
+		pb <- txtProgressBar(min = 0, max = nr, style = 3)
 	gty <- matrix(NA, nrow = ni, ncol = nr)
 	for (i in 1:nr) {
 		geno.raw <- as.logical(rawToBits(readBin(bed, "raw", bsz)))
@@ -60,7 +62,8 @@ read.plink <- function(prefix, ...) {
 		## recall that 0/1 is het, but 1/0 is missing
 		geno[ geno.raw[ j ] == 1 & geno.raw[ j+1 ] == 0 ] <- NA
 		gty[ ,i ] <- geno[1:ni]
-		setTxtProgressBar(pb, i)
+		if (intr)
+			setTxtProgressBar(pb, i)
 	}
 	close(bed)
 	
@@ -70,7 +73,7 @@ read.plink <- function(prefix, ...) {
 	colnames(gty) <- as.character(fam$iid)
 	
 	## make it a 'genotypes' object
-	gty <- genotypes(gty, map = map, ped = ped, alleles = "01")	
+	gty <- genotypes(gty, map = bim, ped = fam, alleles = "01")	
 	return(gty)
 	
 }
@@ -162,7 +165,9 @@ write.plink <- function(gty, prefix, map = NULL, fam = NULL, ...) {
 						  rev(as.logical(c(0,0,0,0,0,0,0,1)))) )
 	writeBin(magic, bed)
 	
-	pb <- txtProgressBar(min = 0, max = nrow(gty), style = 3)
+	intr <- interactive()
+	if (intr)
+		pb <- txtProgressBar(min = 0, max = nrow(gty), style = 3)
 	for (i in seq_len(nrow(gty))) {
 		row <- gty[ i, ]
 		row[ is.na(row) ] <- "N"
@@ -183,7 +188,8 @@ write.plink <- function(gty, prefix, map = NULL, fam = NULL, ...) {
 		towrite <- logical(8*bsz)
 		towrite[ 1:length(row2) ] <- row2
 		writeBin(packBits(towrite, "raw"), bed)
-		setTxtProgressBar(pb, i)
+		if (intr)
+			setTxtProgressBar(pb, i)
 	}
 	close(bed)
 	
@@ -1029,7 +1035,7 @@ pca.plink <- function(prefix, flags = "--autosome", K = 20, by = c("indiv","var"
 	if (is.character(success)) {
 		pcs.file <- paste0(success, ".", expect[[1]])
 		pcs <- read.table(pcs.file, header = FALSE, strip.white = TRUE)
-		colnames(pcs) <- cols
+		colnames(pcs) <- cols[1:ncol(pcs)]
 		eigs <- read.table(paste0(success, ".", expect[[2]]), header = FALSE)[,1]
 		attr(pcs, "eigvals") <- eigs/sum(eigs)
 		return(pcs)
