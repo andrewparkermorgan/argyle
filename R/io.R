@@ -323,7 +323,7 @@ export.doqtl <- function(gty, where = "doqtl.Rdata", recode = FALSE, ...) {
 #' 
 #' Broman KW, Sen S. (2009) A Guide to QTL Mapping with R/qtl. Springer, New York.
 #' 
-#' @seealso \code{\link{qtl::read.cross}}
+#' @seealso \code{\link{qtl::read.cross}}, \code{\link{as.genotypes.cross}} (for inverse operation)
 #' 
 #' @export
 as.rqtl.genotypes <- function(gty, type = c("f2","bc"), chroms = paste0("chr", c(1:19,"X")), ...) {
@@ -331,9 +331,9 @@ as.rqtl.genotypes <- function(gty, type = c("f2","bc"), chroms = paste0("chr", c
 	if (!(inherits(gty, "genotypes") && .has.valid.map(gty) && .has.valid.ped(gty)))
 		stop("Please supply an object of class 'genotypes' with valid marker map and sample metadata.")
 	
-	if (!is.numeric(gty))
-		stop(paste("For export to R/qtl, genotypes should be encoded numerically, and by reference to",
-				   "the parental strains of a cross.  See ?recode.to.parents."))
+	if (!(is.numeric(gty) && attr(gty, "alleles") == "parent"))
+		warning(paste("For export to R/qtl, genotypes should be encoded numerically, and by reference to",
+					  "the parental strains of a cross.  See ?recode.to.parent."))
 	
 	## dump intensity data
 	gty <- drop.intensity(gty)
@@ -383,3 +383,61 @@ as.rqtl.genotypes <- function(gty, type = c("f2","bc"), chroms = paste0("chr", c
 	
 }
 as.rqtl <- function(x, ...) UseMethod("as.rqtl")
+
+#' Convert an \code{R/qtl} object to a \code{genotypes} object
+#' 
+#' @param x a \code{qtl::cross} object
+#' 
+#' @return an object of class \code{genotypes}
+#' 
+#' @details Karl Broman's \code{R/qtl} is a widely-used package for mapping quantiative traits
+#' 	in experimental crosses of laboratory organisms and crop plants.  It expects genotypes to
+#' 	be coded with respect to parental lines: eg. AA, AB, BB for an F2 cross between (true-breeding)
+#' 	lines A and B.  Be sure to recode genotypes in that mannyer way before passing them to this function.
+#' 	
+#' 	Marker positions in \code{R/qtl} are expressed in centimorgans, not basepairs.  On conversion,
+#' 	physical positions are faked by assuming recombination rate 1 cM per 1 Mbp and rounding to
+#' 	the next-lowest integer.
+#' 
+#' 	Only crosses of type \code{"f2"} (F2 intercross) or \code{"bc"} are supported, and partially-
+#' 	informative genotypes will probably be mangled.
+#' 
+#' @references
+#' \code{R/qtl}: \url{http://www.rqtl.org}
+#' 
+#' Broman KW, Wu H, Sen Ś, Churchill GA. (2003) R/qtl: QTL mapping in experimental crosses.
+#' 	Bioinformatics 19:889-890. doi:10.1093/bioinformatics/btg112.
+#' 
+#' Broman KW, Sen S. (2009) A Guide to QTL Mapping with R/qtl. Springer, New York.
+#' 
+#' @seealso \code{\link{qtl::read.cross}}, \code{\link{as.rqtl.genotypes}} (for inverse operation)
+#' 
+#' @export
+as.genotypes.cross <- function(x, ...) {
+	
+	if (!inherits(x, "cross") && any(inherits(x, "f2"), inherits(x, "bc")))
+		stop("Please supply an object of class 'cross' (from KW Broman's R/qtl package).")
+	
+	geno <- do.call( rbind, lapply(x$geno, function(chr) t(chr$data)) )
+	
+	geno <- geno-1
+	map <- do.call( rbind, lapply(names(x$geno), function(chr) data.frame(chr = chr, marker = names(x$geno[[chr]]$map),
+																		  cM = x$geno[[chr]]$map, pos = floor(x$geno[[chr]]$map*1e6))) )
+	map$A1 <- attr(x, "alleles")[1]
+	map$A2 <- attr(x, "alleles")[2]
+	if (!any(grepl("^chr", map$chr)))
+		map$chr <- paste0("chr", map$chr)
+	
+	fam <- make.fam(rownames(x$pheno))
+	if (!is.null(x$pheno$sex))
+		fam$sex <- .fix.sex(x$pheno$sex)
+	for (col in setdiff(colnames(x), c("sex","pgm","id","ID")))
+		fam[ ,col ] <- x$pheno[ ,col ]
+	fam$pheno <- x$pheno[,1]
+	colnames(geno) <- as.character(rownames(fam))
+	
+	rez <- genotypes(geno, map = map, ped = fam, alleles = "01")
+	return(rez)
+	
+}
+as.genotypes <- function(x, ...) UseMethod("as.genotypes")

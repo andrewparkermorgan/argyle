@@ -158,6 +158,7 @@ pca.genotypes <- function(gty, extras = NULL, what = c("genotypes","intensity"),
 	rez.df <- data.frame(meta, rez[ rownames(meta),1:K ])
 	
 	## copy over the %variance explained
+	class(rez.df) <- c("pca.result", class(rez.df))
 	attr(rez.df, "explained") <- attr(rez, "explained")[1:K]
 	
 	return(rez.df)

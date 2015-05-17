@@ -98,3 +98,17 @@ theme_axesonly <- function(base_size = 12, base_family = "Helvetica") {
 			axis.ticks.margin = grid::unit(0.25, "lines")
 		))
 }
+
+#' @export
+blank.grob <- function(...) {
+	grid::grid.rect(gp = grid::gpar(col = NA))
+}
+
+## get an interpolator function for a RColorBrewer palette
+brewer.interpolate <- function(palette, ...) {
+	
+	maxcol <- RColorBrewer::brewer.pal.info[ palette,"maxcolors" ]
+	pal <- colorRampPalette(RColorBrewer::brewer.pal(maxcol, palette))
+	return(pal)
+	
+}

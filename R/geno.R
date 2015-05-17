@@ -18,9 +18,20 @@
 #' geno[ ,c("sample1","sample2") ]
 #'
 #' @export
-`[.genotypes` <- function(x, i = TRUE, j = TRUE, drop = FALSE, ...) {
+`[.genotypes` <- function(x, i, j, ..., drop = FALSE) {
+	
+	if (missing(i))
+		i <- TRUE
+	if (missing(j))
+		j <- TRUE
 	
 	r <- NextMethod("[", drop = drop)
+	## handle "array indexing"
+	if (is.matrix(i)) {
+		ii <- i
+		i <- ii[,1, drop = TRUE]
+		j <- ii[,2, drop = TRUE]
+	}
 	if (!is.null(attr(x, "map"))) {
 		attr(r, "map") <- attr(x, "map")[ i,,drop = FALSE ]
 	}
@@ -67,6 +78,7 @@ summary.genotypes <- function(gty, ...) {
 	nsamples <- ncol(gty)
 	nsites <- nrow(gty)
 	cat("---", deparse(substitute(gty)), "---\nA genotypes object with", nsites, "sites x", nsamples, "samples\n")
+	cat("Allele encoding:", attr(gty, "alleles"), "\n")
 	
 	has.intens <- .has.valid.intensity(gty)
 	normed <- .null.false(attr(gty, "normalized"))
@@ -101,6 +113,66 @@ summary.genotypes <- function(gty, ...) {
 		}
 	}
 	
+}
+
+#' @export
+print.genotypes <- function(gty, ...) {
+	summary.genotypes(gty)
+	
+	if (.has.valid.map(gty)) {
+		chrs <- factor(attr(gty, "map")$chr)
+		cat("\nCounts of markers by chromosome:\n")
+		tbl <- table(chrs, dnn = NULL)
+		print(tbl)
+		cat("\n")
+	}
+	
+}
+
+#' @export
+head.genotypes <- function(gty, n = 10, nsamples = min(10,ncol(gty)), ...) {
+	
+	if (!inherits(gty, "genotypes"))
+		stop("Please supply and object of class 'genotypes'.")
+	
+	w <- 5
+	head.fmt <- paste0("%", w, "s")
+	col.fmt <- paste0("%", w, "s")
+
+	n <- min(nrow(gty), n)
+	nc <- min(ncol(gty), nsamples)
+	if (n >= 1 && nc >= 1) {
+		
+		gty <- gty[1:n,1:nc]
+		G <- matrix( as.character(.copy.matrix.noattr(gty)), nrow = nrow(gty), ncol = ncol(gty) )
+		sm <- sprintf(head.fmt, substr(gsub("[\\_\\. \\:\\(\\)]", "", colnames(gty)), 1, w))
+		mk <- sprintf("%15s", rownames(gty))
+		
+		cat("Genotypes matrix:\n")
+		cat(sprintf("%15s", ""), sm, "\n")
+		for (i in 1:nrow(G)) {
+			cat(mk[i], paste(sprintf(col.fmt, G[i,])), "\n")
+		}
+		
+		if (.has.valid.map(gty)) {
+			map <- attr(gty, "map")[1:n,]
+			cat("\nMarker map:\n")
+			print(map[ ,1:min(6, ncol(map)) ], row.names = FALSE)
+		}
+		
+		if (.has.valid.ped(gty)) {
+			cat("\n")
+			ped <- attr(gty, "ped")[1:nc,]
+			cat("Sample info:\n")
+			print(ped, row.names = FALSE)
+		}
+		
+	}	
+	else {
+		## nothing much here...
+		summary.genotypes(gty)
+	}
+
 }
 
 ## set some S3 generics for useful accessor functions
@@ -166,6 +238,17 @@ intensity.genotypes <- function(gty, ...) {
 #' @export
 intensity <- function(x) UseMethod("intensity")
 
+#' Check if a \code{genotypes} object has intensity data attached
+#'
+#' @param gty a \code{genotypes} object
+#' 
+#' @return logical scalar; TRUE is intensity data is present
+#'
+#' @export
+has.intensity <- function(gty, ...) {
+	.has.valid.intensity(gty)
+}
+
 ## grab intensities for given markers as nice dataframe for plotting
 get.intensity <- function(gty, markers, ...) {
 	
@@ -214,6 +297,7 @@ get.baf <- function(gty, markers, ...) {
 	rez <- reshape2:::melt.matrix(attr(gty, "baf")[ markers,,drop = FALSE ])
 	colnames(rez) <- c("marker","iid","BAF")
 	rez <- cbind(rez, LRR = reshape2:::melt.matrix(attr(gty, "lrr")[ markers,,drop = FALSE ])[ ,3 ])
+	rez <- cbind(rez, call = reshape2:::melt.matrix(gty[ markers,,drop = FALSE ])[ ,3 ])
 	
 	if (.has.valid.map(gty))
 		rez <- merge(rez, attr(gty, "map"))
@@ -266,6 +350,22 @@ subset.genotypes <- function(gty, expr, by = c("markers","samples"), ...) {
 	else {
 		stop()
 	}
+	
+}
+
+#' Shortcut for grabbing just the autosomes
+#' 
+#' @param gty a \code{genotypes} object
+#' 
+#' @return a copy of \code{gty} without chrX, chrY or chrM (or markers not assigned to a chromosome)
+#' 
+#' @export
+autosomes <- function(gty, ...) {
+	
+	if (!(inherits(gty, "genotypes") && .has.valid.map(gty)))
+		stop("Please supply an object of class 'genotypes' with valid marker map.")
+
+	gty[ !grepl("[YXMPUu]", attr(gty, "map")$chr) & grepl("[0-9]+", attr(gty, "map")$chr), ]
 	
 }
 
@@ -647,27 +747,48 @@ drop.intensity <- function(gty, ...) {
 }
 
 ## apply a function over samples in a genotype matrix, by sample groups
-genoapply <- function(gty, expr, fn = NULL, strip = FALSE, ...) {
+genoapply <- function(gty, margin = c(1,2), expr = 1, fn = NULL, strip = FALSE, ...) {
 	
 	if (!inherits(gty, "genotypes"))
 		stop("Only willing to subset an object of class 'genotypes.'")
 	
 	#e <- eval(expr)
 	e <- expr
-	if (!is.null(attr(gty, "ped")))
-		r <- lapply(e, eval, envir = attr(gty, "ped"), enclos = parent.frame())
-	else
-		r <- lapply(e, eval, envir = parent.frame())
+	if (margin == 2) {
+		if (!is.null(attr(gty, "ped")))
+			r <- lapply(e, eval, envir = attr(gty, "ped"), enclos = parent.frame())
+		else
+			r <- lapply(e, eval, envir = parent.frame())
+	}
+	else {
+		if (!is.null(attr(gty, "map")))
+			r <- lapply(e, eval, envir = attr(gty, "map"), enclos = parent.frame())
+		else
+			r <- lapply(e, eval, envir = parent.frame())
+	}
+	
 	
 	if (strip)
 		gty <- bless(.copy.matrix.noattr(gty))
 	
-	vals <- split(seq_len(ncol(gty)), r)
-	rez <- lapply(vals, function(v) {
-		x <- gty[ ,v,drop = FALSE ]
-		fn(x, ...)
-	})
+	r <- lapply(r, factor)
+	if (margin == 2) {
+		vals <- split(seq_len(ncol(gty)), r)
+		rez <- lapply(vals, function(v) {
+			x <- gty[ ,v,drop = FALSE ]
+			fn(x, ...)
+		})
+	}
+	else {
+		vals <- split(seq_len(nrow(gty)), r)
+		rez <- lapply(vals, function(v) {
+			x <- gty[ v,,drop = FALSE ]
+			fn(x, ...)
+		})
+	}
+	
 	names(rez) <- names(vals)
+	nulls <- lapply(rez, is.null)
 	return(rez)
 	
 }
@@ -718,17 +839,19 @@ recode.genotypes <- function(gty, mode = c("pass","01","native","relative"),
 	
 	## a suite of recoding functions which operate on (marker-wise) vectors of genotype calls
 	top1 <- function(x, nbins) {
-		which.max(tabulate(x, nbins = nbins))
+		tbl <- tabulate(x, nbins = nbins)
+		a <- which.max(tbl)
+		return(a)
 	}
 	# recode 0=major allele, 1=het, 2=minor allele
 	.recode.numeric.by.freq <- function(calls, alleles = NULL) {
 		
-		calls <- factor( as.character(calls), levels = allowed[1:4] )
-		maj <- allowed[ top1(calls, 4) ]
+		calls.f <- factor( calls, levels = allowed[1:4] )
+		maj <- allowed[ top1(calls.f, 4) ]
 		new.calls <- rep(NA, length(calls))
 		new.calls[ calls == "H" ] <- 1
 		new.calls[ calls == maj ] <- 0
-		new.calls[ is.na(new.calls) & !is.na(calls) ] <- 2
+		new.calls[ is.na(new.calls) & !is.na(calls.f) ] <- 2
 		return(new.calls)
 		
 	}
@@ -759,7 +882,7 @@ recode.genotypes <- function(gty, mode = c("pass","01","native","relative"),
 	# recode same as above, only backwards
 	.recode.character.by.ref <- function(calls, alleles = NULL) {
 		
-		new.calls <- rep(NA, length(calls))
+		new.calls <- rep("N", length(calls))
 		new.calls[ calls == 0 ] <- as.character(alleles[1])
 		new.calls[ calls == 2 ] <- as.character(alleles[2])
 		new.calls[ calls == 1 ] <- "H"
@@ -767,15 +890,19 @@ recode.genotypes <- function(gty, mode = c("pass","01","native","relative"),
 		
 	}
 	
+	.dont.convert <- function(calls, alleles = NULL) identity(calls)
+	
 	mode <- match.arg(mode)
 	recode.as <- FALSE
-	if (mode == "pass")
-		converter <- identity
+	if (mode == "pass") {
+		recode.as <- coding
+		converter <- .dont.convert
+	}
 	else if (mode == "01") {
 		if ((is.null(coding) || coding == "01") && is.numeric(gty)) {
 			message("Nothing to do; genotypes already in requested coding.")
 			recode.as <- "01"
-			converter <- function(x, ...) identity(x)
+			converter <- .dont.convert
 		}
 		else if (!is.null(alleles)) {
 			converter <- .recode.numeric.by.ref
@@ -809,13 +936,14 @@ recode.genotypes <- function(gty, mode = c("pass","01","native","relative"),
 		}
 	else
 		if (!is.null(alleles) && coding != "relative") {
+			message("Recoding to character using reference alleles.")
 			converter <- .recode.character.by.ref
 			recode.as <- "native"
 		}
 	else
 		stop("Can only convert genotypes numeric->character given some reference alleles.")
 	
-	.gty <- unclass(gty)
+	.gty <- .copy.matrix.noattr(gty)
 	rez <- matrix(NA, nrow = nrow(.gty), ncol = ncol(.gty))
 	colnames(rez) <- colnames(.gty)
 	rownames(rez) <- rownames(.gty)
@@ -839,6 +967,66 @@ recode.genotypes <- function(gty, mode = c("pass","01","native","relative"),
 }
 #' @export
 recode <- function(x, ...) UseMethod("recode", x)
+
+#' Recode genotypes against genotypes of a parent
+#' 
+#' @param gty a \code{genotypes} object
+#' @param parent a numeric vector of parental genotypes; a scalar pointing to a reference sample in
+#' 	the input (\code{gty}); or another \code{genotypes} with parental genotypes in the first column
+#' 
+#' @return a recoded \code{genotypes} object
+#' 
+#' @export
+recode.to.parent <- function(gty, parent, ...) {
+	
+	if (!inherits(gty, "genotypes"))
+		stop("Please supply an object of class 'genotypes.'")
+	
+	if (!inherits(parent, "genotypes")) {
+		refs <- as.vector(gty[ ,parent ])
+	}
+	else if (inherits(parent, "genotypes")) {
+		prn <- rownames(parent)
+		if (!setequal(prn, rownames(gty))) {
+			stop("Markers in target object and parental genotypes don't match.")
+		}
+		parent <- parent[ rownames(gty), ]
+		refs <- as.vector(parent[,1])
+	}
+	else if (is.numeric(parent))
+		refs <- as.vector(parent)
+	
+	if (!(is.numeric(gty) && is.numeric(refs)))
+		stop("All genotypes must be in numeric encoding.")
+	if (length(refs) != nrow(gty))
+		stop("Dimensions of target object and parental genotypes don't match.")
+	
+	converter <- function(x) {
+		2-abs(refs-x)
+	}
+	
+	.gty <- .copy.matrix.noattr(gty)
+	rez <- matrix(NA, nrow = nrow(.gty), ncol = ncol(.gty),
+				  dimnames = list(rownames(.gty), colnames(.gty)))
+
+	for (i in seq_len(ncol(.gty))) {
+		rez[ ,i ] <- converter(.gty[,i])
+	}
+	
+	if (.has.valid.map(gty))
+		attr(rez, "map") <- attr(gty, "map")
+	if (.has.valid.ped(gty))
+		attr(rez, "ped") <- attr(gty, "ped")
+	
+	for (a in c("intensity","normalized","filter.sites","filter.samples","baf","lrr","qc")) {
+		if (!is.null(attr(gty, a)))
+			attr(rez, a) <- attr(gty, a)
+	}
+	class(rez) <- c("genotypes", class(rez))
+	attr(rez, "alleles") <- "parent"
+	return(rez)
+	
+}
 
 #' Swap out the marker map for a different one
 #' 

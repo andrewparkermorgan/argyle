@@ -2,19 +2,21 @@
 % Please edit documentation in R/genetics.R
 \name{heterozygosity}
 \alias{heterozygosity}
-\title{Calculate the proportion of sites at which each sample is heterozygous}
+\title{Calculate heterozygosity by marker}
 \usage{
-heterozygosity(gty, na.rm = TRUE, ...)
+heterozygosity(gty, hwe = FALSE, na.rm = TRUE, ...)
 }
 \arguments{
 \item{gty}{a \code{genotypes} object}
 
-\item{na.rm}{logical; ignore missing genotypes when counting heterozygous sites?}
+\item{hwe}{if \code{TRUE}, compute the MLE \code{hat{h}} assuming Hardy-Weinberg equilibrium}
+
+\item{na.rm}{logical; ignore missing genotypes?}
 }
 \value{
-a named vector with the proportion of sites of heterozygous for each sample
+a named vector with the heterozygosity of each marker
 }
 \description{
-Calculate the proportion of sites at which each sample is heterozygous
+Calculate heterozygosity by marker
 }
 

@@ -31,6 +31,7 @@ Each point represents a genotype call for a single sample.  Points are coloured 
 	to numeric genotype call (0/1/2/N), with missing (N) calls hidden.  Points are spaced evenly along
 	the x-axis to facilitate visual inspection; marker spacing in genomic coordinates is indicated in
 	a track along the bottom of the plot which connects each column to its relative genomic position.
+	At present, the function will only do a single chromosome at a time.
 
 	Since the return value is a \code{ggplot}, the user can add modify it at will.  To recover the
 	underlying dataframe, use \code{...$data}.

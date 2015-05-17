@@ -32,9 +32,12 @@ Implements thresholded quantile normalization (tQN) as described in Staaf et al.
 }
 \references{
 Adapted from code provided by Johan Staaf.
+
 Staaf J et al. (2008) BMC Bioinformatics. doi:10.1186/1471-2105-9-409.
+
 Bolstad BM et al. (2003) A comparison of normalization methods for high density oligonucleotide
 	array data based on bias and variance. Bioinformatics 19(2): 185-193.
+
 Peiffer DA et al. (2006) Genome Res 16(9): 1136-1148. doi:10.1101/gr.5402306.
 }
 

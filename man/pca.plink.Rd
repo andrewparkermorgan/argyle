@@ -19,7 +19,8 @@
 \value{
 When \code{by = "indiv"} (the default), a dataframe with individual IDs, family IDs,
 and then projections in columns "PC1"..."PC{k}".  When \code{by == "var"}, a dataframe with
-columns chromosome and marker name followed by PCs.
+columns chromosome and marker name followed by PCs.  The object inherits from \code{pca.result}
+so it can be autoploted with \code{plot()}.
 }
 \description{
 Perform PCA on genotypes with PLINK
@@ -43,6 +44,6 @@ Duforet-Frebourg N et al. (2015) Detecting genomic signatures of natural selecti
 	\url{http://arxiv.org/abs/1504.04543}
 }
 \seealso{
-\code{\link{mds.plink}}
+\code{\link{mds.plink}}, \code{\link{plot.pca.result}}
 }
 

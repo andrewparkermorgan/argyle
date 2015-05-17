@@ -62,12 +62,13 @@ summarize.intensity <- function(gty, q = seq(0,1,0.1), ..., .progress = "none") 
 #' @return a dataframe with counts of A (reference or major allele), B (alternate or minor allele),
 #' 	H (heterozygous) and N (missing/no-call) by either sample or marker.
 #' 	
-#' @details Any metadata associated with markers or samples is merged into the final result.
+#' @details Any metadata associated with markers or samples is *not* merged into the final result, in order
+#' 	to preserve parallelism between rows of the result and of the parent object.
 #'
 #' @seealso \code{\link{summarize.intensity}}, \code{\link{intensity.vs.ref}}, \code{\link{run.qc.checks}}
 #' 	 	
 #' @export
-summarize.calls <- function(gty, by = c("samples","markers"), ...) {
+summarize.calls <- function(gty, by = c("samples","markers"), counts = TRUE, ...) {
 	
 	if (!inherits(gty, "genotypes"))
 		stop("Please supply an object of class 'genotypes'.")
@@ -78,8 +79,14 @@ summarize.calls <- function(gty, by = c("samples","markers"), ...) {
 	else
 		which.dim <- 1
 	
+	if (counts)
+		denom <- 1
+	else
+		denom <- dim(gty)[ setdiff(c(2,1), which.dim) ]
+	
 	## convert genotypes to numeric for faster summaries
-	gty <- .copy.matrix.noattr(recode.genotypes(gty, "01"))
+	if (!(attr(gty, "alleles") %in% c("01","relative")))
+		gty <- .copy.matrix.noattr(recode.genotypes(gty, "01"))
 	## convert NAs to special code
 	gty[ is.na(gty) ] <- 3
 	## fast summary with tabulate()
@@ -87,10 +94,12 @@ summarize.calls <- function(gty, by = c("samples","markers"), ...) {
 	
 	if (by == "samples")
 		return(data.frame(iid = colnames(gty),
-						  A = counts[,1], B = counts[,3], H = counts[,2], N = counts[,4]))
+						  A = counts[,1]/denom, B = counts[,3]/denom,
+						  H = counts[,2]/denom, N = counts[,4]/denom))
 	else
 		return(data.frame(marker = rownames(gty),
-						  A = counts[,1], B = counts[,3], H = counts[,2], N = counts[,4]))
+						  A = counts[,1]/denom, B = counts[,3]/denom,
+						  H = counts[,2]/denom, N = counts[,4]/denom))
 	
 }
 

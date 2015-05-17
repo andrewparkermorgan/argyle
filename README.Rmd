@@ -119,6 +119,7 @@ Note that order matters: genotypes from the `*.bed` file are mapped to samples a
 ff <- file.path(tempdir(), "sample")
 ex <- recode(ex, "native")
 write.plink(ex, ff)
+
 ## ... and this one reads it back in
 summary( read.plink(ff) )
 ```

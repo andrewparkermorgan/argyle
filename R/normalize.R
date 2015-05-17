@@ -72,9 +72,12 @@ quantile.normalize <- function(gty, weights = NULL, force = FALSE, ...) {
 #'
 #' @references
 #' Adapted from code provided by Johan Staaf.
+#' 
 #' Staaf J et al. (2008) BMC Bioinformatics. doi:10.1186/1471-2105-9-409.
+#' 
 #' Bolstad BM et al. (2003) A comparison of normalization methods for high density oligonucleotide
 #' 	array data based on bias and variance. Bioinformatics 19(2): 185-193.
+#' 
 #' Peiffer DA et al. (2006) Genome Res 16(9): 1136-1148. doi:10.1101/gr.5402306.
 #'
 #' @export
@@ -93,7 +96,8 @@ tQN <- function(gty, thresholds = c(1.5, 1.5), clusters = NULL, ...) {
 	intens.raw <- attr(gty, "intensity")
 	
 	message("Performing tQN normalization...")
-	pb <- txtProgressBar(min = 0, max = ncol(gty), style = 3)
+	if (interactive())
+		pb <- txtProgressBar(min = 0, max = ncol(gty), style = 3)
 	for (i in seq_len(ncol(gty))) {
 		
 		rez <- tQN.sample(markers, intens.raw$x[,i], intens.raw$y[,i],
@@ -102,7 +106,8 @@ tQN <- function(gty, thresholds = c(1.5, 1.5), clusters = NULL, ...) {
 		lrr[ rownames(rez),i ] <- rez$LRR
 		xnorm[ rownames(rez),i ] <- rez$X
 		ynorm[ rownames(rez),i ] <- rez$Y
-		setTxtProgressBar(pb, i)
+		if (interactive())
+			setTxtProgressBar(pb, i)
 	}
 	
 	message("Done.")

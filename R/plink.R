@@ -23,6 +23,7 @@
 read.plink <- function(prefix, ...) {
 	
 	## construct filenames; check that all are present and accounted for
+	prefix <- gsub("\\.bed$", "", prefix)
 	bed <- paste0(prefix, ".bed")
 	bim <- paste0(prefix, ".bim")
 	fam <- paste0(prefix, ".fam")
@@ -212,10 +213,18 @@ unplink.chroms <- function(x, ...) {
 ## create a fam-formatted dataframe for plink
 make.fam <- function(ids, fid = NULL, sex = 0, pheno = -9, ...) {
 	
-	resex <- 0
-	resex[ grepl("^[mM]", sex) ] <- 1
-	resex[ grepl("^[fF]", sex) ] <- 2
-	resex[ is.na(resex) ] <- 0
+	if (is.character(ids)) {
+		resex <- rep(0, length(ids))
+		resex[ grepl("^[mM]", sex) ] <- 1
+		resex[ grepl("^[fF]", sex) ] <- 2
+		resex[ is.na(resex) ] <- 0
+	}
+	else {
+		resex <- factor(sex, levels = c(1,2))
+		resex <- as.numeric(resex)
+		resex[ is.na(resex) ] <- 0
+	}
+	
 	pheno[ is.na(pheno) ] <- -9
 	ids <- gsub(" ","", as.character(ids))
 	if (is.null(fid))
@@ -271,7 +280,8 @@ write.plink.file <- function(x, ..., fix.missing = NA) {
 plinkify <- function(gty, map = NULL, ped = NULL, where = tempdir(), prefix = "stuff", flags = "", ...) {
 	
 	## allow shortcut to bless paths of existing plink files
-	if (inherits(gty, "character")) {
+	if (inherits(gty, "character") && is.atomic(gty)) {
+		gty <- gsub("\\.bed$", "", gty)
 		paths <- sapply(c("bim","bed","fam"), function(x) file.exists(paste0(gty, ".", x)))
 		if (all(paths)) {
 			prefix <- as.character(gty)
@@ -299,6 +309,20 @@ plinkify <- function(gty, map = NULL, ped = NULL, where = tempdir(), prefix = "s
 	class(prefix) <- c("plink", class(prefix))
 	return(prefix)
 	
+}
+
+#' @export
+summary.plink <- function(prefix, ...) {
+	
+	cat("-- Pointer to a PLINK fileset -- ","\n")
+	cat("Source:", normalizePath(paste0(prefix, ".bed")), "\n")
+	cat("Ouput dir:", normalizePath(attr(prefix, "working")), "\n")
+	
+}
+
+#' @export
+print.plink <- function(prefix, ...) {
+	summary.plink(prefix, ...)
 }
 
 ## read a plink fam/tfam file
@@ -789,8 +813,6 @@ qc.plink <- function(prefix, flags = "--nonfounders", ...) {
 ld.plink <- function(prefix, index.snp = NULL, markers = NULL, chr = NULL, from = NULL, to = NULL,
 					 window = NULL, window.r2 = 0, flags = "", ...) {
 	
-	require(data.table)
-	
 	if (!inherits(prefix, "plink"))
 		stop("Not convinced the input is a pointer to a plink fileset.")
 	where <- dirname(prefix)
@@ -816,7 +838,7 @@ ld.plink <- function(prefix, index.snp = NULL, markers = NULL, chr = NULL, from 
 	success <- .plink.command(prefix, cmd, list("ld"), ...)
 	if (is.character(success)) {
 		ld.file <- paste0(success, ".ld")
-		ld <- data.table(read.table(ld.file, header = TRUE, strip.white = TRUE))
+		ld <- data.table::data.table(read.table(ld.file, header = TRUE, strip.white = TRUE))
 		return(ld)
 	}
 	else {
@@ -985,7 +1007,8 @@ mds.plink <- function(prefix, flags = "--autosome", K = 3, ...) {
 #' 
 #' @return When \code{by = "indiv"} (the default), a dataframe with individual IDs, family IDs,
 #' and then projections in columns "PC1"..."PC{k}".  When \code{by == "var"}, a dataframe with
-#' columns chromosome and marker name followed by PCs.
+#' columns chromosome and marker name followed by PCs.  The object inherits from \code{pca.result}
+#' so it can be autoploted with \code{plot()}.
 #' 
 #' @details See the relevant PLINK documentation for details of the underlying calculations.
 #' 	The default is to perform PCA on autosomal genotypes only.  Scaled eigenvalues (ie. percent
@@ -1004,7 +1027,7 @@ mds.plink <- function(prefix, flags = "--autosome", K = 3, ...) {
 #' 	principal componentanalysis: application to the 1000 Genomes data
 #' 	\url{http://arxiv.org/abs/1504.04543}
 #' 
-#' @seealso \code{\link{mds.plink}}
+#' @seealso \code{\link{mds.plink}}, \code{\link{plot.pca.result}}
 #' 
 #' @export
 pca.plink <- function(prefix, flags = "--autosome", K = 20, by = c("indiv","var"), ...) {
@@ -1038,6 +1061,8 @@ pca.plink <- function(prefix, flags = "--autosome", K = 20, by = c("indiv","var"
 		colnames(pcs) <- cols[1:ncol(pcs)]
 		eigs <- read.table(paste0(success, ".", expect[[2]]), header = FALSE)[,1]
 		attr(pcs, "eigvals") <- eigs/sum(eigs)
+		attr(pcs, "explained") <- attr(pcs, "eigvals")
+		class(pcs) <- c("pca.result", class(pcs))
 		return(pcs)
 	}
 	else {

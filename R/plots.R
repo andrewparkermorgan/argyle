@@ -7,7 +7,7 @@ plot.QC.result <- function(qc, show = c("point","label"), max.H = Inf, max.N = I
 	intens <- qc$intensity
 	if (is.null(calls$filter))
 		calls$filter <- FALSE
-	calls$filter <- with(calls, H > max.H | N > max.N)
+	calls$filter <- with(calls, filter | (H > max.H | N > max.N))
 	
 	show <- match.arg(show)
 	
@@ -113,8 +113,12 @@ qcplot <- function(gty, draw = TRUE, ...) {
 		gty <- run.qc.checks(gty, ...)
 	
 	p <- plot.QC.result(gty$qc, ...)
-	if (draw)
-		gtable:::plot.gtable(p)
+	if (draw) {
+		if (inherits(p, "ggplot"))
+			plot(p)
+		else if (inherits(p, "gtable"))
+			gtable:::plot.gtable(p)
+	}
 	
 	invisible(p)
 	
@@ -174,6 +178,90 @@ plot.clusters <- function(gty, markers = NULL, theme.fn = ggplot2::theme_bw, for
 	
 }
 
+#' Plot B-allele frequency (BAF) and log2-intensity ratio (LRR) for a sample
+#'
+#' @param gty a \code{genotypes} object with BAF and LRR pre-computed via \code{tQN()}
+#' @param sm indexing vector which should extract exactly one sample from \code{gty}
+#' @param ... additional parameters passed on to \code{supsmu()} to control smoothing
+#'
+#' @return a two-panel plot, BAF in upper panel and LRR in lower panel
+#' 
+#' @details For a detailed description of the BAF and LRR metrics, their calculation,
+#' 	and literature references, see \code{?tQN}.
+#' 
+#' @seealso \code{\link{tQN}}
+#'
+#' @export
+bafplot <- function(gty, sm = TRUE, ...) {
+	
+	if (!(inherits(gty, "genotypes") && .has.valid.baflrr(gty)))
+		stop("Please supply an object of class 'genotypes' with valid BAF and LRR pre-computed.")
+	
+	gty <- gty[,sm]
+	if (ncol(gty) != 1)
+		stop("BAF+LRR plot only implemented for one sample at a time.")
+	
+	if (!is.numeric(gty))
+		gty <- recode.genotypes(gty, "01")
+	
+	baf <- get.baf(gty, TRUE)
+	
+	## smoothing helper
+	.smooth.me <- function(x, y, ...) {
+		smth <- do.call(cbind, supsmu(x, y, ...))
+		z <- NA
+		i <- match(x, smth[ ,1 ], nomatch = 0)
+		z[ i > 0] <- smth[ i,2 ]
+		return(z)
+	}
+	
+	## apply smoothing to BAF and LRR
+	baf <- plyr::ddply(baf, .(chr), function(d) {
+		d$BAF.smooth <- .smooth.me(d$pos, d$BAF, ...)
+		d$LRR.smooth <- .smooth.me(d$pos, d$LRR, ...)
+		return(d)
+	})
+	
+	## plot BAF, coloured by call
+	baf$.call <- factor( ifelse(is.na(baf$call), NA, ifelse(baf$call == 1, 1, ifelse(as.integer(baf$BAF > 0.5), 2, 0))),
+						 levels = c(0,1,2) )
+	baf$.col <- factor(baf$chr):factor(baf$.call)
+	call.cols <- rep_len( c("lightblue","mediumpurple1","pink","darkblue","purple4","red"),
+						  length.out = nlevels(baf$.col) )
+	
+	p1 <- ggmanhattan(baf) +
+		ggplot2::geom_point(ggplot2::aes(y = BAF, colour = .col)) +
+		ggplot2::geom_point(ggplot2::aes(y = BAF.smooth), colour = "red") +
+		ggplot2::scale_alpha_discrete(range = c(0.5,1)) +
+		ggplot2::scale_colour_manual(values = call.cols, na.value = "grey") +
+		ggplot2::guides(colour = FALSE, alpha = FALSE) +
+		ggplot2::theme_bw() + ggplot2::theme(axis.title.x = ggplot2::element_blank(),
+											 axis.text.x = ggplot2::element_blank(),
+											 plot.margin = grid::unit(c(1, 1, 0, 0.5), "lines"))
+	
+	## plot LRR with smoothed fit
+	lrr.cols <- brewer.interpolate("Spectral")(6)
+	p2 <- ggmanhattan(baf) +
+		ggplot2::geom_point(ggplot2::aes(y = LRR), colour = "grey") +
+		ggplot2::geom_point(ggplot2::aes(y = LRR.smooth), colour = "red") +
+		#ggplot2::scale_colour_gradientn(colours = lrr.cols, breaks = c(-1, 0, 1)) +
+		ggplot2::scale_y_continuous(limits = c(-2,2)) +
+		ggplot2::guides(colour = FALSE) +
+		#scale_x_genome() +
+		ggplot2::theme_bw() +ggplot2::theme(axis.title.x = ggplot2::element_blank(),
+											plot.margin = grid::unit(c(0.2, 1, 0.5, 0.5), "lines"))
+	
+	rez <- gtable:::rbind_gtable(ggplot2::ggplotGrob(p1),
+								 ggplot2::ggplotGrob(p2),
+								 size = "first")
+	
+	grid::grid.newpage()
+	grid::grid.draw(rez)
+	
+	invisible(rez)
+	
+}
+
 #' Show a visual representation of a slice of a genotype matrix
 #' 
 #' @param a \code{genotypes} object
@@ -190,6 +278,7 @@ plot.clusters <- function(gty, markers = NULL, theme.fn = ggplot2::theme_bw, for
 #' 	to numeric genotype call (0/1/2/N), with missing (N) calls hidden.  Points are spaced evenly along
 #' 	the x-axis to facilitate visual inspection; marker spacing in genomic coordinates is indicated in
 #' 	a track along the bottom of the plot which connects each column to its relative genomic position.
+#' 	At present, the function will only do a single chromosome at a time.
 #' 	
 #' 	Since the return value is a \code{ggplot}, the user can add modify it at will.  To recover the
 #' 	underlying dataframe, use \code{...$data}.
@@ -208,6 +297,8 @@ dotplot.genotypes <- function(gty, size = 2, meta = NULL, shape = c("point","til
 	
 	## set up horizontal positions of markers
 	map <- attr(gty, "map")
+	if (length(unique(map$chr)) > 1)
+		stop("Dotplot works only for one chromosome at a time.")
 	map$i <- as.numeric(factor(map$pos))
 	map$ipos <- map$pos - min(map$pos)
 	map$relpos <- map$ipos/diff(range(map$pos)) * max(map$i)
@@ -260,3 +351,178 @@ dotplot.genotypes <- function(gty, size = 2, meta = NULL, shape = c("point","til
 	
 }
 dotplot <- function(x, ...) UseMethod("dotplot")
+
+
+#' Create skeleton of a 'Manhattan plot' (concatenated chromosomes) with \code{ggplot2}
+#' 
+#' @param df a dataframe with columns (at least) "chr" and "pos"
+#' @param chroms chromosome names (in order); will try to guess them if not supplied
+#' @param space padding factor to add in between chromosomes
+#' @param cols vector of length 2, giving alternating colours for alternating chromosomes
+#' 
+#' @return a \code{ggplot2} object whose x-axis is defined by chromosome and position (with
+#' 	chromosomes concatenated in karyotype order), to which data in \code{df} can be added as
+#' 	additional layers
+#' 
+#' @export
+ggmanhattan <- function(df, chroms = NULL, space = 10, cols = c("grey30","grey60"), ...) {
+	
+	if (all(c("chr","pos") %in% colnames(df)))
+		df <- df[ ,c("chr","pos", setdiff(colnames(df), c("chr","pos"))) ]
+	else
+		stop("We require a dataframe with at least columns 'chr' and 'pos'.")
+	
+	if (!is.factor(df[,1]))
+		if (!is.null(chroms))
+			df[,1] <- factor(df[,1], levels = chroms)
+	else
+		df[,1] <- factor(df[,1])
+	else
+		df[,1] <- factor(df[,1])
+	
+	chrlen <- tapply(df[,2], df[,1], max, na.rm = TRUE)/1e6 + space
+	adj <- c(0, cumsum(chrlen))
+	ticks <- adj[ -length(adj) ] + diff(adj)/2
+	#names(adj) <- c(names(chrlen),"z")
+	#print( cbind(chrlen, adj[-1], ticks) )
+	#print(length(chrlen))
+	#print(length(ticks))
+	df$.adj <- adj[ as.numeric(df[,1]) ]
+	df$.x <- df$.adj + df[,2]/1e6
+	df$.chr <- df[,1]
+	colmap <- setNames( rep_len(c(0,1), nlevels(df$.chr)), levels(df$.chr)  )
+	df$.colour <- factor(colmap[ df$.chr ])
+	#print(tapply(df$.x, df$.chr, max))
+	
+	rez <- ggplot2::ggplot(df, ggplot2::aes(x = .x, colour = .colour))
+	rez <- rez +
+		ggplot2::scale_x_continuous(breaks = ticks, minor_breaks = adj,
+						   labels = gsub("^chr", "", names(chrlen))) +
+		ggplot2::scale_colour_manual(values = cols) +
+		ggplot2::guides(colour = FALSE) +
+		ggplot2::theme_bw() + ggplot2::theme(axis.title.x = ggplot2::element_blank(),
+						   panel.grid.minor = ggplot2::element_line(colour = "grey90"),
+						   panel.grid.minor = ggplot2::element_blank())
+	return(rez)
+	
+}
+
+#' Auto-plotting of a PCA result
+#' 
+#' @param pc a \code{pca.result} object
+#' @param K numeric vector of length 2 specifing which PCs to plot against each other; first is on x-axis and second on y-axis
+#' @param screeplot logical; if \code{TRUE}, show both the plot of two PCs against each other and the variances explained of
+#' 	all available PCs
+#' @param show length-1 character vector; show just points, or sample IDs
+#' @param theme.fn a \code{ggplot2}-compatible function to specify formatting
+#' 
+#' @return if \code{screeplot = FALSE}, a \code{ggplot}; if \code{screeplot = TRUE}, a \code{gtable::gtable} object which can be
+#' 	modified or re-rendered with \code{grid::grid.draw()}.
+#' 
+#' @export
+plot.pca.result <- function(pc, K = c(1,2), screeplot = FALSE, show = c("points","labels"), theme.fn = ggplot2::theme_bw, ...) {
+	
+	if (!inherits(pc, "pca.result"))
+		stop("Please supply an object of class 'pca.result'.")
+	
+	if (length(K) != 2)
+		stop("Can only plot pairs of PCs.")
+	
+	show <- match.arg(show)
+	if (show == "points") {
+		geom.fn <- ggplot2::geom_point
+		size <- 2
+	}
+	else {
+		geom.fn <- ggplot2::geom_text
+		size <- 3.5
+	}
+		
+	xll <- paste0("\nPC", K[1], " (", sprintf("%.1f", 100*attr(pc, "explained")[1]), "%)")
+	yll <- paste0("PC", K[1], " (", sprintf("%.1f", 100*attr(pc, "explained")[2]), "%)\n")
+	
+	## plot PCs against each other
+	p1 <- ggplot2::ggplot(pc, ggplot2::aes_string(paste0("PC", K[1]), paste0("PC", K[2]),
+												  label = "iid"), size = size) +
+		geom.fn() +
+		ggplot2::xlab(xll) + ggplot2::ylab(yll) +
+		ggplot2::coord_equal() +
+		theme.fn()
+	
+	if (screeplot) {
+		
+		## draw "screeplot" (PCs by variance explained)
+		evdf <- data.frame(PC = as.integer(gsub("PC","",grep("^PC", colnames(pc), value = TRUE))),
+						   variance = attr(pc, "explained"))
+		
+		p2 <- ggplot2::ggplot(evdf, ggplot2::aes(x = PC, y = variance)) +
+			ggplot2::geom_line(colour = "darkblue") +
+			ggplot2::geom_point(colour = "darkblue") +
+			ggplot2::scale_y_continuous(label = scales::percent) +
+			ggplot2::scale_x_continuous(breaks = 1:max(evdf$PC, na.rm = TRUE),
+										labels = function(x) paste0("PC",round(x)),
+										expand = c(0,0.5)) +
+			ggplot2::ylab("% variance explained\n") +
+			theme.fn() + ggplot2::theme(axis.title.x = ggplot2::element_blank())
+		
+		p1 <- ggplot2::ggplotGrob(p1)
+		p2 <- ggplot2::ggplotGrob(p2)
+		rez <- gtable:::cbind_gtable( p1, p2,
+									  size = "first")
+		panels <- rez$layout$t[grep("panel", rez$layout$name)]
+		#rez$widths[panels] <- lapply(c(1,1), grid::unit, "null")
+		
+		grid::grid.newpage()
+		grid::grid.draw(rez)
+		invisible(rez)
+		
+	}
+	else {
+		return(p1)
+	}
+	
+}
+
+#' Plot frequencies of missing, heterozygous, and minor-allele calls across genome
+#' 
+#' @param gty a \code{genotypes} object
+#' @param max.H show markers with heterozygosity greater than this threshold
+#' @param max.N show markers with missingness greater than this threshold
+#' @param max.H show markers with minor-allele frequency less than this threshold
+#' 
+#' @return a \code{ggplot} object with a Manhattan-style plot of the above values
+#' 
+#' @seealso \code{\link{qcplot}}, \code{\link{bafplot}}, \code{\link{summarize.calls}}
+#' 
+#' @export
+freqplot <- function(gty, max.H = -1, max.N = -1, min.maf = Inf, ...) {
+	
+	if (!inherits(gty, "genotypes"))
+		stop("Please supply an object of class 'genotypes'.")
+	
+	gty <- recode.genotypes(gty, "relative")
+	calls <- summarize.calls(gty, "markers", counts = FALSE)
+
+	calls <- merge(calls, attr(gty, "map"))
+	calls <- transform(calls, maf = B+0.5*H)
+	calls <- subset(calls[ ,c("chr","pos","H","N","maf") ], H > max.H | N > max.N | maf <= min.maf)
+	calls.m <- reshape2::melt(calls, id.vars = c("chr","pos"))
+	
+	call.labs <- c("minor allele","H","N")
+	call.cols <- c("black","grey",scales::muted("red"))
+	calls.m$variable <- factor(calls.m$variable, levels = c("maf","H","N"),
+							   labels = call.labs)
+
+	message("Markers failing by")
+	message("\t", sprintf("%13s", "no-call rate:"), sprintf("%7d", sum(calls$N > max.N)))
+	message("\t", sprintf("%13s", "het rate:"), sprintf("%7d", sum(calls$H > max.H)))
+	message("\t", sprintf("%13s", "MAF:"), sprintf("%7d", sum(calls$maf <= min.maf)))
+	message("\t", sprintf("%13s", "Total"), sprintf("%7d", nrow(calls)))
+	
+	ggmanhattan(calls.m) +
+		ggplot2::geom_point(ggplot2::aes(y = value, colour = variable)) +
+		ggplot2::scale_colour_manual("frequency of", values = call.cols, labels = call.labs) +
+		ggplot2::facet_grid(variable ~ .) +
+		ggplot2::ylab("relative frequency\n")
+	
+}

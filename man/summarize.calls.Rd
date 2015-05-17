@@ -4,7 +4,7 @@
 \alias{summarize.calls}
 \title{Summarize genotype calls by sample or marker}
 \usage{
-summarize.calls(gty, by = c("samples", "markers"), ...)
+summarize.calls(gty, by = c("samples", "markers"), counts = TRUE, ...)
 }
 \arguments{
 \item{gty}{a \code{genotypes} object with intensity data attached}
@@ -19,7 +19,8 @@ a dataframe with counts of A (reference or major allele), B (alternate or minor 
 Summarize genotype calls by sample or marker
 }
 \details{
-Any metadata associated with markers or samples is merged into the final result.
+Any metadata associated with markers or samples is *not* merged into the final result, in order
+	to preserve parallelism between rows of the result and of the parent object.
 }
 \seealso{
 \code{\link{summarize.intensity}}, \code{\link{intensity.vs.ref}}, \code{\link{run.qc.checks}}

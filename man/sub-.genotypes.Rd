@@ -4,7 +4,7 @@
 \alias{[.genotypes}
 \title{Indexing into a \code{genotypes} object}
 \usage{
-\method{[}{genotypes}(x, i = TRUE, j = TRUE, drop = FALSE, ...)
+\method{[}{genotypes}(x, i, j, ..., drop = FALSE)
 }
 \arguments{
 \item{x}{an object of class \code{genotypes}}

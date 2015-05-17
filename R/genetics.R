@@ -309,10 +309,33 @@ predict.f1 <- function(gty, na.rm = FALSE, ...) {
 #' @return a named vector with the proportion of sites of heterozygous for each sample
 #' 
 #' @export
-heterozygosity <- function(gty, na.rm = TRUE, ...) {
+prop.het <- function(gty, na.rm = TRUE, ...) {
 	
 	gty[ gty != 1 ] <- 0
 	colMeans(gty, na.rm = na.rm)
+	
+}
+
+#' Calculate heterozygosity by marker
+#' 
+#' @param gty a \code{genotypes} object
+#' @param hwe if \code{TRUE}, compute the MLE \code{hat{h}} assuming Hardy-Weinberg equilibrium
+#' @param na.rm logical; ignore missing genotypes?
+#' 
+#' @return a named vector with the heterozygosity of each marker
+#'
+#' @export
+heterozygosity <- function(gty, hwe = FALSE, na.rm = TRUE, ...) {
+	
+	
+	if (!hwe) {
+		gty[ gty != 1 ] <- 0
+		rowMeans(gty, na.rm = na.rm)
+	}
+	else {
+		apply(gty, 1, function(x) 1 - mean(x == 0, na.rm = na.rm)^2 - mean(x == 2, na.rm = na.rm))
+	}
+		
 	
 }
 
