@@ -3,9 +3,12 @@ title: Introduction to the `argyle` package
 author: Andrew P Morgan
 date: "`r format(Sys.time(), 'Updated %d %B %Y')`"
 output:
-  rmarkdown::pdf_document:
+  rmarkdown::html_vignette:
     toc: true
 graphics: yes
+bibliography: refs.bib
+csl: mammalian-genome.csl
+keep_md: true
 vignette: >
   %\VignetteIndexEntry{Vignette Title}
   %\VignetteEngine{knitr::rmarkdown}
@@ -19,11 +22,11 @@ knitr::opts_chunk$set(
 ```
 
 # Introduction
-High-throughput genotyping of tens of thousands of SNPs using microarrays is common practice in both laboratory and population genetics.  Ggenotypes at a dense panel of biallelic markers with a low rate of missing data are a valuable resource for breeding, marker-assisted selection, genetic mapping and analyses of population structure.  The Illumina Infinium system is one popular and cost-effective ($\sim 100$/sample) platform.  Custom Illumina arrays are available for many organisms of research, agricultural or ecological interest including mouse (CCC (2012)), dog, chicken, cow, pig, horse, sheep, salmon (http://www.biomedcentral.com/1471-2164/14/439) and cotton (http://g3journal.org/content/early/2015/04/22/g3.115.018416).
+High-throughput genotyping of tens of thousands of SNPs using microarrays is common practice in both laboratory and population genetics.  Genotypes at a dense panel of biallelic markers with a low rate of missing data are a valuable resource for breeding, marker-assisted selection, genetic mapping and analyses of population structure.  The Illumina Infinium system is one popular and cost-effective ($\sim 100$/sample) platform.  Custom Illumina arrays are available for many organisms of research, agricultural or ecological interest including mouse [@Ccc2012], dog, chicken, cow, pig, horse, sheep, salmon [@Johnston2013] and cotton [Hulse-Kemp et al. (2015)](http://g3journal.org/content/early/2015/04/22/g3.115.018416).
 
-The `argyle` package provides basic functionality for loading biallelic SNP datasets directly from (1) the output of Illumina BeadStudio; or (2) `PLINK` binary filesets.  For genotypes from Illumina arrays, hybridization intensity data is stored in parallel with genotype calls for use in quality control and downstream analyses.  Several functions for quality control at the level of both hybridization intensity (where available) and genotype calls are provided.  Data can be exported from `argyle` to `PLINK` binary format; or to formats compatible with the [`R/qtl`](http://www.rqtl.org/) package for genetic mapping in experimental crosses (Broman *et al.* (2003)), or the [`DOQTL`](http://do.jax.org/) package (Gatti *et al.* (2014)) for mapping in multi-founder outbred populations.
+The `argyle` package provides basic functionality for loading biallelic SNP datasets directly from (1) the output of Illumina BeadStudio; or (2) `PLINK` binary filesets.  For genotypes from Illumina arrays, hybridization intensity data is stored in parallel with genotype calls for use in quality control and downstream analyses.  Several functions for quality control at the level of both hybridization intensity (where available) and genotype calls are provided.  Data can be exported from `argyle` to `PLINK` binary format; or to formats compatible with the [`R/qtl`](http://www.rqtl.org/) package for genetic mapping in experimental crosses [@Broman2003], or the [`DOQTL`](http://do.jax.org/) package [@Gatti2014] for mapping in multi-founder outbred populations.
 
-The design of `argyle` is inspired by the [`PLINK` (Purcell *et al.* (2007))](https://www.cog-genomics.org/plink2/) software.  A `PLINK` fileset has three parts: a genotype matrix, a marker map and a "pedigree" (sample and family metadata) file.  Likewise the central data structure in this package (the `genotypes` object) stores a genotype matrix in parallel with a marker map and sample metadata.
+The design of `argyle` is inspired by the [`PLINK`](https://www.cog-genomics.org/plink2/) software [@Purcell2007].  A `PLINK` fileset has three parts: a genotype matrix, a marker map and a "pedigree" (sample and family metadata) file.  Likewise the central data structure in this package (the `genotypes` object) stores a genotype matrix in parallel with a marker map and sample metadata.
 
 > **Note**: `argyle` was designed for mouse genetics, but should be applicable to any diploid organism with an X-Y sex chromosome system (with males XY and females XX.)
 
@@ -32,7 +35,7 @@ We created `argyle` to fill a specific niche: quality control and basic explorat
 
 This package explicitly favors *simplicity* and *readability* of code over raw efficiency.  It is appropriate for the "medium-sized" data -- say, tens of thousands of markers and hundreds of individuals -- regularly encountered in experimental genetics.  Users with larger datasets routinely collected in human genetics -- say, millions of markers and thousands of individuals -- which do not fit comfortably in memory as plain-vanilla `R` objects probably want to explore more sophisticated `R` packages (such as the [`GenABEL` suite](http://www.genabel.org/)).
 
-A zoo of `R` packages already exists for normalization of raw intensity data from Illumina platforms: see `lumi` (Du *et al.* (2008)) and `beadarray` (Dunning *et al.* (2007)) among others.  Users interested in exploiting the copy-number signal from Illumina arrays should consult these packages and related references.  Gross copy-number aberrations affecting hundreds or thousands of markers, such as (partial) aneuploidy, *can* be identified in `argyle`; see **Intensity-based analyses** for more.
+A zoo of `R` packages already exists for normalization of raw intensity data from Illumina platforms: see `lumi` [@Du2008] and `beadarray` [@Dunning2007] among others.  Users interested in exploiting the copy-number signal from Illumina arrays should consult these packages and related references.  Gross copy-number aberrations affecting hundreds or thousands of markers, such as (partial) aneuploidy, *can* be identified in `argyle`; see **Intensity-based analyses** for more.
 
 Although `argyle` implements some basic frequency calculations for use in genotyping quality control, it makes no effort to duplicate or replace the functionality of existing `R` packages for statistical and population genetics.  More serious calculations -- marker LD, Hardy-Weinbery equilibrium tests, association tests -- can be accessed through the pacakge's `PLINK` wrappers.  (These calls don't require holding the genotypes themselves in memory in the `R` session, so they can be applied to quite large datasets.)
 
@@ -183,9 +186,9 @@ identical(ex, ex.rerecode)
 ```
 
 ## Particulars for Illumina arrays
-The technical aspects of the [Illumina Infinium](http://www.illumina.com/technology/beadarray-technology/infinium-hd-assay.html) genotyping array platform are described at length in Steemers *et al.* (2006).  Briefly, oligonucleotide probes are designed to target $k$ invariant base pairs adjacent to a biallelic SNP.  These oligos are conjugated to silica beads which are addressed into a microarray.  Sample DNA is hyridized to the array, and a single-base extension reaction is performed at the target SNP using fluorescently-labelled nucleotides.  Two-channel fluorescence intensity signals are captured by a scanner.
+The technical aspects of the [Illumina Infinium](http://www.illumina.com/technology/beadarray-technology/infinium-hd-assay.html) genotyping array platform are described at length in [@Steemers2006].  Briefly, oligonucleotide probes are designed to target $k$ invariant base pairs adjacent to a biallelic SNP.  These oligos are conjugated to silica beads which are addressed into a microarray.  Sample DNA is hyridized to the array, and a single-base extension reaction is performed at the target SNP using fluorescently-labelled nucleotides.  Two-channel fluorescence intensity signals are captured by a scanner.
 
-Raw fluorescence signals are post-processed and normalized prior to genotype-calling.  Many normalization algorithms have been proposed that take advantage of specific properties of the Illumina platform to estimate and remove technical artefacts; see Ritchie *et al.* (2009) for discussion.  Illumina's own BeadStudio software use a procedure described in Peiffer *et al.* (2006) that attempts to place samples into three clusters: two (presumably) homozygous clusters, one near the $x$- and another near the $y$-axes, and a (presumably) heterozygous cluster along an arc between them.
+Raw fluorescence signals are post-processed and normalized prior to genotype-calling.  Many normalization algorithms have been proposed that take advantage of specific properties of the Illumina platform to estimate and remove technical artefacts; see [@Du2008] for discussion.  Illumina's own BeadStudio software use a procedure described in [@Peiffer2006] that attempts to place samples into three clusters: two (presumably) homozygous clusters, one near the $x$- and another near the $y$-axes, and a (presumably) heterozygous cluster along an arc between them.
 
 Hybridization-intensity signals have carry information about both genotype and copy number.  Discrete genotypes for a group of samples can be inferred by first clustering samples in the $x,y$ plane at each marker; then identifying the three canonical clusters (corresponding to genotypes *AA*, *AB* and *BB* at the target SNP); and finally assigning a most probably cluster membership to each sample.  The total hybridization intensity along both $x$ and $y$ dimensions -- and, at heterozygous markers, the relative magnitude of $x$ and $y$ signals -- is informative for copy number.  "Total intensity" is defined by `argyle` not as $x+y$ but as $d = \sqrt{x^2+y^2}$, the total distance from the origin.  This is ancedotally superior to the simple sum if intensities are saturated along either dimension.
 
@@ -273,7 +276,7 @@ geno <- read.beadstudio(prefix = "", snps, in.path = "path/to/folder")
 ```
 
 ## From `PLINK` a fileset
-Reading a `PLINK` binary fileset with `argyle` is simple with `read.plink()`.  As an example, we can load genotypes of 28 wild mice from the Mouse Diversity Array (Yang *et al.* (2011)), provided in this package's "data/" directory.  Genotypes from `PLINK` filesets are always read directly to the `"01"` encoding.
+Reading a `PLINK` binary fileset with `argyle` is simple with `read.plink()`.  As an example, we can load genotypes of 28 wild mice from the Mouse Diversity Array [@Yang2011], provided in this package's "data/" directory.  Genotypes from `PLINK` filesets are always read directly to the `"01"` encoding.
 
 ```{r}
 infile <- system.file("data/wild.chr19.bed", package = "argyle")
@@ -335,17 +338,17 @@ Note that we have excluded Y-linked markers from this analysis: the Y chromosome
 > **Note**: Criteria for excluding samples or markers from an analysis depend completely on the samples and the experiment at hand.
 
 # Intensity-based analyses
-Hybridization intensity to Illumina arrays carries information about both genotype and copy number.  Whereas the $x,y$ intensities at a single probe are (usually) sufficient to determine genotype at the corresponding target SNP, noise in the hybridization signal means that intensities from adjacent probes must be aggregated to assess copy number.  Inter-probe variability in $x$, $y$ and their relative magnitude is accomodated by two transformations introduced by Peiffer *et al.* (2006): the B-allele (pseudo-)frequency (BAF) and log2-intensity ratio (LRR).  Both quantities are calculated with respect to intensity values derived from a large set of reference samples.
+Hybridization intensity to Illumina arrays carries information about both genotype and copy number.  Whereas the $x,y$ intensities at a single probe are (usually) sufficient to determine genotype at the corresponding target SNP, noise in the hybridization signal means that intensities from adjacent probes must be aggregated to assess copy number.  Inter-probe variability in $x$, $y$ and their relative magnitude is accomodated by two transformations introduced by [@Peiffer2006]: the B-allele (pseudo-)frequency (BAF) and log2-intensity ratio (LRR).  Both quantities are calculated with respect to intensity values derived from a large set of reference samples.
 
 The B-allele frequency is not, in fact, anything to do with a true allele frequency, but rather a measure of the distance of a sample from the *BB* homozygous reference cluster, scaled and truncated to fall in $[0,1]$.  At homozygous markers BAF takes values near $0$ or $1$; at heterozygous markers it takes values near $0.5$.  The LRR is $\log2{(R/R_{ref})}$ where $R = x + y$ and $R_{ref} = x_{ref} + y_{ref}$, and in turn $x_{ref},y_{ref}$ are the centroid of the reference cluster to which the same is nearest.  It is expected to have mean zero across the array, in the absence of aneuploidy or large structural variants.
 
-Technical artefacts at the hybridization or scanning steps can introduce bias in BAF and LRR. The function `argyle::tQN()` (re-)implements a normalization procedure described in Staaf *et al.* (2008), using code borrowed from the `CLASP` package (Didion *et al.* (2014)).  Briefly, quantile normalization (see Bolstad *et al.* (2003)) is applied to the array-wide $x$ and $y$ intensities per sample to account for systematic differences in signal intensity from the two fluorophores used in the Infinium chemistry.  Relative differences between the pre- and post-normalization intensities are subject to a pre-specified threshold (by default, $1.5$).  Then BAF and LRR are computed using a matrix of (*AA*, *AB*, *BB*) reference cluster centroids.
+Technical artefacts at the hybridization or scanning steps can introduce bias in BAF and LRR. The function `argyle::tQN()` (re-)implements a normalization procedure described in [@Staaf2008], using code borrowed from the `CLASP` package [@Didion2014].  Briefly, quantile normalization (see [@Bolstad2003]) is applied to the array-wide $x$ and $y$ intensities per sample to account for systematic differences in signal intensity from the two fluorophores used in the Infinium chemistry.  Relative differences between the pre- and post-normalization intensities are subject to a pre-specified threshold (by default, $1.5$).  Then BAF and LRR are computed using a matrix of (*AA*, *AB*, *BB*) reference cluster centroids.
 
 The tQN procedure is somewhat time-consuming; for the purposes of this vignette we demonstrate it on a single sample (an F1 offspring of a cross between the inbred mouse strains A/J and NOD/ShiLtJ.)  The `clusters` object contains reference cluster centroids for the GigaMUGA array.
-```{r, echo=FALSE, eval=TRUE}
+```{r, echo=FALSE, eval=FALSE}
 load("~/Dropbox/GigaMUGA_design/annotation/control.clusters.Rdata")
 ```
-```{r, warning=FALSE, eval=TRUE}
+```{r, warning=FALSE, eval=FALSE}
 ex.norm <- tQN(ex[ markers(ex)$chr != "chrY","AD_15423_F" ], clusters = clusters)
 ```
 
@@ -354,7 +357,7 @@ Use the function `bafplot()` to see the result, with smoothed fits superposed in
 bafplot(ex.norm, "AD_15423_F")
 ```
 
-As expected, this sample is euploid (at least for the chromsomes shown) and mostly heterozygous. A discussion of the patterns of BAF and LRR expected due to aneuploidy or sample contamination can be found in Didion *et al.* (2014).
+As expected, this sample is euploid (at least for the chromsomes shown) and mostly heterozygous. A discussion of the patterns of BAF and LRR expected due to aneuploidy or sample contamination can be found in [@Didion2014].
 
 # Analysis of experimental crosses
 To demonstrate the use of `argyle` for designing and analysing a laboratory experiment, we consider a hypothetical F2 cross between the inbred mouse strains A/J (coded 'A' in the example dataset) and NOD/ShiLtJ (coded 'D').  To analyze genotypes from the F2 offspring, we need to know the following:
@@ -414,11 +417,11 @@ fake.cross <- as.rqtl(by.mom)
 ```
 
 # Population-based analyses (and `PLINK`)
-To demonstrate the use of `argyle` on population-genetic data, we use genotypes (on chr19) from 28 wild mice genotyped on the Mouse Diversity Array (Yang *et al.* (2011)).  These are provided as a `PLINK` fileset (`wild.chr19.*`) in this package's `data/` directory.  The `fid` column of these samples indicates their mouse subspecies of origin.
+To demonstrate the use of `argyle` on population-genetic data, we use genotypes (on chr19) from 28 wild mice genotyped on the Mouse Diversity Array [@Yang2011].  These are provided as a `PLINK` fileset (`wild.chr19.*`) in this package's `data/` directory.  The `fid` column of these samples indicates their mouse subspecies of origin.
 
 First load the genotypes from the `PLINK` fileset.  Genotypes from `PLINK` are always loaded in the `"01"` encoding.
 ```{r}
-ff <- system.file("data", "wild.chr19.bed", package = "argyle")
+ff <- system.file("data/wild.chr19.bed", package = "argyle")
 wild <- read.plink(ff)
 
 summary(wild)
@@ -495,3 +498,5 @@ summary(wild)
 The resulting pointer has class `plink`.  All the `PLINK` wrappers take such an object as their first argument.  The `where` argument specifies the location to which output should be written; the default is the temporary directory corresponding to the current `R` session.
 
 > **Safety warning**: `PLINK` will, by default, place its output in the same directory as the input fileset.  This creates risk of overwriting the input if the user is not careful.  Unless there is good reason to do otherwise, leave `where` set to the default to avoid clobbering important data.
+
+# References
