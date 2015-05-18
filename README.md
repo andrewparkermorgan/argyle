@@ -46,17 +46,67 @@ For a realistic test of `argyle`'s performance, I use an Illumina BeadStudio dat
 
 Testing on my Mac Pro desktop (OS X 10.6.8.10K549, 2x2.26 GHz quad-core Xeon, 24 GB DDR3 RAM) under `R` 3.1.3:
 
+    #> Loading argyle
+    #> Loading required package: data.table
+    #> Loading required package: digest
+    #> Loading required package: preprocessCore
+    #> Loading required package: reshape2
+    #> Loading required package: plyr
+
 ``` {.r}
 system.time( geno <- read.beadstudio("", snps, "./data/MM_sample") )
+#> Reading sample manifest from < ./data/MM_sample/Sample_Map.zip > ...
+#> Reading genotypes and intensities from < ./data/MM_sample/FinalReport.zip > ...
+#> 
+Read 0.0% of 7469568 rows
+Read 18.6% of 7469568 rows
+Read 37.8% of 7469568 rows
+Read 55.8% of 7469568 rows
+Read 73.5% of 7469568 rows
+Read 91.6% of 7469568 rows
+Read 7469568 rows and 11 (of 11) columns from 0.478 GB file in 00:00:09
+#> Constructing genotype matrix...
+#> Constructing intensity matrices...
+#>   77725 sites x 96 samples
+#> Done.
+#>    user  system elapsed 
+#>  25.437   2.732  28.793
 
 summary(geno)
+#> --- geno ---
+#> A genotypes object with 77725 sites x 96 samples
+#> Allele encoding: native 
+#> Intensity data: yes (raw) 
+#> Sample metadata: yes ( 0 male / 0 female / 96 unknown )
+#> Filters set: 0 sites / 0 samples 
+#> File source: /Users/apm/Dropbox/pmdvlab/argyle/data/MM_sample (on 2015-05-17 21:40:19 )
+#> Checksum: 5dec3557df628860ca53c7192faa838f
 
 print(object.size(geno), units = "Mb")
+#> 202.1 Mb
 
 sessionInfo()
+#> R version 3.1.2 (2014-10-31)
+#> Platform: x86_64-apple-darwin10.8.0 (64-bit)
+#> 
+#> locale:
+#> [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+#> 
+#> attached base packages:
+#> [1] stats     graphics  grDevices utils     datasets  methods   base     
+#> 
+#> other attached packages:
+#> [1] argyle_0.1            plyr_1.8.1            reshape2_1.4         
+#> [4] preprocessCore_1.28.0 digest_0.6.4          data.table_1.9.4     
+#> [7] devtools_1.6.1       
+#> 
+#> loaded via a namespace (and not attached):
+#>  [1] chron_2.3-45     evaluate_0.5.5   formatR_1.0      htmltools_0.2.6 
+#>  [5] knitr_1.8        Rcpp_0.11.3      rmarkdown_0.3.10 stringr_0.6.2   
+#>  [9] tools_3.1.2      yaml_2.1.13
 ```
 
-The final object is format(object.size(geno), units = 'Mb'), and is completely "self-contained" in that sample and marker metadata are stored alongside the genotypes and hybridization intensities. It is worth noting that if the input files were decompressed they would occupy about 500 MB on disk.
+The final object is 202.1 Mb, and is completely "self-contained" in that sample and marker metadata are stored alongside the genotypes and hybridization intensities. It is worth noting that if the input files were decompressed they would occupy about 500 MB on disk.
 
 Usage
 -----
