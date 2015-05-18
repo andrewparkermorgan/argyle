@@ -272,7 +272,7 @@ The running time of `read.beadstudio()` for a realistic dataset (say $80,000$ ma
 
 ```{r, eval=FALSE}
 data(snps) # the marker map
-geno <- read.beadstudio(prefix = "", snps, in.path = "path/to/folder")
+geno <- read.beadstudio(prefix = "", snps, in.path = "path/to/containing/folder")
 ```
 
 ## From `PLINK` a fileset
@@ -309,7 +309,7 @@ ex <- run.qc.checks(ex)
 ```
 
 Use `qcplot()` to generate the default QC plots.  (If `run.qc.checks()` had not been run already, it would be automatically called here.)
-```{r}
+```{r, warning=FALSE}
 qcplot(ex)
 ```
 
@@ -323,13 +323,13 @@ xtabs(~ predicted + nominal, data = sexing)
 There is perfect concordance between the nominal and inferred sex of these samples.
 
 Suppose we expected all samples to be mostly homozygous: we could supply the argument `max.H` to `run.qc.checks()` to flag all samples with greater than that threshold number of heterozygous calls.  Flagged samples are now shown in dark red in the upper panel of the QC plot.
-```{r}
+```{r, warning=FALSE}
 ex <- run.qc.checks(ex, max.H = 2000)
 qcplot(ex)
 ```
 
 After removing failed samples we can identify low-performing markers.  A low-performing marker is one with (1) high rate of missingness; (2) low or zero minor-allele frequency in the population of interest; or (3) higher-than-expected heterozygosity given its minor-allele frequencies.  (The Illumina genotype-caller is prone to misclassifying no-calls as heterozygous calls.)  The `freqplot()` function generates a graphical summary of call frequencies at markers falling below defined thresholds.  A text summary is written to the console.
-```{r, warning=FALSE}
+```{r, warning=FALSE, fig.width = 6, fig.height = 3.5}
 ## plot low-performing markers
 freqplot(subset(ex, chr != "chrY"), max.N = 0.2, max.H = 0.5, min.maf = 0.1)
 ```
@@ -345,15 +345,15 @@ The B-allele frequency is not, in fact, anything to do with a true allele freque
 Technical artefacts at the hybridization or scanning steps can introduce bias in BAF and LRR. The function `argyle::tQN()` (re-)implements a normalization procedure described in [@Staaf2008], using code borrowed from the `CLASP` package [@Didion2014].  Briefly, quantile normalization (see [@Bolstad2003]) is applied to the array-wide $x$ and $y$ intensities per sample to account for systematic differences in signal intensity from the two fluorophores used in the Infinium chemistry.  Relative differences between the pre- and post-normalization intensities are subject to a pre-specified threshold (by default, $1.5$).  Then BAF and LRR are computed using a matrix of (*AA*, *AB*, *BB*) reference cluster centroids.
 
 The tQN procedure is somewhat time-consuming; for the purposes of this vignette we demonstrate it on a single sample (an F1 offspring of a cross between the inbred mouse strains A/J and NOD/ShiLtJ.)  The `clusters` object contains reference cluster centroids for the GigaMUGA array.
-```{r, echo=FALSE, eval=FALSE}
+```{r, echo=FALSE, eval=TRUE}
 load("~/Dropbox/GigaMUGA_design/annotation/control.clusters.Rdata")
 ```
-```{r, warning=FALSE, eval=FALSE}
+```{r, warning=FALSE, eval=TRUE}
 ex.norm <- tQN(ex[ markers(ex)$chr != "chrY","AD_15423_F" ], clusters = clusters)
 ```
 
 Use the function `bafplot()` to see the result, with smoothed fits superposed in red.
-```{r, eval=FALSE}
+```{r, eval=TRUE, warning=FALSE, fig.width = 6, fig.height = 3.5}
 bafplot(ex.norm, "AD_15423_F")
 ```
 
@@ -455,7 +455,7 @@ plot(pc, screeplot = FALSE) +
 The PCA reveals the expected differentiation between the three mouse subspecies: *Mus musculus domesticus*, *M. m. musculus* and *M. m. castaneus.*
 
 We could also, for example, inspect the distribution of minor-allele frequencies within each subspecies by wrapping the function `maf()` in a call to `genoapply()`.
-```{r}
+```{r, fig.width = 5, fig.height = 3}
 wild <- recode(wild, "relative")
 mafs.by.ss <- genoapply(wild, 2, .(fid), maf)
 
@@ -471,7 +471,7 @@ fid.cols <- scales::muted(c("blue","red","green"))
 ggplot(mafs.m) +
 	geom_freqpoly(aes(x = value, colour = variable), binwidth = 0.1) +
 	scale_colour_manual(values = fid.cols) +
-	theme_classic() +
+	theme_classic(base_size = 9) +
 	xlab("\nminor-allele frequency")
 ```
 
