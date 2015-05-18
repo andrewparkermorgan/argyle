@@ -3,10 +3,10 @@
 
 
 
-argyle
-======
+<img src="figs/argyle.png" alt="argyle logo" height=50 /> argyle
+================================================================
 
-**An R package for GenotYpes from ILlumina Et al.**. Utilities for import, QC and (some) analysis of genotyping and hybridization-intensity data from Illumina Infinium arrays using `R`.
+**An R package for GenotYpes from ILlumina Et al.** Utilities for import, QC and (some) analysis of genotyping and hybridization-intensity data from Illumina Infinium arrays using `R`.
 
 Dependencies
 ------------

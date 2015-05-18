@@ -33,6 +33,9 @@
 ehthumbs.db
 Thumbs.db
 
+# Image sources
+*.ai
+
 # R-generated stuff
 .Rapp.*
 .Rhistory
