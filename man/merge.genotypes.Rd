@@ -4,7 +4,8 @@
 \alias{merge.genotypes}
 \title{Merge two \code{genotypes} objects which share markers}
 \usage{
-\method{merge}{genotypes}(a, b, join = c("inner", "left"), ...)
+\method{merge}{genotypes}(a, b, join = c("inner", "left"),
+  check.alleles = FALSE, ...)
 }
 \arguments{
 \item{a}{a \code{genotypes} object}
@@ -12,7 +13,9 @@
 \item{b}{another \code{genotypes} object}
 
 \item{join}{what sort of join to perform: at present, only \code{"inner"} (intersection of \code{a}'s and \code{b}'s
-    marker sets) is supported}
+marker sets) is supported}
+
+\item{check.alleles}{logical; if \code{TRUE}, attempt to verify compatibility of marker maps and fix allele or strand swaps}
 }
 \value{
 a \code{genotypes} object containing all samples in \code{a} and \code{b}, at all markers shared

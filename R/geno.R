@@ -423,6 +423,7 @@ rbind.genotypes <- function(a, b, ...) {
 #' @param b another \code{genotypes} object
 #' @param join what sort of join to perform: at present, only \code{"inner"} (intersection of \code{a}'s and \code{b}'s
 #' 	marker sets) is supported
+#' @param check.alleles logical; if \code{TRUE}, attempt to verify compatibility of marker maps and fix allele or strand swaps
 #' 
 #' @return a \code{genotypes} object containing all samples in \code{a} and \code{b}, at all markers shared
 #' 	by \code{a} and \code{b}
@@ -437,7 +438,7 @@ rbind.genotypes <- function(a, b, ...) {
 #' 	filtered in either or both input datasets.
 #' 
 #' @export
-merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
+merge.genotypes <- function(a, b, join = c("inner","left"), check.alleles = FALSE, ...) {
 	
 	if (!inherits(b, "genotypes"))
 		stop("Only willing to merge two objects of class 'genotypes.'")
@@ -465,7 +466,36 @@ merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
 	
 	join <- match.arg(join)
 	new.o <- keep[ order(o[keep]) ]
+	
 	if (join == "inner") {
+		
+		## check for strand/allele swaps
+		if (check.alleles) {
+			
+			a <- a[ new.o, ]
+			b <- b[ new.o, ]
+			
+			message("Checking for allele/strand swaps...")
+			newmaps <- .detect.strand.swaps( attr(b, "map")[ new.o, ], attr(a, "map")[ new.o, ] )
+			newmaps[[1]] <- subset(newmaps[[1]], !is.na(A1) & !is.na(A2))
+			newmaps[[2]] <- subset(newmaps[[2]], !is.na(A1) & !is.na(A2))
+			nn <- rownames(newmaps[[1]])
+			new.o <- keep[ order(o[nn]) ]
+			
+			a <- a[ new.o, ]
+			b <- b[ new.o, ]
+			
+			if (!is.numeric(newmaps)) {
+				a <- recode.genotypes(a, "01")
+				b <- recode.genotypes(b, "01")
+				attr(a, "map") <- newmaps[[2]][ new.o, ]
+				attr(b, "map") <- newmaps[[1]][ new.o, ]
+			}
+			else {
+				stop("Maps are incompatible at marker", attr(a, "map")$marker[newmaps])
+			}
+		}
+		
 		## keep intersection of marker sets
 		rez <- cbind( unclass(a)[ new.o, ],
 					  unclass(b)[ new.o, ] )
@@ -491,7 +521,7 @@ merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
 	
 	## merge markers and family information
 	if (!is.null(attr(a, "map")))
-		attr(rez, "map") <- attr(a, "map")[ keep[ order(o[keep]) ], ]
+		attr(rez, "map") <- attr(a, "map")[ new.o, ]
 	if (!is.null(attr(a, "ped")) & !is.null(attr(b, "ped")))
 		attr(rez, "ped") <- rbind(attr(a, "ped"), attr(b, "ped"))
 	
@@ -506,6 +536,77 @@ merge.genotypes <- function(a, b, join = c("inner","left"), ...) {
 	}
 	
 	return(rez)
+	
+}
+
+## try to reconcile alleles in two maps with identical markers
+.detect.strand.swaps <- function(map1, map2, ...) {
+	
+	rc <- function(x) {
+		bases <- c(A="T",C="G",T="A",G="C")
+		if (is.na(bases[x]))
+			return("N")
+		else
+			return(bases[x])
+	}
+	
+	ii <- which(map1$A1 != map2$A1 | map1$A2 != map2$A2)
+	message("\tinvestigating ", length(ii), " potential swaps...")
+	
+	map1$A1 <- toupper(as.character(map1$A1))
+	map1$A2 <- toupper(as.character(map1$A2))
+	map2$A1 <- toupper(as.character(map2$A1))
+	map2$A2 <- toupper(as.character(map2$A2))
+	
+	for (i in ii) {
+		cat(rownames(map1)[i], "\n")
+		if (map1$A1[i] == map2$A1[i]) {
+			if(map1$A2[i] == map2$A2[i]) {
+				## matching alleles
+				next
+			}
+			else {
+				map1$A2[i] <- NA
+			}
+		}
+		else if (rc(map1$A1[i]) == map2$A1[i]){
+			if (rc(map1$A2[i]) == map2$A1[i]) {
+				## matching allele order; opposite strand
+				map1$A1[i] <- rc(map1$A1[i])
+				map1$A2[i] <- rc(map1$A2[i])
+			}
+			else {
+				map1$A2[i] <- NA	
+			}
+		}
+		else if (map1$A1[i] == map2$A2[i]) {
+			if (map1$A2[i] == map2$A1[i]) {
+				## different allele order; same strand
+				tmp <- map1$A1[i]
+				map1$A1[i] <- map1$A2[i]
+				map1$A2[i] <- tmp
+			}
+			else {
+				map1$A2[i] <- NA	
+			}
+		}
+		else if (rc(map1$A1[i]) == map2$A2[i]) {
+			if (rc(map1$A2[i]) == map2$A1[i]) {
+				## different allele order; opposite strand
+				tmp <- rc(map1$A1[i])
+				map1$A1[i] <- rc(map1$A2[i])
+				map1$A2[i] <- tmp
+			}
+			else {
+				map1$A2[i] <- NA
+			}
+		}
+		else {
+			map1$A2[i] <- NA
+		}
+	}
+
+	return(list(map1, map2))
 	
 }
 

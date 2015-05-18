@@ -4,8 +4,8 @@
 \alias{plot.pca.result}
 \title{Auto-plotting of a PCA result}
 \usage{
-plot.pca.result(pc, K = c(1, 2), screeplot = FALSE, show = c("points",
-  "labels"), theme.fn = ggplot2::theme_bw, ...)
+\method{plot}{pca.result}(pc, K = c(1, 2), screeplot = FALSE,
+  show = c("points", "labels"), theme.fn = ggplot2::theme_bw, ...)
 }
 \arguments{
 \item{pc}{a \code{pca.result} object}
