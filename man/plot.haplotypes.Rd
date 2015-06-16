@@ -12,13 +12,14 @@
 \item{space}{numeric scalar; how much buffer to add between adjacent chromosomes}
 }
 \value{
-a \code{ggplot} object with haplotype mosaics arranged in a grid layout
+A \code{ggplot} object with haplotype mosaics arranged in a grid layout
 }
 \description{
 Plot the results of haplotype reconstruction
 }
 \details{
 The input dataframe is assumed to have the following columns: \code{.id}, \code{chr},
-\code{start}, \code{end}, \code{hap1} and \code{hap2}.
+\code{start}, \code{end}, \code{hap1} and \code{hap2}.  Since the result is a \code{ggplot},
+it can be futher decorated/modified at will.
 }
 

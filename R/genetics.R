@@ -376,3 +376,181 @@ ld <- function(gty, force = FALSE, ...) {
 	
 }
 
+#' Compute rate of Mendelian inconsistency between an individual and possible mother-father pairs.
+#' 
+#' @param gty a \code{genotypes} object containing exactly one target individual
+#' @param parents a \code{genotypes} object containing possible parents for the target individual
+#' @param verbose logical; if \code{TRUE}, send progress messages to terminal
+#' 
+#' @return a dataframe of mother-father pairs and corresponding Mendel distances
+#' 
+#' @details Define the "Mendel distance" between an individual and two possible parents as the mean
+#' 	rate of Mendelian inconsistencies -- that is, markers at which zero alleles are shared IBS between
+#' 	one parent and one offspring -- across the pairs (father, offspring) and (mother, offspring). Given
+#' 	a set of possible parents (in \code{parents}), this function creates all possible male-female pairs
+#' 	and computes the Mendel distance between each pair and a single target individual (in \code{gty}).
+#' 	
+#' 	If the sex of the target individual is non-missing, the sex chromosomes will be handled specially:
+#' 	for males, chrY is compared to the father's chrY and chrX to the mother's chrX; for females, chrX
+#' 	is compared to both parents and chrY is ignored.  If the sex of the target individual is missing,
+#' 	the sex chromosomes will be ignored, and mitochondrial markers are always ignored because they are
+#' 	so few in number and tend to be homoplasic.
+#' 
+#' @seealso \code{\link{guess.parents}}
+#' 
+#' @export
+mendel.distance <- function(gty, parents, verbose = TRUE, ...) {
+	
+	if (!inherits(gty, "genotypes") || !inherits(parents, "genotypes"))
+		stop("Both input (gty) and possible parents (parents) must be of class 'genotypes'.")
+	
+	if (attr(gty, "alleles") != attr(parents, "alleles") || !is.numeric(gty))
+		stop("Alleles should be in same numeric encoding in unknown (gty) and parents (parents).")
+	
+	if (ncol(gty) > 1)
+		stop("Can only handle one sample of unknown parentage at a time.")
+	
+	## extract parents of each sex
+	moms <- parents[ ,attr(parents, "ped")$sex == 2 ]
+	dads <- parents[ ,attr(parents, "ped")$sex == 1 ]
+	if (nrow(moms) < 1 || nrow(dads) < 1)
+		stop("Not enough parents.")
+	
+	## keep only markers shared between parents and offspring...
+	keep <- intersect(rownames(gty), rownames(moms))
+	gty <- gty[ keep, ]
+	moms <- moms[ keep, ]
+	dads <- dads[ keep, ]
+	
+	## generate possible pairs
+	pairs <- as.matrix(expand.grid( colnames(moms), colnames(dads), stringsAsFactors = FALSE ))
+	if (verbose)
+		message("Investigating ", nrow(pairs), " possible mother-father pairs...")
+	
+	## get chromosomes by inheritance pattern
+	autos <- autosomes(gty[,1])
+	chrx <- xchrom(gty[,1])
+	chry <- ychrom(gty[,1])
+	
+	## weighting factors
+	A <- nrow(autos)
+	X <- nrow(chrx)
+	Y <- nrow(chry)
+	
+	## autosomal distances
+	dm <- apply(autosomes(moms), 2, ibs0, autos)
+	dd <- apply(autosomes(dads), 2, ibs0, autos)
+	
+	if (sex(gty) == 1) {
+		## males: chrX distances to mom only, plus chrY to dad
+		dm <- (A/(A+X))*dm + (X/(A+X))*apply(xchrom(moms), 2, ibs0, chrx)
+		dd <- (A/(A+Y))*dd + (Y/(A+Y))*apply(ychrom(dads), 2, ibs0, chry) 
+	}
+	else if (sex(gty) == 2) {
+		## females: chrX distances to both parents
+		dm <- (A/(A+X))*dm + (X/(A+X))*apply(xchrom(moms), 2, ibs0, chrx)
+		dd <- (A/(A+X))*dd + (X/(A+X))*apply(xchrom(dads), 2, ibs0, chrx)
+	}
+	
+	scores <- (dm[ pairs[,1] ] + dd[ pairs[,2] ])/2
+	return( data.frame(mom = pairs[,1], dad = pairs[,2], score = scores) )
+	
+}
+
+#' @export
+ibs0 <- function(x,y) sum(abs(x-y) == 2, na.rm = TRUE)/sum(!is.na(x+y))
+
+ibs0.fancy <- function(x, y, ...) {
+	
+	if (!all(inherits(x, "genotypes"), inherits(y, "genotypes")))
+		stop("Both input objects must be of class 'genotypes'.")
+	
+	## make sure only one sample in each object
+	x <- x[,1]
+	y <- y[,1]
+	
+	## get sexes
+	sx <- sex(x)
+	sy <- sex(y)
+	
+	## autosomal genotypes
+	xa <- autosomes(x)
+	ya <- autosomes(y)
+	
+	## chrX genotypes
+	xx <- x[ grepl("X", attr(x, "map")$chr), ]
+	yx <- y[ grepl("X", attr(x, "map")$chr), ]
+	
+	## chrY genotypes
+	xy <- x[ grepl("Y", attr(x, "map")$chr), ]
+	yy <- y[ grepl("Y", attr(x, "map")$chr), ]
+	
+	## chrM genotypes
+	xm <- x[ grepl("M", attr(x, "map")$chr), ]
+	ym <- y[ grepl("M", attr(x, "map")$chr), ]
+	
+	## autosomal distance
+	da <- sum(abs(xa-ya) == 2, na.rm = TRUE)
+	na <- sum(!is.na(xa+ya))
+	
+	## sex chr distances
+	dx <- sum(abs(xx-yx))
+	nx <- sum(!is.na(xx+yx))
+	if (sx == 1 && sy == 1) {
+		## only check chrY if both samples male
+		dy <- sum(abs(xy-yy) == 2, na.rm = TRUE)
+		ny <- sum(!is.na(xy+yy))
+	}
+	else {
+		dy <- 0
+		ny <- 0
+	}
+	
+	## mitochondria distances
+	if (sx == 2 && sy == 2) {
+		## only check mitochondria if both samples female
+		dm <- sum(abs(xm-ym) == 2, na.rm = TRUE)
+		nm <- sum(!is.na(xm+ym))
+	}
+	else {
+		dm <- 0
+		nm <- 0
+	}
+	
+	return( (dx+dy+dm+da)/(nx+ny+nm+na) )
+
+}
+
+#' Attempt to guess the mother-father pair corresponding to offspring
+#' 
+#' @param gty a \code{genotypes} object containing target individuals
+#' @param parents a \code{genotypes} object containing possible parents for the target individuals
+#' 
+#' @return the sample metedata from the input object, with \code{mom} and \code{dad} values replaced
+#' 	by the function's best guesses
+#' 
+#' @details This wrapper calls \code{mendel.distance()} for all mother-father pairs available from
+#' 	\code{parents} and all offspring in \code{gty}, and for each offspring reports the mother-father
+#' 	pair with the smallest Mendel distance.  No guarantees are made with respect to near-misses.
+#' 
+#' @export
+guess.parents <- function(gty, parents, ...) {
+	
+	if (!inherits(gty, "genotypes"))
+		stop("Please supply an object of class 'genotypes'.")
+	
+	message("Attempting to guess parents of ", ncol(gty), " samples.")
+	
+	fam <- attr(gty, "ped")
+	for (i in colnames(gty)) {
+		message("\t... ", i)
+		scores <- mendel.distance(gty[,i], parents, verbose = FALSE)
+		guess <- scores[ which.min(scores$score),c("mom","dad") ]
+		fam[ i,"mom" ] <- guess[1,"mom"]
+		fam[ i,"dad" ] <- guess[1,"dad"]
+	}
+	
+	message("Done.\n")
+	return(fam)
+	
+}

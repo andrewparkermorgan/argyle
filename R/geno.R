@@ -116,6 +116,15 @@ summary.genotypes <- function(gty, ...) {
 }
 
 #' @export
+sex.genotypes <- function(gty) {
+	if (.has.valid.ped(gty))
+		return( setNames( attr(gty, "ped")$sex, colnames(gty) ) )
+	else
+		return( setNames( rep(0, ncol(gty)), colnames(gty) ) )
+}
+sex <- function(x) UseMethod("sex")
+
+#' @export
 print.genotypes <- function(gty, ...) {
 	summary.genotypes(gty)
 	
@@ -366,6 +375,38 @@ autosomes <- function(gty, ...) {
 		stop("Please supply an object of class 'genotypes' with valid marker map.")
 
 	gty[ !grepl("[YXMPUu]", attr(gty, "map")$chr) & grepl("[0-9]+", attr(gty, "map")$chr), ]
+	
+}
+
+#' Shortcut for grabbing just chrX
+#' 
+#' @param gty a \code{genotypes} object
+#' 
+#' @return a copy of \code{gty} with only chrX
+#'
+#' @export
+xchrom <- function(gty, ...) {
+	
+	if (!(inherits(gty, "genotypes") && .has.valid.map(gty)))
+		stop("Please supply an object of class 'genotypes' with valid marker map.")
+	
+	gty[ grepl("[X]", attr(gty, "map")$chr), ]
+	
+}
+
+#' Shortcut for grabbing just chrY
+#' 
+#' @param gty a \code{genotypes} object
+#' 
+#' @return a copy of \code{gty} with only chrY
+#'
+#' @export
+ychrom <- function(gty, ...) {
+	
+	if (!(inherits(gty, "genotypes") && .has.valid.map(gty)))
+		stop("Please supply an object of class 'genotypes' with valid marker map.")
+	
+	gty[ grepl("[Y]", attr(gty, "map")$chr), ]
 	
 }
 
