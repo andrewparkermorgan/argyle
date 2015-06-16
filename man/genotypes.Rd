@@ -23,9 +23,9 @@ is a matrix with same dimensions and same row/column names as \code{G}}
 
 \item{normalized}{logical; have intensities been normalized?}
 
-\item{filter.sites}{logical vector indicating which markers to flag as low-quality}
+\item{filter.sites}{character vector of filters attached to markers}
 
-\item{filter.samples}{logical vector indicating which samples to flag as low-quality}
+\item{filter.samples}{character vector of filters attached to samples}
 
 \item{check}{logical; if \code{TRUE}, do sanity checks on input}
 }
@@ -98,5 +98,13 @@ the first 6 of which are for PLINK compatibility, in the following order.
 }
 Rownames must be present and must match the contents of column "iid".  The pedigree is auto-generated
 when missing, and in that case every sample is assigned an "fid" identical to its "iid".
+}
+
+\section{Filters}{
+
+The \code{filter.*} fields are character vectors describing the filter(s), if any, with which to mark markers
+or samples.  An empy string (\code{""}) indicates a "passing" marker or sample.  Filters are appended to the
+filter string as single characters: \code{H} for excess heterozygosity; \code{N} for excess no-call rate;
+\code{I} (for sampes only) for abnormal intensity pattern; \code{F} (for markers only) for abberrant allele frequency.
 }
 

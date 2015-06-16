@@ -241,7 +241,7 @@ informative <- function(gty, between, ...) {
 		stop("Please supply an object of class 'genotypes'.")
 	
 	#message("Calculating consensus genotypes...")
-	cons <- do.call("cbind", genoapply(gty, between, consensus, ..., strip = TRUE))
+	cons <- do.call("cbind", genoapply(gty, 2, between, consensus, ..., strip = TRUE))
 	
 	#message("Iterating over groups...")
 	seg <- segregating(cons, allow.het = FALSE, ...)
@@ -294,6 +294,28 @@ predict.f1 <- function(gty, na.rm = FALSE, ...) {
 		het <- apply(gty, 1, function(x) any(x == 1, na.rm = na.rm))
 		f1[het] <- NA
 		rez[,i] <- f1
+	}
+	
+	rez <- genotypes(rez, map = map, alleles = "01")
+	return(rez)
+	
+}
+
+#' @export
+pairwise.diffs <- function(gty, ...) {
+	
+	pairs <- combn(ncol(gty), 2)
+	pnames <- paste(colnames(gty)[ pairs[1,] ], colnames(gty)[ pairs[2,] ],
+					 sep = "::")
+	rez <- matrix(NA, ncol = ncol(pairs), nrow = nrow(gty),
+				  dimnames = list(rownames(gty), pnames))
+	
+	map <- attr(gty, "map")
+	gty <- .copy.matrix.noattr(gty)
+	message(paste("Calculating pairwise differences for", ncol(pairs), "pairs of parents..."))
+	for (i in seq_len(ncol(pairs))) {
+		is.diff <- as.integer(gty[ pairs[1,i] ] == gty[ pairs[2,i] ])
+		rez[,i] <- is.diff
 	}
 	
 	rez <- genotypes(rez, map = map, alleles = "01")

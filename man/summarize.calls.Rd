@@ -23,6 +23,6 @@ Any metadata associated with markers or samples is *not* merged into the final r
 	to preserve parallelism between rows of the result and of the parent object.
 }
 \seealso{
-\code{\link{summarize.intensity}}, \code{\link{intensity.vs.ref}}, \code{\link{run.qc.checks}}
+\code{\link{summarize.intensity}}, \code{\link{intensity.vs.ref}}, \code{\link{run.sample.qc}}
 }
 

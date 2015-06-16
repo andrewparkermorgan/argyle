@@ -12,8 +12,8 @@
 }
 \value{
 list of length 2 with elements \code{sites} and \code{samples} which should run parallel to the
-	row and columns, respectively, of the genotypes matrix in the input.  If fitlers are absent, returns logical vectors
-	with appropriate dimensions which are uniformly \code{FALSE}.  These vectors have names matching the row
+	row and columns, respectively, of the genotypes matrix in the input.  If fitlers are absent, returns vector
+	with appropriate dimensions in which all elements are empty.  These vectors have names matching the row
 	and column names of the genotypes matrix.
 }
 \description{

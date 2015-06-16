@@ -4,12 +4,14 @@
 \alias{ld.plink}
 \title{Compute pairwise LD between markers with PLINK}
 \usage{
-ld.plink(prefix, index.snp = NULL, markers = NULL, chr = NULL,
-  from = NULL, to = NULL, window = NULL, window.r2 = 0, flags = "",
-  ...)
+ld.plink(prefix, dprime = FALSE, index.snp = NULL, markers = NULL,
+  chr = NULL, from = NULL, to = NULL, window = NULL, window.r2 = 0,
+  flags = "", ...)
 }
 \arguments{
 \item{prefix}{a pointer to a PLINK fileset (of class \code{plink})}
+
+\item{dprime}{logical; if \code{TRUE}, compute Lewontin D-prime instead of R2}
 
 \item{index.snp}{name of the marker used to anchor the calculation}
 

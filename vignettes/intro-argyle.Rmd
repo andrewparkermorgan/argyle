@@ -57,8 +57,8 @@ The central datastructure in the `argyle` package is the `genotypes` object.  It
 	* `sex` -- sex; 1 = male, 2 = female, 0 = missing
 	* `pheno` -- phenotype; 0 or -9 = missing, 1 = "control", 2 = "case"; or any floating-point value for a quantitative trait
 * `attr(,"alleles")` -- allele encoding (see **Allele encoding schemes** later in this vignette), one of `"native"`, `"01"`, `"relative"` or `"parent"`.
-* `attr(,"filter.sites")` -- logical vector of length equal to number of *rows* of genotype matrix, with `TRUE` values flagging suspicious markers
-* `attr(,"filter.samples")` -- logical vector of length equal to number of *columns* of genotype matrix, with `TRUE` values flagging suspicious samples
+* `attr(,"filter.sites")` -- character vector of length equal to number of *rows* of genotype matrix, with non-blank values flagging suspicious markers
+* `attr(,"filter.samples")` -- character vector of length equal to number of *columns* of genotype matrix, with non-blank values flagging suspicious samples
 
 When hybridization intensity data are included, the object has several additional attributes.
 
@@ -143,17 +143,16 @@ identical(x,y)
 
 > **Technical note:** A side effect of overloading the `[` operator for `genotypes` is that any operation which repeatedly slices a matrix (including functions in the `apply` family) will incur the extra cost of slicing the marker map, sample metadata, intensity matrices, etc. on every pass.  If this is a problem, use the unexported `argyle:::.copy.matrix.noattr()` function to make a copy of the genotypes matrix which preseves row and column names but dumps all the other attributes.
 
-The `argyle` package borrows its notion of a "filter" from the [VCF format](http://www.1000genomes.org/wiki/analysis/variant-call-format): null (in our case `FALSE`) unless there is evidence for low quality.  Unlike VCF, which allows filters for sites (in our case markers) only, `argyle` defines filters for both sites and samples.  A marker (site) or sample can be marked as suspicious by setting its entry to `TRUE` in `attr(,"filter.sites")` or `attr(,"filter.samples")` respectively.  Let us check how many filters are set in the example dataset.
+The `argyle` package borrows its notion of a "filter" from the [VCF format](http://www.1000genomes.org/wiki/analysis/variant-call-format): blank (in our case `""`) unless there is evidence for low quality.  Unlike VCF, which allows filters for sites (in our case markers) only, `argyle` defines filters for both sites and samples.  A marker (site) or sample can be marked as suspicious by adding single-character codes to its entry in `attr(,"filter.sites")` or `attr(,"filter.samples")` respectively.  Let us check how many filters are set in the example dataset.
 ```{r}
 ## see quality filters (like VCF's 'FILTER' field)
-fl <- filters(ex)
-sapply(fl, sum)
+summarize.filters(ex)
 ```
 
 Set filters for the first $10$ sites and check them.
 ```{r}
-attr(ex, "filter.sites")[1:10] <- TRUE
-sapply(filters(ex), sum)
+attr(ex, "filter.sites")[1:10] <- "N"
+summarize.filters(ex)
 ```
 
 To drop all filtered sites and/or samples, use `apply.filters()`.  The default behavior is to apply filters to both sites and samples (`apply.to = "both"`).
@@ -161,7 +160,7 @@ To drop all filtered sites and/or samples, use `apply.filters()`.  The default b
 fl <- apply.filters(ex, "both")
 summary(fl)
 ```
-After application of filters, all filters in the resulting `genotypes` are (trivially) set to `FALSE`.
+After application of filters, all filters in the resulting `genotypes` are (trivially) set to blanks.
 
 ## Allele encoding
 The `argyle` package supports both character and numeric representation of genotypes.  Character genotypes (the `"native"` encoding) are expected to take the values `ACGTHN`, where `H` represents a heterozygous call and `N` a no-call (ie. missing data).  Since all markers are expected to be biallelic SNPs, character genotypes can be converted to a computationally more convenient numeric encoding in one of two ways.
@@ -302,13 +301,13 @@ For sample-wise QC, we recommend checking (at least) the following three metrics
 * **Intensity distribution.**  Failed arrays have lower mean intensity and greater variance in intensity across probes than successful arrays. Comparing the distribution of total intensity ($d = \sqrt{x^2 + y^2}$; see **Introduction**) by sample within a batch, and between batches when multiple batches are available, can reveal failed samples.
 * **Sex-chromosome concordance.**  Nominally male samples with an excess of heterozygous calls on the X-chromosome, or female samples with nonmissing calls on the Y-chromosome, represent potential failures or sample swaps.
 
-We will demonstrate these procedures on the example dataset in `ex`, which includes intensity data.  To run sample-wise QC checks, use `run.qc.checks()`, which returns a copy of the input with a new attribute `attr(,"qc")` containing the results.
+We will demonstrate these procedures on the example dataset in `ex`, which includes intensity data.  To run sample-wise QC checks, use `run.sample.qc()`, which returns a copy of the input with a new attribute `attr(,"qc")` containing the results.
 ```{r}
 data(ex)
-ex <- run.qc.checks(ex)
+ex <- run.sample.qc(ex)
 ```
 
-Use `qcplot()` to generate the default QC plots.  (If `run.qc.checks()` had not been run already, it would be automatically called here.)
+Use `qcplot()` to generate the default QC plots.  (If `run.sample.qc()` had not been run already, it would be automatically called here.)
 ```{r, warning=FALSE}
 qcplot(ex)
 ```
@@ -322,11 +321,22 @@ xtabs(~ predicted + nominal, data = sexing)
 ```
 There is perfect concordance between the nominal and inferred sex of these samples.
 
-Suppose we expected all samples to be mostly homozygous: we could supply the argument `max.H` to `run.qc.checks()` to flag all samples with greater than that threshold number of heterozygous calls.  Flagged samples are now shown in dark red in the upper panel of the QC plot.
+By default, `run.sample.qc()` does not apply any filters.  In practice it will be useful to flag samples with excess N and H calls using the arguments `max.N` and `max.H` respectively.  While the number of no-calls in our dataset should be approximately constant across samples, the number of heterozygous calls will be very different for inbred samples and outbred samples.  The `argyle` package supports either constant thresholds or group-specific thresholds which are applied based on a sample's `fid` (recall that this is the "family ID" in `attr(,"ped")`).  The snippet below demonstrates the alternative syntax.
 ```{r, warning=FALSE}
-ex <- run.qc.checks(ex, max.H = 2000)
+## apply same 'N' filter to all samples (max.N is a constant)
+## but different 'H' filter to F1 and inbred samples (max.H is a named list)
+ex <- run.sample.qc(ex, max.N = 500, max.H = list(inbred = 100, F1 = 10e3))
 qcplot(ex)
 ```
+
+Single-character flags are used to describe the thresholds failed by a sample or a marker.  The default flags are as follows.
+
+| code | description | samples | markers |
+|------|-------------|:-------:|:-------:|
+| `N` | excess no-calls | **x** | **x** |
+| `H` | excess heterozygosity | **x** | **x** |
+| `I` | aberrant intensity pattern | **x** |  |
+| `F` | aberrant allele frequency |  | **x** |
 
 After removing failed samples we can identify low-performing markers.  A low-performing marker is one with (1) high rate of missingness; (2) low or zero minor-allele frequency in the population of interest; or (3) higher-than-expected heterozygosity given its minor-allele frequencies.  (The Illumina genotype-caller is prone to misclassifying no-calls as heterozygous calls.)  The `freqplot()` function generates a graphical summary of call frequencies at markers falling below defined thresholds.  A text summary is written to the console.
 ```{r, warning=FALSE, fig.width = 6, fig.height = 3.5}
@@ -345,15 +355,15 @@ The B-allele frequency is not, in fact, anything to do with a true allele freque
 Technical artefacts at the hybridization or scanning steps can introduce bias in BAF and LRR. The function `argyle::tQN()` (re-)implements a normalization procedure described in [@Staaf2008], using code borrowed from the `CLASP` package [@Didion2014].  Briefly, quantile normalization (see [@Bolstad2003]) is applied to the array-wide $x$ and $y$ intensities per sample to account for systematic differences in signal intensity from the two fluorophores used in the Infinium chemistry.  Relative differences between the pre- and post-normalization intensities are subject to a pre-specified threshold (by default, $1.5$).  Then BAF and LRR are computed using a matrix of (*AA*, *AB*, *BB*) reference cluster centroids.
 
 The tQN procedure is somewhat time-consuming; for the purposes of this vignette we demonstrate it on a single sample (an F1 offspring of a cross between the inbred mouse strains A/J and NOD/ShiLtJ.)  The `clusters` object contains reference cluster centroids for the GigaMUGA array.
-```{r, echo=FALSE, eval=TRUE}
+```{r, echo=FALSE, eval=FALSE}
 load("~/Dropbox/GigaMUGA_design/annotation/control.clusters.Rdata")
 ```
-```{r, warning=FALSE, eval=TRUE}
+```{r, warning=FALSE, eval=FALSE}
 ex.norm <- tQN(ex[ markers(ex)$chr != "chrY","AD_15423_F" ], clusters = clusters)
 ```
 
 Use the function `bafplot()` to see the result, with smoothed fits superposed in red.
-```{r, eval=TRUE, warning=FALSE, fig.width = 6, fig.height = 3.5}
+```{r, eval=FALSE, warning=FALSE, fig.width = 6, fig.height = 3.5}
 bafplot(ex.norm, "AD_15423_F")
 ```
 
@@ -366,14 +376,15 @@ To demonstrate the use of `argyle` for designing and analysing a laboratory expe
 * which markers are predicted to be segregating between the parents
 * which markers work as predicted (homozygous in the parents, predicted to segregate, heterozygous in the F1)
 
-First, see that `r sum(samples(ex)$fid == "AA")` A/J samples (AA) and `r sum(samples(ex)$fid == "DD")` NOD/ShiLtJ samples (DD), and and `r sum(samples(ex)$fid %in% c("AD","DA"))` corresponding F1 hybrids are present in the sample dataset.
+First, see that `r sum(grepl("^AA", samples(ex)$iid))` A/J samples (AA) and `sum(grepl("^DD", samples(ex)$iid))` NOD/ShiLtJ samples (DD), and and `r sum(grepl("^[AD][AD]", samples(ex)$iid))` corresponding F1 hybrids are present in the sample dataset.
 ```{r}
-xtabs(~ fid, samples(ex))
+xtabs(~ fid, subset(samples(ex), grepl("^[AD][AD]", iid)))
 ```
 
-Before going any further, genotypes must be converted to numeric encoding.
+Before going any further, genotypes must be converted to numeric encoding.  For convenience, we also set the `fid` field to a sample's genotype.
 ```{r}
 ex <- recode(ex, "01")
+attr(ex, "ped")$fid <- substr(samples(ex)$iid, 1, 2)
 ```
 
 The `genoapply()` function is a generalization of `R`'s `apply` family for `genotypes` objects.  Just as `apply(x, 1, ...)` applies a function over the rows of a matrix, `genoapply(x, margin = 1, grp, fn, ...)` applies `fn()` by samples (rows in the genotypes matrix.)  Unlike `apply()`, the `genoapply()` function takes an additional grouping expression `grp` to apply a function by marker (with `margin = 1`) or sample groups (with `margin = 2`) defined by the value of `grp`.  We demonstrate `genoapply()` to compute the consensus genotype of the parental strains in our example cross.  For these analyses we will, of course, ignore the Y-chromosome.

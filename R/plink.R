@@ -211,7 +211,7 @@ unplink.chroms <- function(x, ...) {
 }
 
 ## create a fam-formatted dataframe for plink
-make.fam <- function(ids, fid = NULL, sex = 0, pheno = -9, ...) {
+make.fam <- function(ids, fid = NULL, mom = 0, dad = 0, sex = 0, pheno = -9, ...) {
 	
 	if (is.character(ids)) {
 		resex <- rep(0, length(ids))
@@ -227,13 +227,15 @@ make.fam <- function(ids, fid = NULL, sex = 0, pheno = -9, ...) {
 	
 	pheno[ is.na(pheno) ] <- -9
 	ids <- gsub(" ","", as.character(ids))
+	mom <- gsub(" ","", as.character(mom))
+	dad <- gsub(" ","", as.character(dad))
 	if (is.null(fid))
 		fid <- ids
 	if (length(ids) != length(unique(ids)))
 		warning("IDs are not unique; plink might complain.")
 	
 	fam <- data.frame(fid = fid, iid = ids,
-					  mom = 0, dad = 0, sex = resex, pheno = pheno)
+					  mom = mom, dad = dad, sex = resex, pheno = pheno)
 	rownames(fam) <- as.character(fam$iid)
 	return(fam)
 	
@@ -337,7 +339,7 @@ read.fam <- function(f, pheno.missing = c(0,-9), ...) {
 				stop("Oops -- can't find a plink family file by that name.")
 		}
 	}
-	fam <- read.table(ff, header = FALSE)
+	fam <- read.table(ff, header = FALSE, comment.char = "")
 	colnames(fam) <- c("fid","iid","mom","dad","sex","pheno")
 	rownames(fam) <- as.character(fam$iid)
 	fam$iid <- as.character(fam$iid)
@@ -571,6 +573,79 @@ assoc.plink <- function(prefix, model = c("assoc","linear","logistic"),
 	
 }
 
+#' Perform family-based transmission diseqiulibrium test (TDT) with PLINK
+#' 
+#' @param prefix a pointer to a PLINK fileset (of class \code{plink})
+#' @param perms logical: establish significance thresholds using adaptive permutation, or skip it?
+#' @param geno.missing drop markers with call rate lower than this threshold
+#' @param ind.missing drop samples with call rate lower than this threshold
+#' @param maf drop markers with minor-allele frequency lower than this threhsold
+#' @param hwe drop markers p-value less than this threshold for test of Hardy-Weinbery equilibrium
+#' @param flags additional command-line flags passed directly to PLINK call
+#' 
+#' @return a dataframe with association results, having the following columns:
+#' \itemize{
+#' \item chr
+#' \item pos
+#' \item marker
+#' \item A1 -- reference allele (interpretation depends on dataset)
+#' \item p.value -- p-value for hypothesis test
+#' \item OR -- odds ratio (in case-control context)
+#' \item n -- count of non-missing genotypes at this marker
+#' \item test -- which family of hypothesis test this is
+#' \item p.value.perm -- empirical p-value from permutations, if applicable
+#' }
+#' 
+#' @details Requires a case-control phenotype. See the relevant PLINK documentation for details
+#' 	of the underlying calculations.
+#'
+#' @references
+#' PLINK v1.9: \url{https://www.cog-genomics.org/plink2}
+#' 
+#' Purcell S et al. (2007) PLINK: a toolset for whole-genome association and population-based 
+#' 	linkage analysis. Am J Hum Genet 81(3): 559-575. doi:10.1086/519795.
+#' 
+#' @export
+tdt.plink <- function(prefix, perms = FALSE, geno.missing = 0, ind.missing = 0, maf = 0, hwe = 1,
+						flags = "--keep-allele-order --allow-no-sex --nonfounders", ...) {
+	
+	cmd <- paste("--tdt", flags)
+	if (perms)
+		cmd <- paste(cmd, "--perm")
+	
+	where <- dirname(prefix)
+	if (geno.missing > 0)
+		cmd <- paste(cmd, "--geno", geno.missing)
+	if (ind.missing > 0)
+		cmd <- paste(cmd, "--mind", ind.missing)
+	if (maf > 0)
+		cmd <- paste(cmd, "--maf", maf)
+	if (hwe < 1)
+		cmd <- paste(cmd, "--hwe", hwe, "midp include-nonctrl")
+	
+	expect <- list(gsub("^\\.", "", "tdt"))
+	if (perms)
+		expect <- c(expect, paste0(expect[[1]], ".perm"))
+	success <- .plink.command(prefix, cmd, expect, ...)
+	if (is.character(success)) {
+		.df <- read.table(paste0(success, ".tdt"), header = TRUE)
+		df <- with(.df, data.frame(chr = CHR, pos = BP, marker = SNP, A1 = A1,
+									   p.value = P_COM, OR = OR))
+		df$chr <- unplink.chroms(df$chr)
+		if (perms) {
+			pdf <- read.table(paste0(success, paste0("tdt", ".perm")), header = TRUE)
+			rownames(pdf) <- as.character(pdf$SNP)
+			df$p.value.perm <- NA
+			df$p.value.perm <- pdf[ as.character(df$marker),"EMP1" ]
+		}
+		return(df)
+	}
+	else {
+		stop("Association-mapping failed.")
+	}
+	
+}
+
 ## compute genome-wide IBD estimate (\hat{pi}) with plink, optionally with initial LD pruning step
 ibd.plink <- function(prefix, flags = "--nonfounders", prune = FALSE, ...) {
 	
@@ -782,6 +857,7 @@ qc.plink <- function(prefix, flags = "--nonfounders", ...) {
 #' Compute pairwise LD between markers with PLINK
 #' 
 #' @param prefix a pointer to a PLINK fileset (of class \code{plink})
+#' @param dprime logical; if \code{TRUE}, compute Lewontin D-prime instead of R2
 #' @param index.snp name of the marker used to anchor the calculation
 #' @param markers compute all pairwise LD values between markers in this list
 #' @param chr limit analysis to this chromosome
@@ -810,7 +886,7 @@ qc.plink <- function(prefix, flags = "--nonfounders", ...) {
 #' 	models. Genetics 49(1): 49-67.
 #' 
 #' @export
-ld.plink <- function(prefix, index.snp = NULL, markers = NULL, chr = NULL, from = NULL, to = NULL,
+ld.plink <- function(prefix, dprime = FALSE, index.snp = NULL, markers = NULL, chr = NULL, from = NULL, to = NULL,
 					 window = NULL, window.r2 = 0, flags = "", ...) {
 	
 	if (!inherits(prefix, "plink"))
@@ -818,6 +894,8 @@ ld.plink <- function(prefix, index.snp = NULL, markers = NULL, chr = NULL, from 
 	where <- dirname(prefix)
 	
 	cmd <- paste0("--r2 inter-chr")
+	if (dprime)
+		cmd <- paste(cmd, "dprime")
 	if (!is.null(index.snp))
 		cmd <- paste0(cmd, " --ld-snp ", index.snp)
 	if (!is.null(markers)) {
@@ -919,21 +997,21 @@ filter.plink <- function(prefix, chr = NULL, from = NULL, to = NULL,
 	if (!is.null(remove)) {
 		fam <- read.fam(prefix)
 		ff <- tempfile()
-		write.plink.file(subset(fam, iid %in% remove.fam)[,1:2], ff)
+		write.plink.file(subset(fam, iid %in% remove)[,1:2], ff)
 		cmd <- paste(cmd, "--remove", ff)
 	}
 	
 	if (!is.null(keep.fam)) {
 		fam <- read.fam(prefix)
 		ff <- tempfile()
-		write.plink.file(subset(fam, fid %in% remove.fam)[,1:2], ff)
+		write.plink.file(subset(fam, fid %in% keep.fam)[,1:2], ff)
 		cmd <- paste(cmd, "--keep", ff)
 	}
 	
 	if (!is.null(keep)) {
 		fam <- read.fam(prefix)
 		ff <- tempfile()
-		write.plink.file(subset(fam, iid %in% remove.fam)[,1:2], ff)
+		write.plink.file(subset(fam, iid %in% keep)[,1:2], ff)
 		cmd <- paste(cmd, "--keep", ff)
 	}
 	

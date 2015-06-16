@@ -1,13 +1,12 @@
 ## plots.R
 ## various plotting functions, mostly for QC
 
-plot.QC.result <- function(qc, show = c("point","label"), max.H = Inf, max.N = Inf, theme.fn = ggplot2::theme_bw, ...) {
+plot.QC.result <- function(qc, show = c("point","label"), theme.fn = ggplot2::theme_bw, ...) {
 	
 	calls <- qc$calls
 	intens <- qc$intensity
 	if (is.null(calls$filter))
 		calls$filter <- FALSE
-	calls$filter <- with(calls, filter | (H > max.H | N > max.N))
 	
 	show <- match.arg(show)
 	
@@ -165,7 +164,7 @@ plot.clusters <- function(gty, markers = NULL, theme.fn = ggplot2::theme_bw, for
 	if (!nrow(df))
 		stop("No data.")
 	
-	df$filter <- attr(gty, "filter.samples")[ as.character(df$iid) ]
+	df$filter <- is.filtered(gty)$samples[ as.character(df$iid) ]
 	
 	ggplot2::ggplot(df) +
 		ggplot2::geom_point(ggplot2::aes(x = x, y = y, colour = call, shape = filter), fill = "white") +
@@ -357,6 +356,7 @@ dotplot <- function(x, ...) UseMethod("dotplot")
 #' 
 #' @param df a dataframe with columns (at least) "chr" and "pos"
 #' @param chroms chromosome names (in order); will try to guess them if not supplied
+#' @param scale one of \code{"Mbp"} (millions of basepairs; default) or \code{"cM"} (centimorgans)
 #' @param space padding factor to add in between chromosomes
 #' @param cols vector of length 2, giving alternating colours for alternating chromosomes
 #' 
@@ -365,13 +365,25 @@ dotplot <- function(x, ...) UseMethod("dotplot")
 #' 	additional layers
 #' 
 #' @export
-ggmanhattan <- function(df, chroms = NULL, space = 10, cols = c("grey30","grey60"), ...) {
+ggmanhattan <- function(df, chroms = NULL, scale = c("Mbp", "cM"), space = NULL, cols = c("grey30","grey60"), ...) {
 	
 	if (all(c("chr","pos") %in% colnames(df)))
 		df <- df[ ,c("chr","pos", setdiff(colnames(df), c("chr","pos"))) ]
 	else
 		stop("We require a dataframe with at least columns 'chr' and 'pos'.")
 	
+	scale <- match.arg(scale)
+	if (scale == "Mbp") {
+		denom <- 1e6
+		if (is.null(space))
+			space <- 10
+	}
+	else {
+		denom <- 1
+		if (is.null(space))
+			space <- 5
+	}
+		
 	if (!is.factor(df[,1]))
 		if (!is.null(chroms))
 			df[,1] <- factor(df[,1], levels = chroms)
@@ -380,7 +392,7 @@ ggmanhattan <- function(df, chroms = NULL, space = 10, cols = c("grey30","grey60
 	else
 		df[,1] <- factor(df[,1])
 	
-	chrlen <- tapply(df[,2], df[,1], max, na.rm = TRUE)/1e6 + space
+	chrlen <- tapply(df[,2], df[,1], max, na.rm = TRUE)/denom + space
 	adj <- c(0, cumsum(chrlen))
 	ticks <- adj[ -length(adj) ] + diff(adj)/2
 	#names(adj) <- c(names(chrlen),"z")
@@ -388,7 +400,7 @@ ggmanhattan <- function(df, chroms = NULL, space = 10, cols = c("grey30","grey60
 	#print(length(chrlen))
 	#print(length(ticks))
 	df$.adj <- adj[ as.numeric(df[,1]) ]
-	df$.x <- df$.adj + df[,2]/1e6
+	df$.x <- df$.adj + df[,2]/denom
 	df$.chr <- df[,1]
 	colmap <- setNames( rep_len(c(0,1), nlevels(df$.chr)), levels(df$.chr)  )
 	df$.colour <- factor(colmap[ df$.chr ])
@@ -524,5 +536,38 @@ freqplot <- function(gty, max.H = -1, max.N = -1, min.maf = Inf, ...) {
 		ggplot2::scale_colour_manual("frequency of", values = call.cols, labels = call.labs) +
 		ggplot2::facet_grid(variable ~ .) +
 		ggplot2::ylab("relative frequency\n")
+	
+}
+
+#' Plot the results of haplotype reconstruction
+#' 
+#' @param haps a dataframe containing the results of \code{reconstruct.haps()}
+#' @param space numeric scalar; how much buffer to add between adjacent chromosomes
+#' 
+#' @return A \code{ggplot} object with haplotype mosaics arranged in a grid layout
+#' 
+#' @details The input dataframe is assumed to have the following columns: \code{.id}, \code{chr},
+#' \code{start}, \code{end}, \code{hap1} and \code{hap2}.  Since the result is a \code{ggplot},
+#' it can be futher decorated/modified at will.
+#' 
+#' @export
+plot.haplotypes <- function(haps, space = 0.1, ...) {
+	
+	haps <- droplevels(haps)
+	if (!is.factor(haps$chr))
+		haps$chr <- factor(haps$chr)
+	haps$chr <- factor(haps$chr, levels = rev(levels(haps$chr)))
+	haps$space <- space
+	
+	ggplot2::ggplot(haps, ggplot2::aes(xmin = start, xmax = end)) +
+		# 'maternal' haplotypes
+		ggplot2::geom_rect(ggplot2::aes(ymin = as.numeric(chr)-(0.5-space), ymax = as.numeric(chr)-space/2, fill = hap1)) +
+		# 'paternal' haplotypes
+		ggplot2::geom_rect(ggplot2::aes(ymin = as.numeric(chr)+space/2, ymax = as.numeric(chr)+(0.5-space), fill = hap2)) +
+		scale_x_genome() +
+		ggplot2::scale_y_continuous(breaks = seq_len(nlevels(haps$chr)), labels = gsub("^chr", "", levels(haps$chr))) +
+		ggplot2::scale_fill_discrete("founder") +
+		ggplot2::facet_wrap(~ .id, ncol = 4) +
+		ggplot2::theme_bw()
 	
 }

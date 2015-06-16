@@ -4,7 +4,8 @@
 \alias{apply.filters}
 \title{Drop samples and/or markers flagged as low-quality}
 \usage{
-apply.filters(gty, apply.to = c("both", "samples", "markers"), ...)
+apply.filters(gty, apply.to = c("both", "samples", "markers"), hits = 0,
+  ...)
 }
 \arguments{
 \item{gty}{a \code{genotypes} object}
@@ -21,6 +22,6 @@ Drop samples and/or markers flagged as low-quality
 In the output object, all sample and marker filters are set to \code{FALSE}.
 }
 \seealso{
-\code{\link{run.qc.checks}}, \code{\link{apply.filters}}
+\code{\link{run.sample.qc}}, \code{\link{apply.filters}}
 }
 

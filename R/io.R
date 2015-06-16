@@ -354,7 +354,7 @@ as.rqtl.genotypes <- function(gty, type = c("f2","bc"), chroms = paste0("chr", c
 	
 	.make.rqtl <- function(cc) {
 		g <- .copy.matrix.noattr(subset(gty, chr == cc))
-		g <- matrix(c("A","H","B")[ t(g)+1 ],
+		g <- matrix(t(g)+1,
 					nrow = ncol(g), ncol = nrow(g),
 					dimnames = list(colnames(g), rownames(g)))
 		m <- subset(map, chr == cc)
@@ -372,8 +372,16 @@ as.rqtl.genotypes <- function(gty, type = c("f2","bc"), chroms = paste0("chr", c
 	geno <- lapply(levels(map$chr), .make.rqtl)
 	names(geno) <- gsub("^chr","", levels(map$chr))
 	rez <- list(geno = geno)
-	rez$pheno <- attr(gty, "ped")
-	rez$pheno$sex <- sex
+	
+	## convert PLINK to R/qtl style of phenotype definition
+	pheno <- attr(gty, "ped")
+	pheno$pheno[ pheno$pheno == -9 ] <- NA
+	newsex <- pheno$sex
+	newsex[ newsex == 0 ] <- NA
+	newsex[ newsex == 2 ] <- 0
+	pheno$sex <- newsex
+	
+	rez$pheno <- pheno[ ,c("pheno","sex",setdiff(colnames(pheno), c("pheno","sex"))) ]
 	class(rez) <- c("f2","cross")
 	attr(rez, "alleles") <- c("A","B")
 	

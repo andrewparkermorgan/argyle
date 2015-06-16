@@ -5,7 +5,7 @@
 \title{Merge two \code{genotypes} objects which share markers}
 \usage{
 \method{merge}{genotypes}(a, b, join = c("inner", "left"),
-  check.alleles = FALSE, ...)
+  check.alleles = FALSE, verbose = TRUE, ...)
 }
 \arguments{
 \item{a}{a \code{genotypes} object}
@@ -33,5 +33,9 @@ Both input objects should have the same allele coding (character vs. numeric, re
 	be present in the output only if they are present in both input objects, and have the expected names.  A
 	logical OR is applied to the site filters -- ie. a site will be marked as \code{TRUE} (filtered) if it is
 	filtered in either or both input datasets.
+}
+\section{Warnings}{
+
+Sample filters currently are *dropped* by the merge operation.
 }
 

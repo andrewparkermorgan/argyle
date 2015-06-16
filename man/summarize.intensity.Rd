@@ -28,6 +28,6 @@ The \code{q}th quantiles of "sum-intensity" are computed for each sample, across
 	affine-transformation scheme to the raw fluorescences.
 }
 \seealso{
-\code{\link{summarize.calls}}, \code{\link{intensity.vs.ref}}, \code{\link{run.qc.checks}}
+\code{\link{summarize.calls}}, \code{\link{intensity.vs.ref}}, \code{\link{run.sample.qc}}
 }
 

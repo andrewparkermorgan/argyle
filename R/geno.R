@@ -211,8 +211,8 @@ samples <- function(x) UseMethod("samples")
 #' Get filters attached to a \code{genotypes} object
 #' @param gty a \code{genotypes} object
 #' @return list of length 2 with elements \code{sites} and \code{samples} which should run parallel to the
-#' 	row and columns, respectively, of the genotypes matrix in the input.  If fitlers are absent, returns logical vectors
-#' 	with appropriate dimensions which are uniformly \code{FALSE}.  These vectors have names matching the row
+#' 	row and columns, respectively, of the genotypes matrix in the input.  If fitlers are absent, returns vector
+#' 	with appropriate dimensions in which all elements are empty.  These vectors have names matching the row
 #' 	and column names of the genotypes matrix.
 #' @seealso Other accessor functions: \code{\link{markers}} (marker map), \code{\link{samples}}
 #' 	(sample metadata), \code{\link{intensity}} (intensity matrices)
@@ -436,9 +436,12 @@ rbind.genotypes <- function(a, b, ...) {
 #' 	be present in the output only if they are present in both input objects, and have the expected names.  A
 #' 	logical OR is applied to the site filters -- ie. a site will be marked as \code{TRUE} (filtered) if it is
 #' 	filtered in either or both input datasets.
+#' 	
+#' @section Warnings:
+#' Sample filters currently are *dropped* by the merge operation.
 #' 
 #' @export
-merge.genotypes <- function(a, b, join = c("inner","left"), check.alleles = FALSE, ...) {
+merge.genotypes <- function(a, b, join = c("inner","left"), check.alleles = FALSE, verbose = TRUE, ...) {
 	
 	if (!inherits(b, "genotypes"))
 		stop("Only willing to merge two objects of class 'genotypes.'")
@@ -472,28 +475,19 @@ merge.genotypes <- function(a, b, join = c("inner","left"), check.alleles = FALS
 		## check for strand/allele swaps
 		if (check.alleles) {
 			
+			if (!(attr(a, "alleles") == "01" && attr(b, "alleles") == "01"))
+				stop("In order to perform allele check efficiently, both input datasets should be in",
+					 "the '01' numeric encoding.")
+				
 			a <- a[ new.o, ]
 			b <- b[ new.o, ]
 			
-			message("Checking for allele/strand swaps...")
-			newmaps <- .detect.strand.swaps( attr(b, "map")[ new.o, ], attr(a, "map")[ new.o, ] )
-			newmaps[[1]] <- subset(newmaps[[1]], !is.na(A1) & !is.na(A2))
-			newmaps[[2]] <- subset(newmaps[[2]], !is.na(A1) & !is.na(A2))
-			nn <- rownames(newmaps[[1]])
-			new.o <- keep[ order(o[nn]) ]
+			message("Checking for allele and strand swaps...")
+			unswapped <- .fix.allele.swaps(b, a, verbose = verbose)
+			message("Done fixing swaps.")
+			a <- unswapped[[2]]
+			b <- unswapped[[1]]
 			
-			a <- a[ new.o, ]
-			b <- b[ new.o, ]
-			
-			if (!is.numeric(newmaps)) {
-				a <- recode.genotypes(a, "01")
-				b <- recode.genotypes(b, "01")
-				attr(a, "map") <- newmaps[[2]][ new.o, ]
-				attr(b, "map") <- newmaps[[1]][ new.o, ]
-			}
-			else {
-				stop("Maps are incompatible at marker", attr(a, "map")$marker[newmaps])
-			}
 		}
 		
 		## keep intersection of marker sets
@@ -518,6 +512,8 @@ merge.genotypes <- function(a, b, join = c("inner","left"), check.alleles = FALS
 	
 	## add class info
 	class(rez) <- c("genotypes", class(rez))
+	colnames(rez) <- c(colnames(a), colnames(b))
+	attr(rez, "alleles") <- attr(a, "alleles")
 	
 	## merge markers and family information
 	if (!is.null(attr(a, "map")))
@@ -527,9 +523,13 @@ merge.genotypes <- function(a, b, join = c("inner","left"), check.alleles = FALS
 	
 	## merge filters
 	if (!any(is.null(attr(b, "filter.sites")), is.null(attr(a, "filter.sites")))) {
-		fa <- attr(a, "filter.sites")
-		fb <- attr(b, "filter.sites")
-		attr(rez, "filter.sites") <- (fb[new.o] | fa[new.o])
+		#fa <- attr(a, "filter.sites")
+		#fb <- attr(b, "filter.sites")
+		#attr(rez, "filter.sites") <- .merge.filters(fa, fb)
+		attr(rez, "filter.sites") <- .init.filters(rownames(rez))
+	}
+	else {
+		attr(rez, "filter.sites") <- .init.filters(rownames(rez))
 	}
 	if (!any(is.null(attr(b, "filter.samples")), is.null(attr(a, "filter.samples")))) {
 		attr(rez, "filter.samples") <- c( attr(a, "filter.samples"), attr(b, "filter.samples") )[ colnames(rez) ]
@@ -539,8 +539,8 @@ merge.genotypes <- function(a, b, join = c("inner","left"), check.alleles = FALS
 	
 }
 
-## try to reconcile alleles in two maps with identical markers
-.detect.strand.swaps <- function(map1, map2, ...) {
+## try to reconcile alleles in 'genotypes' objects with identical marker sets
+.fix.allele.swaps <- function(a, b, verbose = FALSE, ...) {
 	
 	rc <- function(x) {
 		bases <- c(A="T",C="G",T="A",G="C")
@@ -550,63 +550,76 @@ merge.genotypes <- function(a, b, join = c("inner","left"), check.alleles = FALS
 			return(bases[x])
 	}
 	
-	ii <- which(map1$A1 != map2$A1 | map1$A2 != map2$A2)
+	aa1 <- toupper(as.character(attr(a, "map")$A1))
+	aa2 <- toupper(as.character(attr(a, "map")$A2))
+	ba1 <- toupper(as.character(attr(b, "map")$A1))
+	ba2 <- toupper(as.character(attr(b, "map")$A2))
+	
+	ii <- which(aa1 != ba1 | aa2 != ba2)
 	message("\tinvestigating ", length(ii), " potential swaps...")
 	
-	map1$A1 <- toupper(as.character(map1$A1))
-	map1$A2 <- toupper(as.character(map1$A2))
-	map2$A1 <- toupper(as.character(map2$A1))
-	map2$A2 <- toupper(as.character(map2$A2))
-	
 	for (i in ii) {
-		cat(rownames(map1)[i], "\n")
-		if (map1$A1[i] == map2$A1[i]) {
-			if(map1$A2[i] == map2$A2[i]) {
+		#cat(rownames(a)[i], "\n")
+		if (aa1[i] == ba1[i]) {
+			if(aa2[i] == ba2[i]) {
 				## matching alleles
 				next
 			}
 			else {
-				map1$A2[i] <- NA
+				aa2[i] <- NA
 			}
 		}
-		else if (rc(map1$A1[i]) == map2$A1[i]){
-			if (rc(map1$A2[i]) == map2$A1[i]) {
+		else if (rc(aa1[i]) == ba1[i]){
+			if (rc(aa2[i]) == ba2[i]) {
 				## matching allele order; opposite strand
-				map1$A1[i] <- rc(map1$A1[i])
-				map1$A2[i] <- rc(map1$A2[i])
+				if (verbose)
+					message("\tswapping strand at marker ", rownames(a)[i])
+				aa1[i] <- rc(aa1[i])
+				aa2[i] <- rc(aa2[i])
 			}
 			else {
-				map1$A2[i] <- NA	
+				aa2[i] <- NA
 			}
 		}
-		else if (map1$A1[i] == map2$A2[i]) {
-			if (map1$A2[i] == map2$A1[i]) {
+		else if (aa1[i] == ba2[i]) {
+			if (aa2[i] == ba1[i]) {
 				## different allele order; same strand
-				tmp <- map1$A1[i]
-				map1$A1[i] <- map1$A2[i]
-				map1$A2[i] <- tmp
+				if (verbose)
+					message("\tswapping order at marker ", rownames(a)[i])
+				tmp <- aa1[i]
+				aa1[i] <- aa2[i]
+				aa2[i] <- tmp
+				a[ i, ] <- abs(2 - a[ i, ]) # swap calls
 			}
 			else {
-				map1$A2[i] <- NA	
+				aa2[i] <- NA
 			}
 		}
-		else if (rc(map1$A1[i]) == map2$A2[i]) {
-			if (rc(map1$A2[i]) == map2$A1[i]) {
+		else if (rc(aa1[i]) == ba2[i]) {
+			if (rc(aa2[i]) == ba1[i]) {
 				## different allele order; opposite strand
-				tmp <- rc(map1$A1[i])
-				map1$A1[i] <- rc(map1$A2[i])
-				map1$A2[i] <- tmp
+				if (verbose)
+					message("\tswapping strand and order at marker ", rownames(a)[i])
+				tmp <- rc(aa1[i])
+				aa1[i] <- rc(aa2[i])
+				aa2[i] <- tmp
+				a[ i, ] <- abs(2 - a[ i, ]) # swap calls
 			}
 			else {
-				map1$A2[i] <- NA
+				aa2[i] <- NA
 			}
 		}
 		else {
-			map1$A2[i] <- NA
+			aa2[i] <- NA
 		}
 	}
 
-	return(list(map1, map2))
+	attr(a, "map")$A1 <- aa1
+	attr(a, "map")$A2 <- aa2
+	attr(b, "map")$A1 <- ba1
+	attr(b, "map")$A2 <- ba2
+	
+	return(list(a, b))
 	
 }
 
@@ -1030,19 +1043,19 @@ recode.genotypes <- function(gty, mode = c("pass","01","native","relative"),
 			message("Recoding to 0/1/2 using empirical frequencies.")
 		}
 	}
-	else if (mode == "native")
+	else if (mode == "native") {
 		if (is.character(gty)) {
 			message("Nothing to do; genotypes already in requested coding.")
 			converter <- identity
 		}
-	else
-		if (!is.null(alleles) && coding != "relative") {
-			message("Recoding to character using reference alleles.")
-			converter <- .recode.character.by.ref
-			recode.as <- "native"
+		else if (!is.null(alleles) && coding != "relative") {
+				message("Recoding to character using reference alleles.")
+				converter <- .recode.character.by.ref
+				recode.as <- "native"
 		}
-	else
-		stop("Can only convert genotypes numeric->character given some reference alleles.")
+		else
+			stop("Can only convert genotypes numeric->character given some reference alleles.")
+	}
 	
 	.gty <- .copy.matrix.noattr(gty)
 	rez <- matrix(NA, nrow = nrow(.gty), ncol = ncol(.gty))

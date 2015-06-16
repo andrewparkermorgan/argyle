@@ -4,13 +4,15 @@
 \alias{ggmanhattan}
 \title{Create skeleton of a 'Manhattan plot' (concatenated chromosomes) with \code{ggplot2}}
 \usage{
-ggmanhattan(df, chroms = NULL, space = 10, cols = c("grey30", "grey60"),
-  ...)
+ggmanhattan(df, chroms = NULL, scale = c("Mbp", "cM"), space = NULL,
+  cols = c("grey30", "grey60"), ...)
 }
 \arguments{
 \item{df}{a dataframe with columns (at least) "chr" and "pos"}
 
 \item{chroms}{chromosome names (in order); will try to guess them if not supplied}
+
+\item{scale}{one of \code{"Mbp"} (millions of basepairs; default) or \code{"cM"} (centimorgans)}
 
 \item{space}{padding factor to add in between chromosomes}
 

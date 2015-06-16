@@ -46,8 +46,8 @@ NULL
 #' @param intensity a list with elements \code{x} and \code{y} containing hybridization intensities; each
 #' 	is a matrix with same dimensions and same row/column names as \code{G}
 #' @param normalized logical; have intensities been normalized?
-#' @param filter.sites logical vector indicating which markers to flag as low-quality
-#' @param filter.samples logical vector indicating which samples to flag as low-quality
+#' @param filter.sites character vector of filters attached to markers
+#' @param filter.samples character vector of filters attached to samples
 #' @param check logical; if \code{TRUE}, do sanity checks on input
 #'
 #' @return a new \code{genotypes} object
@@ -109,6 +109,12 @@ NULL
 #' }
 #' Rownames must be present and must match the contents of column "iid".  The pedigree is auto-generated
 #' when missing, and in that case every sample is assigned an "fid" identical to its "iid".
+#'
+#' @section Filters:
+#' The \code{filter.*} fields are character vectors describing the filter(s), if any, with which to mark markers
+#' or samples.  An empy string (\code{""}) indicates a "passing" marker or sample.  Filters are appended to the
+#' filter string as single characters: \code{H} for excess heterozygosity; \code{N} for excess no-call rate;
+#' \code{I} (for sampes only) for abnormal intensity pattern; \code{F} (for markers only) for abberrant allele frequency.
 #'
 #' @export
 genotypes <- function(G, map, ped = NULL, alleles = c("auto","native","01","relative"),
@@ -183,23 +189,20 @@ genotypes <- function(G, map, ped = NULL, alleles = c("auto","native","01","rela
 	
 	## --- filters --- ##
 	if (!is.null(filter.sites)) {
-		if (!is.logical(filter.sites) || length(filter.sites) != nrow(G))
-			stop(paste("Site filters are invalid: this should be logical vector of length equal to number",
-					   "of rows in genotypes matrix."))
+		if (!is.list(filter.sites) || length(filter.sites) != nrow(G))
+			stop(paste("Site filters are invalid: this should be list of zero or more filters per sample",
+					   "with length equal to number of rows in genotypes matrix."))
 	}
 	else
-		filter.sites <- setNames( rep(FALSE, nrow(G)), rownames(G) )
+		filter.sites <- .init.filters(rownames(G))
 	
 	if (!is.null(filter.samples)) {
-		if (!is.logical(filter.samples) || length(filter.samples) != ncol(G))
-			stop(paste("Sample filters are invalid: this should be logical vector of length equal to number",
-					   "of columns in genotypes matrix."))
+		if (!is.list(filter.samples) || length(filter.samples) != ncol(G))
+			stop(paste("Sample filters are invalid: this should be list of zero or more filters per sample",
+					   "with length equal to number of columns in genotypes matrix."))
 	}
 	else
-		filter.samples <- setNames( rep(FALSE, ncol(G)), colnames(G) )
-	
-	filter.sites[ is.na(filter.sites) ] <- TRUE
-	filter.samples[ is.na(filter.samples) ] <- TRUE
+		filter.samples <- .init.filters(colnames(G))
 	
 	## construct the new 'genotypes' object
 	rez <- structure(G, map = map[ mk, ], ped = ped[ sm, ], alleles = alleles,

@@ -35,6 +35,6 @@ Didion JP et al. (2014) SNP array profiling of mouse cell lines identifies their
 	and reveals cross-contamination and widespread aneuploidy. BMC Genomics 15(1): 847. doi:10.1186/1471-2164-15-847.
 }
 \seealso{
-\code{\link{summarize.intensity}}, \code{\link{summarize.calls}}, \code{\link{run.qc.checks}}
+\code{\link{summarize.intensity}}, \code{\link{summarize.calls}}, \code{\link{run.sample.qc}}
 }
 

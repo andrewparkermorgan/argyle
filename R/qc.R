@@ -36,7 +36,7 @@ column.quantiles <- function(x, q = seq(0,1,0.1), ..., .progress = "none") {
 #' 	the origin represents total hybridization intensity after application of Illumina's proprietary
 #' 	affine-transformation scheme to the raw fluorescences.
 #'
-#' @seealso \code{\link{summarize.calls}}, \code{\link{intensity.vs.ref}}, \code{\link{run.qc.checks}}
+#' @seealso \code{\link{summarize.calls}}, \code{\link{intensity.vs.ref}}, \code{\link{run.sample.qc}}
 #' 	 	
 #' @export
 summarize.intensity <- function(gty, q = seq(0,1,0.1), ..., .progress = "none") {
@@ -65,7 +65,7 @@ summarize.intensity <- function(gty, q = seq(0,1,0.1), ..., .progress = "none") 
 #' @details Any metadata associated with markers or samples is *not* merged into the final result, in order
 #' 	to preserve parallelism between rows of the result and of the parent object.
 #'
-#' @seealso \code{\link{summarize.intensity}}, \code{\link{intensity.vs.ref}}, \code{\link{run.qc.checks}}
+#' @seealso \code{\link{summarize.intensity}}, \code{\link{intensity.vs.ref}}, \code{\link{run.sample.qc}}
 #' 	 	
 #' @export
 summarize.calls <- function(gty, by = c("samples","markers"), counts = TRUE, ...) {
@@ -126,7 +126,7 @@ summarize.calls <- function(gty, by = c("samples","markers"), counts = TRUE, ...
 #' Didion JP et al. (2014) SNP array profiling of mouse cell lines identifies their strains of origin
 #' 	and reveals cross-contamination and widespread aneuploidy. BMC Genomics 15(1): 847. doi:10.1186/1471-2164-15-847.
 #'
-#' @seealso \code{\link{summarize.intensity}}, \code{\link{summarize.calls}}, \code{\link{run.qc.checks}}
+#' @seealso \code{\link{summarize.intensity}}, \code{\link{summarize.calls}}, \code{\link{run.sample.qc}}
 #' 	 	
 #' @export
 intensity.vs.ref <- function(gty, ref, ...) {
@@ -147,12 +147,15 @@ intensity.vs.ref <- function(gty, ref, ...) {
 #'
 #' @param gty a \code{genotypes} object
 #' @param ref.intensity a vector of "sum-intensities" from known good reference samples
-#' @param max.H threshold for count of heterozygous calls, above which a sample is flagged
-#' @param max.N threshold for count of no-calls, above which a sample is flagged
+#' @param max.H threshold for count of heterozygous calls, above which a sample is flagged;
+#' 	OR a named list of thresholds, with names to match "family ID" (column \code{fid}) in pedigree
+#' @param max.N threshold for count of no-calls, above which a sample is flagged; OR a named list
+#' 	as above
 #' @param max.D upper threshold for D-statistic (see \code{\link{intensity.vs.ref}}) above which a
-#' 	sample is flagged
+#' 	sample is flagged; OR a named list as above
 #' @param min.D lower threshold for D-statistic (see \code{\link{intensity.vs.ref}}) above which a
-#' 	sample is flagged
+#' 	sample is flagged; OR a named list as above
+#' @param apply logical; if \code{TRUE}, remove samples failing the filters, rather than flagging them
 #' 
 #' @return a copy of the input with sample filters set, and an object of class \code{QC.result} in
 #' 	attr(,"qc")
@@ -164,47 +167,91 @@ intensity.vs.ref <- function(gty, ref, ...) {
 #' @seealso \code{\link{summarize.calls}}, \code{\link{intensity.vs.ref}}, \code{\link{apply.filters}}
 #' 
 #' @export
-run.qc.checks <- function(gty, ref.intensity = NULL,
-						  max.H = Inf, max.N = Inf, max.D = Inf, min.D = Inf, ...) {
+run.sample.qc <- function(gty, ref.intensity = NULL,
+						  max.H = Inf, max.N = Inf, max.D = Inf, min.D = Inf, 
+						  apply = FALSE, hits = 0, ...) {
 	
 	if (!inherits(gty, "genotypes"))
 		stop("Please supply an object of class 'genotypes'.")
 	
-	fsites <- setNames( rep(FALSE, nrow(gty)), rownames(gty) )
-	fsamples <- setNames( rep(FALSE, ncol(gty)), colnames(gty) )
-	if (!is.null(attr(gty, "filter.sites")))
-		fsites <- attr(gty, "filter.sites")
-	if (!is.null(attr(gty, "filter.samples")))
-		fsamples <- attr(gty, "filter.samples")
+	fl <- get.filters(gty)
 	
-	if (length(fsites) != nrow(gty))
+	if (length(fl$sites) != nrow(gty))
 		warning("Site filters don't match dimensions of genotype matrix.")
-	if (length(fsamples) != ncol(gty))
+	if (length(fl$samples) != ncol(gty))
 		warning("Sample filters don't match dimensions of genotype matrix.")
 	
 	qc.rez <- list()
 	message("Performing QC checks on genotype calls...")
 	qc.rez$calls <- summarize.calls(gty, "samples")
-	fsamples <- fsamples | with(qc.rez$calls, H > max.H | N > max.N)
+	
+	sm <- as.character(qc.rez$calls$iid)
+	fid <- as.character(attr(gty, "ped")[ sm, "fid" ])
+	if (is.list(max.H))
+		max.H <- as.vector(max.H[fid])
+	if (is.list(max.N))
+		max.N <- as.vector(max.N[fid])
+	if (is.list(max.D))
+		max.D <- as.vector(max.D[fid])
+	if (is.list(min.D))
+		min.D <- as.vector(max.D[fid])
+	
+	fail.hets <- as.vector(qc.rez$calls$H > max.H)
+	fail.ns <- as.vector(qc.rez$calls$N > max.N)
+	fail.ds <- rep(FALSE, ncol(gty))
 	
 	if (.has.valid.intensity(gty)) {
 		message("Performing QC checks on hybridization intensities...")
 		qc.rez$intensity <- summarize.intensity(gty, q = seq(0.05, 0.95, 0.05))
 		if (!is.null(ref.intensity)) {
 			qc.rez$D <- intensity.vs.ref(gty, ref.intensity)
-			fsamples <- fsamples | (qc.rez$D > max.D | qc.rez$D < min.D)
+			fail.ds <- as.vector(qc.rez$D > max.D | qc.rez$D < min.D)
 		}
 	}
 	
-	qc.rez$calls$filter <- fsamples
-	message(paste(sum(fsites),"markers and", sum(fsamples), "samples now flagged as low-quality."))
+	fl$samples[fail.hets] <- paste0(fl$samples[fail.hets], "H")
+	fl$samples[fail.ns] <- paste0(fl$samples[fail.ns], "N")
+	fl$samples[fail.ds] <- paste0(fl$samples[fail.ds], "I")
+	isfl <- lapply(fl, function(x) {
+		x[ is.na(x) ] <- ""
+		nchar(x) > hits
+	})
+	qc.rez$calls$filter <- isfl$samples
+	
+	message(paste(sum(isfl$sites),"markers and", sum(isfl$samples), "samples now flagged as low-quality."))
 	class(qc.rez) <- c("QC.result", class(qc.rez))
 	
 	attr(gty, "qc") <- qc.rez
-	attr(gty, "filter.sites") <- fsites
-	attr(gty, "filter.samples") <- fsamples
+	attr(gty, "filter.sites") <- fl$sites
+	attr(gty, "filter.samples") <- fl$samples
+	
+	if (apply)
+		gty <- apply.filters(gty)
 	
 	return(gty)
+	
+}
+
+## given a list of filters, update it with 'data' a list(filter_name = logical(to_filter))
+.update.filters <- function(fl, what = c("samples","markers"), data, ...) {
+	
+	for (d in names(data)) {
+		ii <- which(data[[d]])
+		for (i in ii) {
+			these <- fl[[what]][[i]]
+			these <- unique(c(these, d))
+			fl[[what]][[i]] <- these
+		}
+	}
+	
+	return(fl)
+	
+}
+
+## initialize a filter list from vector of names
+.init.filters <- function(nn,...) {
+	
+	setNames( rep("", length(nn)), nn )
 	
 }
 
@@ -217,10 +264,10 @@ run.qc.checks <- function(gty, ref.intensity = NULL,
 #' 	
 #' @details In the output object, all sample and marker filters are set to \code{FALSE}.
 #' 	
-#' @seealso \code{\link{run.qc.checks}}, \code{\link{apply.filters}}
+#' @seealso \code{\link{run.sample.qc}}, \code{\link{apply.filters}}
 #' 
 #' @export
-apply.filters <- function(gty, apply.to = c("both","samples","markers"), ...) {
+apply.filters <- function(gty, apply.to = c("both","samples","markers"), hits = 0, ...) {
 	
 	if (!inherits(gty, "genotypes"))
 		stop("Please supply an object of class 'genotypes'.")
@@ -244,38 +291,41 @@ apply.filters <- function(gty, apply.to = c("both","samples","markers"), ...) {
 	
 	sites <- FALSE
 	samples <- FALSE
-	if (do.sites) {
-		if (!is.null(attr(gty, "filter.sites"))) {
-			sites <- attr(gty, "filter.sites")
-			if (length(sites) != nrow(gty))
-				warning("Site filters don't match dimensions of genotype matrix.")
-		}
-	}
-	if (do.samples) {
-		if (!is.null(attr(gty, "filter.samples"))) {
-			samples <- attr(gty, "filter.samples")
-			if (length(samples) != ncol(gty))
-				warning("Sample filters don't match dimensions of genotype matrix.")
-		}
-	}
+	fl <- is.filtered(gty, hits = hits)
+	
+	if (do.sites)
+		sites <- fl$sites
+		if (length(sites) != nrow(gty))
+			warning("Site filters don't match dimensions of genotype matrix.")
+	
+	if (do.samples)
+		samples <- fl$samples
+		if (length(samples) != ncol(gty))
+			warning("Sample filters don't match dimensions of genotype matrix.")
 	
 	message(paste("Dropping", sum(sites), "markers and", sum(samples), "samples..."))
 	return( gty[ !sites,!samples ] )
 	
 }
 
-## just return the filter flags
-get.filters <- function(gty, ...) {
+
+#' Check if markers or samples are marked with filters
+#' 
+#' @param gty a \code{genotypes} object
+#' @param hits integer; maximum number of filters which can be set before a marker or sample is flagged
+#' 
+#' @return a list with two elements: \code{$sites}, logical vector of filter status for markers;
+#' 	and \code{$samples}, logical vector of filter status for samples
+#' 
+#' @export
+is.filtered <- function(gty, hits = 0, ...) {
 	
 	if (!inherits(gty, "genotypes"))
 		stop("Please supply an object of class 'genotypes'.")
 	
-	sites <- rep(FALSE, nrow(gty))
-	samples <- rep(FALSE, ncol(gty))
-	if (!is.null(attr(gty, "filter.samples")))
-		samples <- attr(gty, "filter.samples")
-	if (!is.null(attr(gty, "filter.sites")))
-		sites <- attr(gty, "filter.sites")
+	fl <- get.filters(gty)
+	samples <- nchar(fl$samples) > hits
+	sites <- nchar(fl$sites) > hits
 	
 	names(samples) <- colnames(gty)
 	names(sites) <- rownames(gty)
@@ -284,10 +334,32 @@ get.filters <- function(gty, ...) {
 	
 }
 
-#' @export
-summarize.filters <- function(gty, ...) {
+## return the filter lists
+get.filters <- function(gty, ...) {
 	
-	filters <- get.filters(gty)
-	sapply(filters, sum, na.rm = TRUE)
+	if (!inherits(gty, "genotypes"))
+		stop("Please supply an object of class 'genotypes'.")
+	
+	fsites <- attr(gty, "filter.sites")
+	if (is.null(fsites))
+		fsites <- setNames( rep("", nrow(gty)), rownames(gty) )
+		
+	fsamples <- attr(gty, "filter.samples")
+	if (is.null(fsamples))
+		fsamples <- setNames( rep("", ncol(gty)), colnames(gty) )
+	
+	fsamples[ is.na(fsamples) ] <- ""
+	fsites[ is.na(fsites) ] <- ""
+	
+	return(list(sites = fsites, samples = fsamples))
+	
+}
+
+#' @export
+summarize.filters <- function(gty, filter.codes = "NHIF", ...) {
+	
+	fl <- get.filters(gty)
+	codes <- unlist(strsplit(filter.codes, ""))
+	sapply(fl, function(x) sapply(codes, function(y) sum(grepl(y, x))))
 	
 }
