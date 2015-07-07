@@ -69,7 +69,7 @@ plot.QC.result <- function(qc, show = c("point","label"), theme.fn = ggplot2::th
 #' @return a \code{gtable} (ineriting from \code{grid::grob}) containg the composite QC plot (see Details)
 #' 
 #' @details This function will plot any existing QC result attached to \code{gty}; if none is present,
-#' 	\code{run.qc.checks(gty)} will be run to generate it.
+#' 	\code{run.sample.qc(gty)} will be run to generate it.
 #' 
 #' 	The QC plot has two panels. The upper panel displays the count of heterozygous (H) and missing
 #' 	(N, no-call) calls for each sample.  The lower panel displays a the "sum intensity" quantiles of each sample.
@@ -109,7 +109,7 @@ qcplot <- function(gty, draw = TRUE, ...) {
 		stop("Please supply an object of class 'genotypes'.")
 	
 	if (is.null(attr(gty, "qc")))
-		gty <- run.qc.checks(gty, ...)
+		gty <- run.sample.qc(gty, ...)
 	
 	p <- plot.QC.result(gty$qc, ...)
 	if (draw) {

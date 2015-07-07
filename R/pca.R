@@ -13,12 +13,12 @@
 				   "they should also be suppled as class 'genotypes'."))
 	
 	what <- match.arg(what)
-	.make.pca.input <- function(g) {
+	.make.pca.input <- function(g, check.variance = TRUE) {
 		if (what == "genotypes") {
 			if (!is.numeric(gty)) {
-				gty <- recode.genotypes(gty, "01")
+				g <- recode.genotypes(g, "01")
 			}
-			X <- t(.copy.matrix.noattr(gty))
+			X <- t(.copy.matrix.noattr(g))
 			## replace missing values with column mean
 			if (any(is.na(colMeans(X)))) {
 				message("\treplacing missing values with minor-allele frequency...")
@@ -42,7 +42,7 @@
 		}
 		
 		## remove zero-variance columns, if scaling requested
-		if (scale) {
+		if (scale && check.variance) {
 			const <- abs(colVars(X) - 0) <= eps
 			const[ is.na(const) ] <- TRUE
 			X <- X[ ,!const ]
@@ -51,19 +51,27 @@
 	}
 
 	## finally do PCA
+	message("Preparing input matrices...")
+	features <- .make.pca.input(gty)
+	if (!is.null(extras)) {
+		topredict <- .make.pca.input(extras, check.variance = FALSE)
+		keep <- intersect(colnames(topredict), colnames(features))
+		features <- features[ ,keep ]
+		topredict <- topredict[ ,keep ]
+	}
+		
 	message(paste("Computing principal components of", what, "matrix..."))
 	if (fast) {
 		message("\t(using corpcor::fast.svd() ...)")
-		pc <- .fast.pca(.make.pca.input(gty), K = K, .center = center, .scale = scale)	
+		pc <- .fast.pca(features, K = K, .center = center, .scale = scale)	
 	}
 	else {
 		message("\t(using base::prcomp() ...)")
-		pc <- prcomp(.make.pca.input(gty), center = center, scale. = scale)
+		pc <- prcomp(features, center = center, scale. = scale)
 	}
 	proj <- predict(pc)
 	if (!is.null(extras)) {
 		message("Projecting extra samples onto existing PCs...")
-		topredict <- .make.pca.input(extras)
 		predicted <- predict(pc, newdata = topredict)
 		proj <- rbind(proj, predicted)
 	}
@@ -150,7 +158,10 @@ pca.genotypes <- function(gty, extras = NULL, what = c("genotypes","intensity"),
 	meta <- data.frame(iid = rownames(rez))
 	rownames(meta) <- rownames(rez)
 	if (.has.valid.ped(gty)) {
-		meta <- merge(meta, attr(gty, "ped"), by = "iid")
+		fam <- attr(gty, "ped")
+		if (!is.null(extras))
+			fam <- rbind(fam, attr(extras, "ped"))
+		meta <- merge(meta, fam, by = "iid")
 		rownames(meta) <- as.character(meta$iid)
 		if (!(nrow(meta) == nrow(rez) && all(rownames(rez) %in% meta$iid)))
 			stop("Sample metadata and PCA result are out of sync.")

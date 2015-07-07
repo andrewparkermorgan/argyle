@@ -113,7 +113,8 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	}
 	message(paste("Reading sample manifest from <", samplefile, "> ..."))
 	samples.df <- read.delim(unz(samplefile, "Sample_Map.txt"), stringsAsFactors = FALSE)
-	rownames(samples.df) <- as.character(samples.df$Name)
+	## handle case of duplicated IDs
+	rownames(samples.df) <- make.unique(as.character(samples.df$Name))
 	
 	## Find a file with "FinalReport" in the filename.
 	rawfile <- dir(path = in.path, pattern = "FinalReport", full.names = TRUE)
@@ -166,6 +167,8 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	}
 	nsamples <- length(samples)
 	data.table::setnames(data, c("marker","iid","call1","call2","x","y","gc","theta","x.raw","y.raw","R"))
+	## ensure uniqueness of sample names
+	data.talbe::set(data, i = NULL, "iid", make.unique(data$iid))
 	data.table::set(data, i = NULL, "call", paste0(data$call1, data$call2))
 	data.table::set(data, i = NULL, "is.het", (data$call1 != data$call2))
 	data.table::set(data, i = NULL, "is.na", (data$call1 == "-" | data$call2 == "-"))

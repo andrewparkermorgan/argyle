@@ -510,7 +510,7 @@ prune.plink <- function(prefix, prune.by = "--make-founders --indep 50 5 2", ...
 #' @export
 assoc.plink <- function(prefix, model = c("assoc","linear","logistic"),
 						test = c("additive","genotypic","hethom","dominant","recessive"),
-						perms = TRUE, geno.missing = 0, ind.missing = 0, maf = 0, hwe = 1,
+						perms = TRUE, n.perms = 1e5, geno.missing = 0, ind.missing = 0, maf = 0, hwe = 1,
 						flags = "--keep-allele-order --allow-no-sex --nonfounders", ...) {
 	
 	model <- match.arg(model)
@@ -520,19 +520,21 @@ assoc.plink <- function(prefix, model = c("assoc","linear","logistic"),
 	}
 	if (model == "assoc") {
 		suffix <- ".assoc"
-		cmd <- paste("--assoc", flags)
+		cmd <- paste("--assoc")
 	}
 	else if (model == "linear") {
 		suffix <- ".assoc.linear"
-		cmd <- paste("--linear", test, flags)
+		cmd <- paste("--linear standard-beta", test)
 	}
 	else if (model == "logistic") {
 		suffix <- ".assoc.logistic"
-		cmd <- paste("--logistic", test, flags)
+		cmd <- paste("--logistic", test)
 	}
 	
-	if (perms)
-		cmd <- paste(cmd, "--perm")
+	if (perms & n.perms > 0)
+		cmd <- paste(cmd, "perm --aperm 5", formatC(n.perms, format = "d"))
+	cmd <- paste(cmd, flags)
+	message(cmd)
 	
 	where <- dirname(prefix)
 	if (geno.missing > 0)
@@ -550,13 +552,17 @@ assoc.plink <- function(prefix, model = c("assoc","linear","logistic"),
 	success <- .plink.command(prefix, cmd, expect, ...)
 	if (is.character(success)) {
 		.df <- read.table(paste0(success, suffix), header = TRUE)
-		if (test == "assoc") {
+		if (model == "assoc") {
 			df <- with(.df, data.frame(chr = CHR, pos = BP, marker = SNP, A1 = A1,
 									   p.value = P, OR = OR))
 		}
-		else {
+		else if (model == "logistic") {
 			df <- with(.df, data.frame(chr = CHR, pos = BP, marker = SNP, A1 = A1,
 									   p.value = P, OR = OR, n = NMISS, test = TEST))
+		}
+		else if (model == "linear") {
+			df <- with(.df, data.frame(chr = CHR, pos = BP, marker = SNP, A1 = A1,
+									   p.value = P, beta = BETA, score = STAT, n = NMISS, test = TEST))
 		}
 		df$chr <- unplink.chroms(df$chr)
 		if (perms) {
@@ -976,9 +982,9 @@ filter.plink <- function(prefix, chr = NULL, from = NULL, to = NULL,
 	if (!is.null(chr))
 		cmd <- paste0(cmd, " --chr ", gsub("^chr","", as.character(chr)))
 	if (!is.null(from))
-		cmd <- paste0(cmd, " --from-bp ", from)
+		cmd <- paste0(cmd, " --from-bp ", formatC(from, format = "d"))
 	if (!is.null(to))
-		cmd <- paste0(cmd, " --to-bp ", to)
+		cmd <- paste0(cmd, " --to-bp ", formatC(to, format = "d"))
 	if (ind.missing > 0)
 		cmd <- paste(cmd, "--mind", ind.missing)
 	if (maf > 0)
