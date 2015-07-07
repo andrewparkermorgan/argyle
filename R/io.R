@@ -84,7 +84,7 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	
 	## make a checksum, then record file source and timestamp (which would mess up checksum comparisons)
 	attr(calls, "md5") <- digest::digest(calls, algo = "md5")
-	attr(calls, "source") <- normalizePath(file.path(in.path, prefix))
+	attr(calls, "source") <- normalizePath(file.path(in.path))
 	attr(calls, "timestamp") <- Sys.time()
 	
 	## check that all pieces of result have matching dimensions, names, ...
@@ -104,28 +104,39 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 		stop("Only read one batch at a time.  To handle multiple batches, wrap with an lapply().")
 	
 	## Get the sample IDs from the Sample_Map.txt file.
-	samplefile <- dir(path = in.path, pattern = "Sample_Map.zip", full.names = TRUE)
-	## If not found, then quit.
-	if (length(samplefile) == 0) {
-		stop(paste("No file called 'Sample_Map.txt' was found in directory",
-				   in.path[i], ".  Please make sure that the Sample_Map file is unzipped and",
-				   "in the specified directory."))
-	}
-	message(paste("Reading sample manifest from <", samplefile, "> ..."))
-	samples.df <- read.delim(unz(samplefile, "Sample_Map.txt"), stringsAsFactors = FALSE)
-	## handle case of duplicated IDs
-	rownames(samples.df) <- make.unique(as.character(samples.df$Name))
-	
-	## Find a file with "FinalReport" in the filename.
-	rawfile <- dir(path = in.path, pattern = "FinalReport", full.names = TRUE)
-	infile <- rawfile[grep("zip$", rawfile)]
+	rawfile <- dir(path = in.path, pattern = "Sample_Map", full.names = TRUE)
+	infile <- rawfile[ grep("zip$", rawfile) ]
 	as.zip <- TRUE
 	## If not found, then quit.
 	if (length(infile) == 0) {
-		infile <- rawfile[grep("txt$", rawfile)]
+		infile <- rawfile[ grep("txt$", rawfile) ]
+		if (length(infile) == 0) {
+			stop(paste("No file with 'Sample_Map' in the filename was found in directory",
+					   in.path))
+		}
+		else {
+			as.zip <- FALSE
+		}
+	}
+	samplefile <- infile
+	if (as.zip)
+		samplefile <- unz(infile, "Sample_Map.txt")
+	message(paste("Reading sample manifest from <", samplefile, "> ..."))
+	samples.df <- read.delim(samplefile, stringsAsFactors = FALSE)
+	## handle case of duplicated IDs
+	renamer <- make.unique(as.character(samples.df$Name))
+	rownames(samples.df) <- renamer
+	
+	## Find a file with "FinalReport" in the filename.
+	rawfile <- dir(path = in.path, pattern = "FinalReport", full.names = TRUE)
+	infile <- rawfile[ grep("zip$", rawfile) ]
+	as.zip <- TRUE
+	## If not found, then quit.
+	if (length(infile) == 0) {
+		infile <- rawfile[ grep("txt$", rawfile) ]
 		if (length(infile) == 0) {
 			stop(paste("No file with 'FinalReport' in the filename was found in directory",
-					   in.path[i], ".  Please make sure that the FinalReport file is",
+					   in.path, ".  Please make sure that the FinalReport file is",
 					   "in the specified directory, and that there is exactly one."))
 		}
 		else {
@@ -139,7 +150,7 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 				   "unzipped the file, keep the original in a different directory."))
 	}
 	
-	## try to read file without having to unzip; fallback to plain sample name
+	## try to unzip on fly
 	piper <- infile
 	if (as.zip) {
 		## check that system supports unzip
@@ -152,8 +163,21 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 		}
 	}
 	
+	## first check header to get # of SNPs
+	genofile <- infile
+	if (as.zip)
+		genofile <- unz(infile, gsub("\\.zip$",".txt", infile))
+	header <- read.delim(genofile, header = FALSE, sep = "\t", nrows = 8, skip = 1,
+						 colClasses = "character", stringsAsFactors = FALSE)
+	if (!all(ncol(header) >= 2, "NUM SNPS" %in% toupper(header[,1])))
+		stop("Header of FinalReport file should be key-value pairs, one of which is 'Total SNPs {x}'")
+	header <- setNames( header[,2], toupper(header[,1]) )
+	nsnps <- as.integer(header["NUM SNPS"])
+	if (!(is.numeric(nsnps) && nsnps > 0))
+		stop("Can't understand number of markers to read; header says '", nsnps, "'")
+	
 	## slurp file into a data.table, skipping the 9 header lines
-	message(paste("Reading genotypes and intensities from <", infile, "> ..."))
+	message(paste("Reading genotypes and intensities for", nsnps, "markers x", length(renamer), "samples from <", infile, "> ..."))
 	data <- data.table::fread(piper, skip = 9)
 	
 	## Verify that we have all of the column names that we expect.
@@ -167,8 +191,8 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	}
 	nsamples <- length(samples)
 	data.table::setnames(data, c("marker","iid","call1","call2","x","y","gc","theta","x.raw","y.raw","R"))
-	## ensure uniqueness of sample names
-	data.talbe::set(data, i = NULL, "iid", make.unique(data$iid))
+	## rename samples by index
+	data.table::set(data, i = NULL, "iid", rep(renamer, 1, each = nsnps))
 	data.table::set(data, i = NULL, "call", paste0(data$call1, data$call2))
 	data.table::set(data, i = NULL, "is.het", (data$call1 != data$call2))
 	data.table::set(data, i = NULL, "is.na", (data$call1 == "-" | data$call2 == "-"))
