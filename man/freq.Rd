@@ -4,7 +4,7 @@
 \alias{freq}
 \title{Calculate allele frequencies by marker or sample}
 \usage{
-freq(gty, by = c("markers", "samples"), na.rm = TRUE, ...)
+freq(gty, by = c("markers", "samples"), na.rm = TRUE, counts = FALSE, ...)
 }
 \arguments{
 \item{gty}{a \code{genotypes} object with numeric allele encoding}
@@ -12,6 +12,8 @@ freq(gty, by = c("markers", "samples"), na.rm = TRUE, ...)
 \item{by}{margin over which to calculate frequencies (usually \code{"markers"})}
 
 \item{na.rm}{skip over missing genotypes in frequency calculations}
+
+\item{counts}{logical; if \code{TRUE}, report allele counts instead of relative frequencies}
 }
 \value{
 a named vector of allele frequencies

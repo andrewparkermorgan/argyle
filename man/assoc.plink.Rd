@@ -6,7 +6,8 @@
 \usage{
 assoc.plink(prefix, model = c("assoc", "linear", "logistic"),
   test = c("additive", "genotypic", "hethom", "dominant", "recessive"),
-  perms = TRUE, geno.missing = 0, ind.missing = 0, maf = 0, hwe = 1,
+  perms = TRUE, n.perms = 1e+05, geno.missing = 0, ind.missing = 0,
+  maf = 0, hwe = 1,
   flags = "--keep-allele-order --allow-no-sex --nonfounders", ...)
 }
 \arguments{

@@ -4,8 +4,9 @@
 \alias{plot.pca.result}
 \title{Auto-plotting of a PCA result}
 \usage{
-plot.pca.result(pc, K = c(1, 2), screeplot = FALSE, show = c("points",
-  "labels"), theme.fn = ggplot2::theme_bw, ...)
+\method{plot}{pca.result}(pc, K = c(1, 2), screeplot = FALSE,
+  show = c("points", "labels", "nothing"), theme.fn = ggplot2::theme_bw,
+  ...)
 }
 \arguments{
 \item{pc}{a \code{pca.result} object}
@@ -15,7 +16,8 @@ plot.pca.result(pc, K = c(1, 2), screeplot = FALSE, show = c("points",
 \item{screeplot}{logical; if \code{TRUE}, show both the plot of two PCs against each other and the variances explained of
 all available PCs}
 
-\item{show}{length-1 character vector; show just points, or sample IDs}
+\item{show}{length-1 character vector; show just points, or sample IDs.  Use \code{"nothing"} to have all the aesthetics
+and axes set, but not actually draw anything.}
 
 \item{theme.fn}{a \code{ggplot2}-compatible function to specify formatting}
 }

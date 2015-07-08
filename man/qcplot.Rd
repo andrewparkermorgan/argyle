@@ -19,7 +19,7 @@ Produce a visual summary of QC measures
 }
 \details{
 This function will plot any existing QC result attached to \code{gty}; if none is present,
-	\code{run.qc.checks(gty)} will be run to generate it.
+	\code{run.sample.qc(gty)} will be run to generate it.
 
 	The QC plot has two panels. The upper panel displays the count of heterozygous (H) and missing
 	(N, no-call) calls for each sample.  The lower panel displays a the "sum intensity" quantiles of each sample.

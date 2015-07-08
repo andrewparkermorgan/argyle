@@ -35,11 +35,12 @@
 #' @param gty a \code{genotypes} object with numeric allele encoding
 #' @param by margin over which to calculate frequencies (usually \code{"markers"})
 #' @param na.rm skip over missing genotypes in frequency calculations
+#' @param counts logical; if \code{TRUE}, report allele counts instead of relative frequencies
 #' 
 #' @return a named vector of allele frequencies
 #' 
 #' @export
-freq <- function(gty, by = c("markers","samples"), na.rm = TRUE, ...) {
+freq <- function(gty, by = c("markers","samples"), na.rm = TRUE, counts = FALSE, ...) {
 	
 	#if (!.check.and.warn(gty))
 	#	stop("Can't understand input.")
@@ -49,11 +50,19 @@ freq <- function(gty, by = c("markers","samples"), na.rm = TRUE, ...) {
 	
 	by <- match.arg(by)
 	if (by == "markers")
-		return( rowMeans(gty, na.rm = na.rm)/2 )
+		if (!counts)
+			return( rowMeans(gty, na.rm = na.rm)/2 )
+		else
+			return( rowSums(gty, na.rm = na.rm) )
 	else
-		return( colMeans(gty, na.rm = na.rm)/2 )
+		if (!counts)
+			return( colMeans(gty, na.rm = na.rm)/2 )
+		else
+			return( colSums(gty, na.rm = na.rm) )
 	
 }
+
+
 
 #' Calculate minor-allele frequency (MAFs) from a genotypes matrix
 #' 

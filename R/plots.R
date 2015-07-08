@@ -425,14 +425,15 @@ ggmanhattan <- function(df, chroms = NULL, scale = c("Mbp", "cM"), space = NULL,
 #' @param K numeric vector of length 2 specifing which PCs to plot against each other; first is on x-axis and second on y-axis
 #' @param screeplot logical; if \code{TRUE}, show both the plot of two PCs against each other and the variances explained of
 #' 	all available PCs
-#' @param show length-1 character vector; show just points, or sample IDs
+#' @param show length-1 character vector; show just points, or sample IDs.  Use \code{"nothing"} to have all the aesthetics
+#' 	and axes set, but not actually draw anything.
 #' @param theme.fn a \code{ggplot2}-compatible function to specify formatting
 #' 
 #' @return if \code{screeplot = FALSE}, a \code{ggplot}; if \code{screeplot = TRUE}, a \code{gtable::gtable} object which can be
 #' 	modified or re-rendered with \code{grid::grid.draw()}.
 #' 
 #' @export
-plot.pca.result <- function(pc, K = c(1,2), screeplot = FALSE, show = c("points","labels"), theme.fn = ggplot2::theme_bw, ...) {
+plot.pca.result <- function(pc, K = c(1,2), screeplot = FALSE, show = c("points","labels","nothing"), theme.fn = ggplot2::theme_bw, ...) {
 	
 	if (!inherits(pc, "pca.result"))
 		stop("Please supply an object of class 'pca.result'.")
@@ -445,9 +446,13 @@ plot.pca.result <- function(pc, K = c(1,2), screeplot = FALSE, show = c("points"
 		geom.fn <- ggplot2::geom_point
 		size <- 2
 	}
-	else {
+	else if (show == "labels") {
 		geom.fn <- ggplot2::geom_text
 		size <- 3.5
+	}
+	else if (show == "nothing") {
+		geom.fn <- ggplot2::geom_blank
+		size <- NULL
 	}
 		
 	xll <- paste0("\nPC", K[1], " (", sprintf("%.1f", 100*attr(pc, "explained")[1]), "%)")
