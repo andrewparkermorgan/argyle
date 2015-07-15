@@ -9,6 +9,8 @@
 #' 	and those names should match those in the BeadStudio output.
 #' @param in.path directory in which to search for input files
 #' @param keep.intensity should hybridization intensities be kept in addition to genotype calls?
+#' @param colmap named character vector mapping column names in \code{*FinalReport} to required columns
+#' 	for \code{argyle} (see Details)
 #'
 #' @return A \code{genotypes} object with genotype calls, marker map, sample metadata and (as requested)
 #' 	intensity data.
@@ -20,6 +22,27 @@
 #' 	command line, files will be unzipped on the fly.  Otherwise \code{FinalReport.zip} (but not
 #' 	\code{Sample_Map.zip}) must be unzipped first.  This is due to the use of \code{data.table} to
 #' 	handle the usually very large genotypes file.
+#' 	
+#' 	Use the \code{colmap} vector to assign column names in the \code{*FinalReport} file to the required
+#' 	columns for argyle.  The required columns are \code{iid} (individual ID), \code{marker} (SNP/marker name),
+#' 	\code{call1} (allele 1, in the same strand as in the marker map), \code{call2} (allele 2, in the
+#' 	same strand as in the marker map), \code{x} (hybridization x-intensity) and \code{y} (hybridization
+#' 	y-intensity).  The default column mapping is:
+#'  \itemize{
+#' 	\item \code{SNP Name} = \code{marker}
+#' 	\item \code{Sample ID} = \code{iid}
+#' 	\item \code{Allele1 - Forward} = \code{call1}
+#' 	\item \code{Allele2 - Forward} = \code{call2}
+#' 	\item \code{X} = \code{x}
+#' 	\item \code{Y} = \code{y}
+#' 	}
+#' 	Note that \code{colmap} must be a named character vector, with old column headers in the \code{names()}
+#' 	and new column names in the vector itself: eg. write \code{colmap = setNames( new, old )}.  An error
+#' 	will be thrown if the column mapping does not provide enough information to read the input properly.
+#' 	Particular attention should be paid to the encoding of the alleles in the \code{snps} object, which
+#' 	will be platform-specific.  For users of the Mouse Universal Genotyping Array series from Neogen Inc,
+#' 	alleles \code{A1,A2} in \code{snps} will be on the forward strand, so columns \code{Allele * - Forward}
+#' 	(not \code{Allele * - Top} or \code{Allele * - AB}) are the ones to use.
 #' 	
 #' 	The behavior of this function with respect to missing data in the genotypes versus the contents
 #' 	of \code{snps} is asymmetric.  Markers in \code{snps} which are absent in the input files will
@@ -34,7 +57,7 @@
 #' 	Inspiration from Dan Gatti's DOQTL package: <https://github.com/dmgatti/DOQTL/blob/master/R/extract.raw.data.R>
 #'
 #' @export
-read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, ...) {
+read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, colmap = NULL,...) {
 
 	## stop here if marker map is not well-formed
 	if (!.is.valid.map(snps)) {
@@ -45,7 +68,7 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	}
 	
 	## read files from Illumina BeadStudio
-	data <- .read.illumina.raw(prefix, in.path)
+	data <- .read.illumina.raw(prefix, in.path, colmap)
 	rownames(data$samples) <- gsub(" ","", rownames(data$samples))
 	
 	## convert to matrices using data.table's optimized code
@@ -98,7 +121,7 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 }
 
 ## process files from BeadStudio into a dataframe (of samples) and data.table (of calls/intensities)
-.read.illumina.raw <- function(prefix, in.path = ".", ...) {
+.read.illumina.raw <- function(prefix, in.path = ".", colmap = NULL, ...) {
 	
 	if (length(paste(prefix, in.path)) > 1)
 		stop("Only read one batch at a time.  To handle multiple batches, wrap with an lapply().")
@@ -180,25 +203,49 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	message(paste("Reading genotypes and intensities for", nsnps, "markers x", length(renamer), "samples from <", infile, "> ..."))
 	data <- data.table::fread(piper, skip = 9)
 	
-	## Verify that we have all of the column names that we expect.
-	column.names <- c("SNP Name", "Sample ID", "X", "Y", "Allele1 - Forward",
-					  "Allele2 - Forward")
-	columns <- match(column.names, names(data))  
-	if (any(is.na(columns))) {
-		stop(paste("All of the expected column names were not found in the",
-				   "FinalReport file. The missing column(s) are:", paste(
-				   	colnames[is.na(columns)], collapse = ",")))
+	## Construct the column-naming map
+	cols.needed <- c("marker","iid","x","y","call1","call2")
+	if (is.null(colmap)) {
+		colmap <-  c("SNP Name" = "marker",
+				   "Sample ID" = "iid",
+				   "X" = "x","Y" = "y",
+				   "Allele1 - Forward" = "call1",
+				   "Allele2 - Forward" = "call2")
 	}
-	nsamples <- length(samples)
-	data.table::setnames(data, c("marker","iid","call1","call2","x","y","gc","theta","x.raw","y.raw","R"))
+	
+	## Check that all required columns are specified in the map
+	columns <- match(cols.needed, colmap)
+	if (any(is.na(columns))) {
+		stop(paste0("The column-name map must specify columns mapping to each of the following:\n",
+					"'iid' (individual ID), 'marker' (SNP/marker name), 'x' (x-intensity), 'y' (y-intensity),\n",
+					"''call1' (allele 1, in same strand as specified in marker map), and 'call2' (allele 2).\n\n",
+					"You are missing the following: ", paste(colmap[is.na(columns)], sep = ", ")))
+	}
+	
+	## Check that all mapped columns are present in the input
+	columns <- match(names(colmap), names(data))  
+	if (any(is.na(columns))) {
+		stop(paste("All of the required column names were not found in the",
+				   "FinalReport file. The missing column(s) are:", paste(
+				   	names(colmap)[is.na(columns)], collapse = ", ")))
+	}
+	
+	## assign new column names using column map
+	data.table::setnames(data, names(colmap), colmap)
+	
 	## rename samples by index
+	nsamples <- length(samples)
 	data.table::set(data, i = NULL, "iid", rep(renamer, 1, each = nsnps))
+	
+	## convert 2-column allele calls to single column; mark hets, missing, etc.
 	data.table::set(data, i = NULL, "call", paste0(data$call1, data$call2))
 	data.table::set(data, i = NULL, "is.het", (data$call1 != data$call2))
 	data.table::set(data, i = NULL, "is.na", (data$call1 == "-" | data$call2 == "-"))
 	data.table::set(data, i = which(data$is.het), "call", "H")
 	data.table::set(data, i = which(data$is.na), "call", "N")
 	data.table::set(data, i = NULL, "call", substr(data$call, 1, 1))
+	
+	## pre-key by marker (SNP name) for next step
 	data.table::setkey(data, marker)
 	
 	return( list(samples = samples.df, intens = data) )
@@ -476,3 +523,57 @@ as.genotypes.cross <- function(x, ...) {
 	
 }
 as.genotypes <- function(x, ...) UseMethod("as.genotypes")
+
+#' Export genotypes in Stanford HGDP format
+#' 
+#' @param gty a \code{genotypes} object
+#' @param prefix filename prefix for output; result will be two files, \code{{prefix}.geno} and
+#' 	with genotypes and \code{{prefix}.map} with marker map.
+#' 
+#' @details Write genotypes to disk in the Stanford HGDP format, which can be read by (among
+#' 	others) the PGDSpider format-conversion suite.
+#' 
+#' @references
+#' Lischer HEL and Excoffier L (2012) PGDSpider: An automated data conversion tool for connecting
+#' 	population genetics and genomics programs. Bioinformatics 28: 298-299.
+#' 
+#' @export
+write.hgdp <- function(gty, prefix, ...) {
+	
+	if (!(inherits(gty, "genotypes") && .has.valid.map(gty)))
+		stop("Please supply an object of class 'genotypes' which includes a valid marker map.")
+	
+	## convert genotypes to numeric
+	gty <- recode.genotypes(gty, "01")
+	
+	## now convert to HGDP style (AA, AB, BB, -)
+	message("Converting genotypes to HGDP encoding (AA/AB/BB/-)...")
+	out <- matrix("-", nrow = nrow(gty), ncol = ncol(gty),
+					 dimnames = dimnames(gty))
+	for (i in seq_len(ncol(gty))) {
+		majr <- with(attr(gty, "map"), paste0(A1, A1))
+		hetr <- with(attr(gty, "map"), paste0(A1, A2))
+		minr <- with(attr(gty, "map"), paste0(A2, A2))
+		is.miss <- is.na(gty[ ,i ])
+		is.maj <- gty[ ,i ] == 0 & !is.miss
+		is.het <- gty[ ,i ] == 1 & !is.miss
+		is.min <- gty[ ,i ] == 2 & !is.miss
+		out[ is.maj,i ] <- majr[is.maj]
+		out[ is.het,i ] <- hetr[is.het]
+		out[ is.min,i ] <- minr[is.min]
+		out[ is.miss,i ] <- "-"
+	}
+	colnames(out)[1] <- paste0("\t", colnames(out)[1])
+	write.table(out, paste0(prefix, ".geno"), col.names = TRUE, row.names = TRUE,
+				quote = FALSE, sep = "\t")
+	
+	## prepare marker map
+	message("Writing marker map...")
+	write.table(attr(gty, "map")[ ,c("marker","chr","pos") ], paste0(prefix, ".map"),
+				col.names = FALSE, row.names = FALSE,
+				quote = FALSE, sep = "\t")
+	
+	message("Done.")
+	invisible(TRUE)
+	
+}

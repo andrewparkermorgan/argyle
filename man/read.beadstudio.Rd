@@ -4,7 +4,8 @@
 \alias{read.beadstudio}
 \title{Read genotype calls and hybridization from Illumina BeadStudio output.}
 \usage{
-read.beadstudio(prefix, snps, in.path = ".", keep.intensity = TRUE, ...)
+read.beadstudio(prefix, snps, in.path = ".", keep.intensity = TRUE,
+  colmap = NULL, ...)
 }
 \arguments{
 \item{prefix}{filename prefix, without working directory: the \code{*} in \code{*_FinalReport.zip}}
@@ -16,6 +17,9 @@ and those names should match those in the BeadStudio output.}
 \item{in.path}{directory in which to search for input files}
 
 \item{keep.intensity}{should hybridization intensities be kept in addition to genotype calls?}
+
+\item{colmap}{named character vector mapping column names in \code{*FinalReport} to required columns
+    for \code{argyle} (see Details)}
 }
 \value{
 A \code{genotypes} object with genotype calls, marker map, sample metadata and (as requested)
@@ -32,6 +36,27 @@ This function initializes a \code{genotypes} object from Illumina BeadStudio out
 	command line, files will be unzipped on the fly.  Otherwise \code{FinalReport.zip} (but not
 	\code{Sample_Map.zip}) must be unzipped first.  This is due to the use of \code{data.table} to
 	handle the usually very large genotypes file.
+
+	Use the \code{colmap} vector to assign column names in the \code{*FinalReport} file to the required
+	columns for argyle.  The required columns are \code{iid} (individual ID), \code{marker} (SNP/marker name),
+	\code{call1} (allele 1, in the same strand as in the marker map), \code{call2} (allele 2, in the
+	same strand as in the marker map), \code{x} (hybridization x-intensity) and \code{y} (hybridization
+	y-intensity).  The default column mapping is:
+ \itemize{
+	\item \code{SNP Name} = \code{marker}
+	\item \code{Sample ID} = \code{iid}
+	\item \code{Allele1 - Forward} = \code{call1}
+	\item \code{Allele2 - Forward} = \code{call2}
+	\item \code{X} = \code{x}
+	\item \code{Y} = \code{y}
+	}
+	Note that \code{colmap} must be a named character vector, with old column headers in the \code{names()}
+	and new column names in the vector itself: eg. write \code{colmap = setNames( new, old )}.  An error
+	will be thrown if the column mapping does not provide enough information to read the input properly.
+	Particular attention should be paid to the encoding of the alleles in the \code{snps} object, which
+	will be platform-specific.  For users of the Mouse Universal Genotyping Array series from Neogen Inc,
+	alleles \code{A1,A2} in \code{snps} will be on the forward strand, so columns \code{Allele * - Forward}
+	(not \code{Allele * - Top} or \code{Allele * - AB}) are the ones to use.
 
 	The behavior of this function with respect to missing data in the genotypes versus the contents
 	of \code{snps} is asymmetric.  Markers in \code{snps} which are absent in the input files will
