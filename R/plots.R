@@ -177,6 +177,23 @@ plot.clusters <- function(gty, markers = NULL, theme.fn = ggplot2::theme_bw, for
 	
 }
 
+#' Plot histogram of (sum-)intensities by sample
+#' @export
+intensity.histogram <- function(gty, ...) {
+	
+	if (!(inherits(gty, "genotypes") && .has.valid.intensity(gty)))
+		stop("Please supply an object of class 'genotypes' with valid intensity matrices attached.")
+	
+	df <- get.intensity(gty, TRUE)
+	df$si <- with(df, sqrt(x^2 + y^2))
+	ggplot2::ggplot(df) +
+		ggplot2::geom_histogram(ggplot2::aes(x = si), binwidth = diff(range(df$si, na.rm = TRUE))/50) +
+		ggplot2::facet_wrap(~ iid, ncol = 3) +
+		ggplot2::ylab("count of markers\n") + 
+		ggplot2::xlab(expression(atop("", paste("sum-intensity = ", sqrt(x^2 + y^2)))))
+	
+}
+
 #' Plot B-allele frequency (BAF) and log2-intensity ratio (LRR) for a sample
 #'
 #' @param gty a \code{genotypes} object with BAF and LRR pre-computed via \code{tQN()}

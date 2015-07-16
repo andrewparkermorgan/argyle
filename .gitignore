@@ -19,6 +19,7 @@
 *.rar
 *.tar
 *.zip
+
 # Logs and databases #
 ######################
 *.log
@@ -32,6 +33,12 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Testing data
+test/*
+
+# manuscript files
+manuscript/*
 
 # Image sources
 *.ai

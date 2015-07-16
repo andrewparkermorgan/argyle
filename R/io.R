@@ -305,10 +305,10 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	
 	## demote back to dataframe
 	gty.mat <- as.data.frame(gty.mat)
-	newmap <- gty.mat[ ,1:4 ]
+	newmap <- gty.mat[ ,1:4, drop = FALSE ]
 	rownames(newmap) <- as.character(newmap$marker)
 	newmap <- data.frame(newmap, snps[ rownames(newmap),!(colnames(snps) %in% c("chr","marker","cM","pos")) ])
-	gty.mat <- as.matrix(gty.mat[ ,-(1:4) ])
+	gty.mat <- as.matrix(gty.mat[ ,-(1:4), drop = FALSE ])
 	
 	rownames(gty.mat) <- as.character(newmap$marker)
 	colnames(gty.mat) <- gsub(" ","", colnames(gty.mat))

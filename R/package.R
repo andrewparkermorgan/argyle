@@ -147,8 +147,8 @@ genotypes <- function(G, map, ped = NULL, alleles = c("auto","native","01","rela
 			map$A2 <- as.character(toupper(map$A2))
 			monomorphic <- (map$A1 == map$A2)
 			if (any(monomorphic)) {
-				stop( paste("REF and ALT alleles can't match, but they do at these markers:\n",
-							paste(rownames(map)[ which(monomorphic) ], collapse = ",")) )
+				warning( paste("REF and ALT alleles shouldn't match, but they do at these markers:\n",
+							   paste(rownames(map)[ which(monomorphic) ], collapse = ",")) )
 			}
 		}
 	}
@@ -222,7 +222,7 @@ genotypes <- function(G, map, ped = NULL, alleles = c("auto","native","01","rela
 				stop("Intensity matrices are invalid: they should have same dimensions as the",
 					 "genotypes matrix, and matching row and column names.")
 			else
-				intensity <- lapply(intensity, function(x) x[mk,sm])
+				intensity <- lapply(intensity, function(x) x[mk,sm, drop = FALSE])
 		}
 		else {
 			stop("Intensity matrices should be supplied as list of length 2.")
