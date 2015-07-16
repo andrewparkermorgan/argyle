@@ -100,6 +100,26 @@ theme_axesonly <- function(base_size = 12, base_family = "Helvetica") {
 }
 
 #' @export
+theme_heatmap <- function(...) {
+	
+	ggplot2::`%+replace%`(
+		ggplot2::theme_classic(),
+		ggplot2::theme(axis.text = ggplot2::element_text(size = 8),
+					   axis.text.x = ggplot2::element_text(angle = 90, hjust = 1),
+					   axis.line = ggplot2::element_blank(), axis.title = ggplot2::element_blank())
+	)
+		
+}
+
+#' @export
+scale_fill_heatmap <- function(...) {
+		
+	heat.cols <- colorRampPalette(RColorBrewer::brewer.pal(4, "Spectral")[2:1])(4)
+	ggplot2::scale_fill_gradientn(..., colours = heat.cols, na.value = "grey70")
+	
+}
+
+#' @export
 blank.grob <- function(...) {
 	grid::grid.rect(gp = grid::gpar(col = NA))
 }

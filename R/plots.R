@@ -177,6 +177,31 @@ plot.clusters <- function(gty, markers = NULL, theme.fn = ggplot2::theme_bw, for
 	
 }
 
+#' @export
+heatmap <- function(gty, ...) {
+	
+	if (!(inherits(gty, "genotypes")))
+		stop("Please supply an object of class 'genotypes'.")
+	
+	## recode genotypes to numeric
+	gty <- recode(gty, "01")
+	
+	## get distance matrix
+	message("Computing distance matrix from genotypes...")
+	d <- dist(t(gty), "manhattan")
+	cl <- hclust(d)
+	k <- as.matrix(d)/(2*nrow(gty))
+	k <- k[ cl$order,cl$order ]
+	
+	ggplot2::ggplot(reshape2::melt(1-k)) +
+		ggplot2::geom_tile(ggplot2::aes(x = Var1, y = Var2, fill = value)) +
+		scale_fill_heatmap("P(IBS)") +
+		ggplot2::coord_equal() +
+		theme_heatmap()
+		
+	
+}
+
 #' Plot histogram of (sum-)intensities by sample
 #' @export
 intensityhist <- function(gty, ...) {
