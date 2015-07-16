@@ -179,7 +179,7 @@ plot.clusters <- function(gty, markers = NULL, theme.fn = ggplot2::theme_bw, for
 
 #' Plot histogram of (sum-)intensities by sample
 #' @export
-intensity.histogram <- function(gty, ...) {
+intensityhist <- function(gty, ...) {
 	
 	if (!(inherits(gty, "genotypes") && .has.valid.intensity(gty)))
 		stop("Please supply an object of class 'genotypes' with valid intensity matrices attached.")
