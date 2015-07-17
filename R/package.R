@@ -175,7 +175,8 @@ genotypes <- function(G, map, ped = NULL, alleles = c("auto","native","01","rela
 	}
 	
 	## --- pedigree --- ##
-	sm <- gsub(" ","",colnames(G))
+	colnames(G) <- gsub(" ","",colnames(G))
+	sm <- colnames(G)
 	if (!is.null(ped)) {
 		if (!.is.valid.ped(ped))
 			stop(paste("The sample metadata provided is invalid; it should be a dataframe with",
@@ -213,16 +214,20 @@ genotypes <- function(G, map, ped = NULL, alleles = c("auto","native","01","rela
 	if (!is.null(intensity)) {
 		if (is.list(intensity) && length(intensity) == 2) {
 			pass <- sapply(intensity, function(x) {
+				colnames(x) <- gsub(" ","", colnames(x))
 				pass <- all(ncol(x) == ncol(G), nrow(x) == nrow(G))
 				pass <- pass && !any(sapply(dimnames(x), is.null))
 				pass <- pass && all(sm %in% colnames(x)) && all(mk %in% rownames(x))
 				return(pass)
 			})
 			if (!all(pass))
-				stop("Intensity matrices are invalid: they should have same dimensions as the",
-					 "genotypes matrix, and matching row and column names.")
+				stop(paste("Intensity matrices are invalid: they should have same dimensions as the",
+						   "genotypes matrix, and matching row and column names."))
 			else
-				intensity <- lapply(intensity, function(x) x[mk,sm, drop = FALSE])
+				intensity <- lapply(intensity, function(x) {
+						colnames(x) <- gsub(" ","", colnames(x))
+						x[mk,sm, drop = FALSE]
+					})
 		}
 		else {
 			stop("Intensity matrices should be supplied as list of length 2.")

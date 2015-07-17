@@ -497,8 +497,8 @@ plot.pca.result <- function(pc, K = c(1,2), screeplot = FALSE, show = c("points"
 		size <- NULL
 	}
 		
-	xll <- paste0("\nPC", K[1], " (", sprintf("%.1f", 100*attr(pc, "explained")[1]), "%)")
-	yll <- paste0("PC", K[1], " (", sprintf("%.1f", 100*attr(pc, "explained")[2]), "%)\n")
+	xll <- paste0("\nPC", K[1], " (", sprintf("%.1f", 100*attr(pc, "explained")[ K[1] ]), "%)")
+	yll <- paste0("PC", K[2], " (", sprintf("%.1f", 100*attr(pc, "explained")[ K[2] ]), "%)\n")
 	
 	## plot PCs against each other
 	p1 <- ggplot2::ggplot(pc, ggplot2::aes_string(paste0("PC", K[1]), paste0("PC", K[2]),

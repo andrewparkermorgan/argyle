@@ -279,7 +279,7 @@ write.plink.file <- function(x, ..., fix.missing = NA) {
 #'	that fileset is returned. 
 #'
 #' @export
-plinkify <- function(gty, map = NULL, ped = NULL, where = tempdir(), prefix = "stuff", flags = "", ...) {
+plinkify <- function(gty, where = tempdir(), prefix = "stuff", flags = "", ...) {
 	
 	## allow shortcut to bless paths of existing plink files
 	if (inherits(gty, "character") && is.atomic(gty)) {
@@ -300,13 +300,10 @@ plinkify <- function(gty, map = NULL, ped = NULL, where = tempdir(), prefix = "s
 	if (!inherits(gty, "genotypes"))
 		stop("Plinkification of non-'genotypes' objects is not yet implemented.")
 	
-	nind <- ncol(gty)
-	if (is.null(ped))
-		ped <- make.fam(1:nind)
-	
 	prefix <- file.path(where, prefix)
+	attr(prefix, "working") <- where
 	system(paste0("rm ", prefix, "*"))
-	write.plink(gty, paste0(prefix), fam = ped)
+	write.plink(gty, paste0(prefix))
 	
 	class(prefix) <- c("plink", class(prefix))
 	return(prefix)
