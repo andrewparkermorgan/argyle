@@ -4,20 +4,19 @@
 \alias{plinkify}
 \title{Create a pointer to a PLINK fileset}
 \usage{
-plinkify(gty, map = NULL, ped = NULL, where = tempdir(),
-  prefix = "stuff", flags = "", ...)
+plinkify(gty, where = tempdir(), prefix = "stuff", flags = "", ...)
 }
 \arguments{
 \item{gty}{a length-1 character vector containing the path to an existing PLINK fileset, OR a
 \code{genotypes} object which will be converted to one}
-
-\item{map}{if \code{gty} a \code{genotypes} object, a marker map to override its current one}
 
 \item{where}{if \code{gty}, directory in which to write the new PLINK fileset}
 
 \item{prefix}{basename of the fileset to be created}
 
 \item{flags}{(ignored)}
+
+\item{map}{if \code{gty} a \code{genotypes} object, a marker map to override its current one}
 
 \item{map}{if \code{gty} a \code{genotypes} object, sample metadata to override any existing metadata}
 }

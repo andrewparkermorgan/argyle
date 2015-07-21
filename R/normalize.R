@@ -1,4 +1,10 @@
 ## normalize.R
+## NB: functions in this file are adapted with modification from John Didion's CLASP package:
+##	Didion JP et al. (2014) BMC Genomics. doi:10.1186/1471-2164-15-847.
+##	https://github.com/jdidion/clasp/
+## Source code from CLASP is provided under the CC-BY-SA-4.0 license.  As required by the terms
+## of that license, please note that adaptation of CLASP code in this package does not necessarily
+## constitute an endorsement by CLASP's author.
 
 #' Perform quantile normalization of intensity data.
 #'
@@ -52,6 +58,41 @@ quantile.normalize <- function(gty, weights = NULL, force = FALSE, ...) {
 	
 }
 
+## now supersded by reworked tQN(..., adjust.lrr = TRUE)
+.calc.lrr <- function(gty, means, ...) {
+	
+	if (!(inherits(gty, "genotypes") && .has.valid.intensity(gty)))
+		stop("Please supply an object of class 'genotypes' with intensity information attached.")
+	
+	## keep only markers which are in reference set AND in the data
+	m <- intersect(rownames(gty), names(means))
+	
+	message("Found ", length(m), " markers in intersection of reference values and this dataset.")
+	message("Calculating raw LRR (log2 ratio of total intensitiy)...")
+	
+	## initialize LRR matrix
+	lrr <- matrix(NA, nrow = nrow(gty), ncol = ncol(gty),
+				  dimnames = dimnames(gty))
+	
+	## spoof the BAF matrix, unless it already exists
+	baf <- matrix(-1, nrow = nrow(gty), ncol = ncol(gty),
+				  dimnames = dimnames(gty))
+	if (is.null(attr(gty, "baf")))
+		attr(gty, "baf") <- baf
+	
+	## calculate LRRs in parallel over markers, but serially over samples
+	## TODO: progress bar
+	for (s in seq_len(ncol(gty))) {
+		lrr[ m,s ] <- log2( with(attr(gty, "intensity"), x[m,s]+y[m,s])/means[m] )
+	}
+	attr(gty, "lrr") <- lrr
+	
+	message("Done.")
+	
+	return(gty)
+	
+}
+
 #' Perform tQN normalization of intensity data.
 #'
 #' @param gty a \code{genotypes} object
@@ -69,9 +110,23 @@ quantile.normalize <- function(gty, weights = NULL, force = FALSE, ...) {
 #' 	on the ratio between the transformed and raw values.
 #' 	NB: the quality of the result of tQN depends strongly on the reference clusters provided in \code{clusters},
 #' 	so beware.
+#' 	
+#' 	The object \code{clusters} should be a dataframe with one row per marker and at least the following six columns:
+#' 	\code{A.R, A.T}, the values of R and theta, respectively, for the centroid of the AA homozygous cluster;
+#' 	\code{B.R, B.T}, likewise for the BB homozygous cluster; and \code{H.R, H.T}, likewise for the AB heterozygous
+#' 	cluster.
+#' 	
+#' 	The transformations proposed by Peiffer et al. (2006) assume that most samples will fall into three well-defined
+#' 	clusters at each marker, save for a relatively small proportion of abberrantly-hybridizing samples.  Indeed the BAF
+#' 	is only well-defined in this case.  However, these assumptions are a bit too restrictive for many arrays, and
+#' 	in particular for arrays which include copy-number probes.  It may be possible to obtain a tighter distribution
+#' 	of LRR values by choosing \code{adjust.lrr = TRUE} and re-computing the LRR values against a reference distribution
+#' 	independent of BAF or underlying clustering pattern.  For this, an additional column \code{Rmean} is required in
+#' 	\code{clusters} which gives the "mean" (or other appropriately-chosen central value) of R across *all* possible
+#' 	clusters at this marker.
 #'
 #' @references
-#' Adapted from code provided by Johan Staaf.
+#' Adapted from code provided by Johan Staaf and John Didion.
 #' 
 #' Staaf J et al. (2008) BMC Bioinformatics. doi:10.1186/1471-2105-9-409.
 #' 
@@ -80,8 +135,10 @@ quantile.normalize <- function(gty, weights = NULL, force = FALSE, ...) {
 #' 
 #' Peiffer DA et al. (2006) Genome Res 16(9): 1136-1148. doi:10.1101/gr.5402306.
 #'
+#' Didion JP et al. (2014) BMC Genomics. doi:10.1186/1471-2164-15-847.
+#'
 #' @export
-tQN <- function(gty, thresholds = c(1.5, 1.5), clusters = NULL, ...) {
+tQN <- function(gty, thresholds = c(1.5, 1.5), clusters = NULL, adjust.lrr = TRUE, ...) {
 	
 	if (!(inherits(gty, "genotypes") && .has.valid.intensity(gty)))
 		stop("Please supply an object of class 'genotypes' with intensity information attached.")
@@ -94,22 +151,38 @@ tQN <- function(gty, thresholds = c(1.5, 1.5), clusters = NULL, ...) {
 				  dimnames = list(rownames(gty), colnames(gty)))
 	xnorm <- ynorm <- lrr <- baf
 	intens.raw <- attr(gty, "intensity")
+	intens.raw$x[ is.na(intens.raw$x) ] <- 0
+	intens.raw$y[ is.na(intens.raw$y) ] <- 0
+	if (do.norm)
+		intens.norm <- list(x = preprocessCore::normalize.quantiles.robust(intens.raw$x),
+							y = preprocessCore::normalize.quantiles.robust(intens.raw$y))
+	else
+		intens.norm <- intens.raw
 	
 	message("Performing tQN normalization...")
 	if (interactive())
 		pb <- txtProgressBar(min = 0, max = ncol(gty), style = 3)
 	for (i in seq_len(ncol(gty))) {
 		
-		rez <- tQN.sample(markers, intens.raw$x[,i], intens.raw$y[,i],
-						  QN.thresholds = thresholds, clusters = clusters)
+		rez <- tQN.sample(markers, QN.thresholds = thresholds, clusters = clusters,
+						  intens.raw$x[,i], intens.raw$y[,i],
+						  intens.norm$x[,i], intens.norm$y[,i] )
 		baf[ rownames(rez),i ] <- rez$BAF
-		lrr[ rownames(rez),i ] <- rez$LRR
+		
+		if (adjust.lrr) {
+			## redo LRR calculation against global mean intensity, rather than cluster-specific mean
+			lrr[ rownames(rez),i ] <- log2( with(intens.raw, rez$X+rez$Y)/clusters[ rownames(rez),"Rmean" ] )
+		}
+		else
+			## use LRR calculation as-is
+			lrr[ rownames(rez),i ] <- rez$LRR
+		
 		xnorm[ rownames(rez),i ] <- rez$X
 		ynorm[ rownames(rez),i ] <- rez$Y
 		if (interactive())
 			setTxtProgressBar(pb, i)
 	}
-	
+		
 	message("Done.")
 	attr(gty, "intensity") <- list(x = xnorm, y = ynorm)
 	attr(gty, "normalized") <- TRUE
@@ -120,7 +193,8 @@ tQN <- function(gty, thresholds = c(1.5, 1.5), clusters = NULL, ...) {
 }
 
 ## from JPD: <https://github.com/jdidion/sci/blob/master/projects/megamugaQC/R/normalize.R>
-tQN.sample <- function(markers, X, Y, QN.thresholds = c(1.5, 1.5), clusters, ...) {
+tQN.sample <- function(markers, X, Y, Xnorm, Ynorm,
+					   QN.thresholds = c(1.5, 1.5), clusters, ...) {
 	
 	result <- data.frame(BAF = rep(NA, length(X)), LRR = rep(NA, length(X)), 
 						 X = rep(NA, length(X)), Y = rep(NA, length(Y)),
@@ -133,24 +207,22 @@ tQN.sample <- function(markers, X, Y, QN.thresholds = c(1.5, 1.5), clusters, ...
 	
 	data <- cbind(X = X, Y = Y)
 	rownames(data) <- markers
+	inorm <- cbind(X = Xnorm, Y = Ynorm)
+	rownames(inorm) <- markers
 	
 	# Remove any rows that aren't in the cluster file
 	i <- intersect(rownames(clusters), markers)
 	ref <- clusters[ i, ]
 	data <- data[ i, ]
-	
-	# Quantile normalization
-	inorm <- normalize.quantiles.robust(data)
+	inorm <- inorm[ i, ]
 	
 	# Calculate R
 	R <- inorm[,1] + inorm[,2]
-	
 	na <- is.na(data[,1]) | is.na(data[,2]) | data[,1] <= 0 | data[,2] <= 0
 	
 	# Thesholding of QN effect
 	aff.x <- !na & (inorm[,1] / data[,1]) > QN.thresholds[1]
 	inorm[ aff.x,1 ] <- QN.thresholds[1] * data[ aff.x,1 ]
-	
 	aff.y <- !na & (inorm[,2] / data[,2]) > QN.thresholds[2]
 	inorm[ aff.y,2 ] <- QN.thresholds[2] * data[ aff.y,2 ]
 	
@@ -163,16 +235,21 @@ tQN.sample <- function(markers, X, Y, QN.thresholds = c(1.5, 1.5), clusters, ...
 	X <- R - Y
 	
 	# Calculate BAF and LRR from corrected R and T
-	baflrr <- baf.lrr(R, Th, ref)
+	#baflrr <- baf.lrr(R, Th, ref)
+	## call fast Rcpp version
+	baflrr <- tQN_Cpp(R, Th, ref$A.T, ref$A.R, ref$B.T, ref$B.R, ref$H.T, ref$H.R)
 	
-	result[rownames(data),] <- data.frame(baflrr, X = X, Y = Y)
+	#result[rownames(data),] <- data.frame(baflrr, X = X, Y = Y)
+	result[rownames(data),] <- data.frame(BAF = baflrr$BAF, LRR = baflrr$LRR, X = X, Y = Y)
 	return(result)
 	
 }
 
 ## from JPD: <https://github.com/jdidion/sci/blob/master/projects/megamugaQC/R/normalize.R>
+## NB: left here for reference, but has been superseded by much faster Rcpp version in tQN_Cpp()
 baf.lrr <- function(R, Th, ref) {
 	
+	print("I am the walrus")
 	BAF <- Th
 	LRR <- R
 	

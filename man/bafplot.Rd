@@ -4,7 +4,7 @@
 \alias{bafplot}
 \title{Plot B-allele frequency (BAF) and log2-intensity ratio (LRR) for a sample}
 \usage{
-bafplot(gty, sm = TRUE, ...)
+bafplot(gty, sm = TRUE, smooth = "cv", draw = TRUE, ...)
 }
 \arguments{
 \item{gty}{a \code{genotypes} object with BAF and LRR pre-computed via \code{tQN()}}

@@ -4,7 +4,8 @@
 \alias{tQN}
 \title{Perform tQN normalization of intensity data.}
 \usage{
-tQN(gty, thresholds = c(1.5, 1.5), clusters = NULL, ...)
+tQN(gty, thresholds = c(1.5, 1.5), clusters = NULL, adjust.lrr = TRUE,
+  ...)
 }
 \arguments{
 \item{gty}{a \code{genotypes} object}
@@ -29,9 +30,23 @@ Implements thresholded quantile normalization (tQN) as described in Staaf et al.
 	on the ratio between the transformed and raw values.
 	NB: the quality of the result of tQN depends strongly on the reference clusters provided in \code{clusters},
 	so beware.
+
+	The object \code{clusters} should be a dataframe with one row per marker and at least the following six columns:
+	\code{A.R, A.T}, the values of R and theta, respectively, for the centroid of the AA homozygous cluster;
+	\code{B.R, B.T}, likewise for the BB homozygous cluster; and \code{H.R, H.T}, likewise for the AB heterozygous
+	cluster.
+
+	The transformations proposed by Peiffer et al. (2006) assume that most samples will fall into three well-defined
+	clusters at each marker, save for a relatively small proportion of abberrantly-hybridizing samples.  Indeed the BAF
+	is only well-defined in this case.  However, these assumptions are a bit too restrictive for many arrays, and
+	in particular for arrays which include copy-number probes.  It may be possible to obtain a tighter distribution
+	of LRR values by choosing \code{adjust.lrr = TRUE} and re-computing the LRR values against a reference distribution
+	independent of BAF or underlying clustering pattern.  For this, an additional column \code{Rmean} is required in
+	\code{clusters} which gives the "mean" (or other appropriately-chosen central value) of R across *all* possible
+	clusters at this marker.
 }
 \references{
-Adapted from code provided by Johan Staaf.
+Adapted from code provided by Johan Staaf and John Didion.
 
 Staaf J et al. (2008) BMC Bioinformatics. doi:10.1186/1471-2105-9-409.
 
@@ -39,5 +54,7 @@ Bolstad BM et al. (2003) A comparison of normalization methods for high density 
 	array data based on bias and variance. Bioinformatics 19(2): 185-193.
 
 Peiffer DA et al. (2006) Genome Res 16(9): 1136-1148. doi:10.1101/gr.5402306.
+
+Didion JP et al. (2014) BMC Genomics. doi:10.1186/1471-2164-15-847.
 }
 

@@ -233,7 +233,7 @@ intensityhist <- function(gty, ...) {
 #' @seealso \code{\link{tQN}}
 #'
 #' @export
-bafplot <- function(gty, sm = TRUE, ...) {
+bafplot <- function(gty, sm = TRUE, smooth = "cv", draw = TRUE, ...) {
 	
 	if (!(inherits(gty, "genotypes") && .has.valid.baflrr(gty)))
 		stop("Please supply an object of class 'genotypes' with valid BAF and LRR pre-computed.")
@@ -246,15 +246,6 @@ bafplot <- function(gty, sm = TRUE, ...) {
 		gty <- recode.genotypes(gty, "01")
 	
 	baf <- get.baf(gty, TRUE)
-	
-	## smoothing helper
-	.smooth.me <- function(x, y, ...) {
-		smth <- do.call(cbind, supsmu(x, y, ...))
-		z <- NA
-		i <- match(x, smth[ ,1 ], nomatch = 0)
-		z[ i > 0] <- smth[ i,2 ]
-		return(z)
-	}
 	
 	## apply smoothing to BAF and LRR
 	baf <- plyr::ddply(baf, .(chr), function(d) {
@@ -278,7 +269,8 @@ bafplot <- function(gty, sm = TRUE, ...) {
 		ggplot2::guides(colour = FALSE, alpha = FALSE) +
 		ggplot2::theme_bw() + ggplot2::theme(axis.title.x = ggplot2::element_blank(),
 											 axis.text.x = ggplot2::element_blank(),
-											 plot.margin = grid::unit(c(1, 1, 0, 0.5), "lines"))
+											 plot.margin = grid::unit(c(1, 1, 0, 0.5), "lines")) +
+		ggplot2::ggtitle(paste0(colnames(gty)[1],"\n"))
 	
 	## plot LRR with smoothed fit
 	lrr.cols <- brewer.interpolate("Spectral")(6)
@@ -292,15 +284,27 @@ bafplot <- function(gty, sm = TRUE, ...) {
 		ggplot2::theme_bw() +ggplot2::theme(axis.title.x = ggplot2::element_blank(),
 											plot.margin = grid::unit(c(0.2, 1, 0.5, 0.5), "lines"))
 	
+	## combine plots
 	rez <- gtable:::rbind_gtable(ggplot2::ggplotGrob(p1),
 								 ggplot2::ggplotGrob(p2),
 								 size = "first")
 	
-	grid::grid.newpage()
-	grid::grid.draw(rez)
+	if (draw) {
+		grid::grid.newpage()
+		grid::grid.draw(rez)
+	}
 	
 	invisible(rez)
 	
+}
+
+## smoothing helper
+.smooth.me <- function(x, y, smooth = "cv", ...) {
+	smth <- do.call(cbind, supsmu(x, y, span = smooth, ...))
+	z <- rep(NA, length(y))
+	i <- match(x, smth[ ,1 ], nomatch = 0)
+	z[ i > 0] <- smth[ i,2 ]
+	return(z)
 }
 
 #' Show a visual representation of a slice of a genotype matrix

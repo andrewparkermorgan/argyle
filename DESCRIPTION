@@ -9,5 +9,7 @@ Description: Some useful stuff for handling genotypes (and underlying hybridizat
 Depends: data.table (>= 1.9.4), digest, preprocessCore, reshape2, plyr
 Suggests: ggplot2, corpcor, grid, gridExtra, gtable, RColorBrewer,
     knitr
-License: MIT
+License: CC BY-NC-SA 4.0
 VignetteBuilder: knitr
+Imports: Rcpp (>= 0.11.0)
+LinkingTo: Rcpp
