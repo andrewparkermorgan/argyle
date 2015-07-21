@@ -576,7 +576,10 @@ dist.genotypes <- function(gty, ...) {
 		gty <- recode(gty, "01")
 	
 	message("Computing distance matrix...")
-	return( stats::dist(t(unclass(gty)), "manhattan") )
+	## compute distance matrix with Rcpp, super fast
+	d <- dist_ibs(gty)
+	dimnames(d) <- list(colnames(gty), colnames(gty))
+	return( as.dist(d) )
 	
 }
 dist <- function(x, ...) UseMethod("dist")

@@ -1,4 +1,3 @@
-## normalize.R
 ## NB: functions in this file are adapted with modification from John Didion's CLASP package:
 ##	Didion JP et al. (2014) BMC Genomics. doi:10.1186/1471-2164-15-847.
 ##	https://github.com/jdidion/clasp/
@@ -153,11 +152,8 @@ tQN <- function(gty, thresholds = c(1.5, 1.5), clusters = NULL, adjust.lrr = TRU
 	intens.raw <- attr(gty, "intensity")
 	intens.raw$x[ is.na(intens.raw$x) ] <- 0
 	intens.raw$y[ is.na(intens.raw$y) ] <- 0
-	if (do.norm)
-		intens.norm <- list(x = preprocessCore::normalize.quantiles.robust(intens.raw$x),
-							y = preprocessCore::normalize.quantiles.robust(intens.raw$y))
-	else
-		intens.norm <- intens.raw
+	intens.norm <- list(x = preprocessCore::normalize.quantiles.robust(intens.raw$x),
+						y = preprocessCore::normalize.quantiles.robust(intens.raw$y))
 	
 	message("Performing tQN normalization...")
 	if (interactive())

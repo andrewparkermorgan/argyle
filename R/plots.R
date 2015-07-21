@@ -187,12 +187,12 @@ heatmap <- function(gty, ...) {
 	gty <- recode(gty, "01")
 	
 	## get distance matrix
-	message("Computing distance matrix from genotypes...")
-	d <- dist(t(gty), "manhattan")
+	d <- dist.genotypes(gty)
 	cl <- hclust(d)
-	k <- as.matrix(d)/(2*nrow(gty))
+	k <- as.matrix(d)
 	k <- k[ cl$order,cl$order ]
 	
+	message("Rendering heatmap...")
 	ggplot2::ggplot(reshape2::melt(1-k)) +
 		ggplot2::geom_tile(ggplot2::aes(x = Var1, y = Var2, fill = value)) +
 		scale_fill_heatmap("P(IBS)") +
@@ -365,6 +365,7 @@ dotplot.genotypes <- function(gty, size = 2, meta = NULL, shape = c("point","til
 	## add metadata, if provided
 	if (!is.null(meta))
 		df <- merge(df, meta, all.x = TRUE)
+	
 	
 	## check that dimensions still match
 	stopifnot(nrow(df) == prod(dim(gty)))

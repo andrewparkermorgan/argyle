@@ -15,11 +15,10 @@ double log2(double x) {
 }
 
 // [[Rcpp::export]]
-List tQN_Cpp( NumericVector r, NumericVector theta, // r,theta coords for sample
-NumericVector A_theta, NumericVector A_r, // r,theta for ref cluster AA
-NumericVector B_theta, NumericVector B_r, // r,theta for ref cluster BB
-NumericVector H_theta, NumericVector H_r // r,theta for ref cluster AB
-) {
+List tQN_Cpp( NumericVector r, NumericVector theta, 
+NumericVector A_theta, NumericVector A_r,
+NumericVector B_theta, NumericVector B_r, 
+NumericVector H_theta, NumericVector H_r) {
 
 	int n = r.size();
 	NumericVector baf = NumericVector(n);
