@@ -582,6 +582,7 @@ dist.genotypes <- function(gty, ...) {
 	return( as.dist(d) )
 	
 }
+#' @export
 dist <- function(x, ...) UseMethod("dist")
 
 #' Calculate Weir & Cockerham's unbiased estimator of Fst

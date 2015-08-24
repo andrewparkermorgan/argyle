@@ -217,6 +217,7 @@ heatmap.genotypes <- function(gty, ...) {
 		
 	
 }
+#' @export
 heatmap <- function(x, ...) UseMethod("heatmap")
 
 #' Plot histogram of (sum-)intensities by sample
@@ -460,6 +461,7 @@ dotplot.genotypes <- function(gty, size = 2, meta = NULL, shape = c("point","til
 	return(p)
 	
 }
+#' @export
 dotplot <- function(x, ...) UseMethod("dotplot")
 
 

@@ -977,6 +977,7 @@ drop.intensity <- function(gty, ...) {
 }
 
 ## apply a function over samples in a genotype matrix, by sample groups
+#' @export
 genoapply <- function(gty, margin = c(1,2), expr = 1, fn = NULL, strip = FALSE, ...) {
 	
 	if (!inherits(gty, "genotypes"))
