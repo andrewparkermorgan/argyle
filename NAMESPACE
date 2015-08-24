@@ -100,3 +100,5 @@ export(write.hgdp)
 export(write.plink)
 export(xchrom)
 export(ychrom)
+
+useDynLib(argyle)
