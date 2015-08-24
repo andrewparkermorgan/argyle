@@ -9,8 +9,11 @@ NumericMatrix dist_ibs(NumericMatrix x) {
    int nc = x.ncol();
    NumericMatrix D = NumericMatrix(nc, nc);
    
-   for (int i = 0; i < nc; i++) {
-   	for (int j = i+1; j < nc; j++) {
+   for (int i = 0; i < nc; i++) { //columns
+   	// assume rows >> columns for most applications, so checking for
+   	// user interrupt here is not too expensive
+   	checkUserInterrupt();
+   	for (int j = i+1; j < nc; j++) { //rows
    		D(j,i) = sum(abs(na_omit(x(_,i)-x(_,j)))) / (2*nr);
    	}
    }
