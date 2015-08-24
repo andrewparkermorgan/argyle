@@ -4,9 +4,22 @@
 \alias{intensityhist}
 \title{Plot histogram of (sum-)intensities by sample}
 \usage{
-intensityhist(gty, ...)
+intensityhist(gty, ref.line = NULL, ...)
+}
+\arguments{
+\item{gty}{a \code{genotypes} object}
+
+\item{ref.line}{numeric; reference value for mean array-wide intensity}
+}
+\value{
+histograms of array-wide sum-intensity, one panel per sample
 }
 \description{
 Plot histogram of (sum-)intensities by sample
+}
+\details{
+Each sample's mean intensity is indicated by a dotted line, and the reference intensity
+	(specified in \code{ref.line}, if any) is indicated by a dashed line.  If any sample filters have
+	been set, either manually or by an automatic QC procedure, that sample's histogram will be plotted in red.
 }
 

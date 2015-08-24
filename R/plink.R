@@ -650,7 +650,7 @@ tdt.plink <- function(prefix, perms = FALSE, geno.missing = 0, ind.missing = 0, 
 }
 
 ## compute genome-wide IBD estimate (\hat{pi}) with plink, optionally with initial LD pruning step
-ibd.plink <- function(prefix, flags = "--nonfounders", prune = FALSE, ...) {
+ibd.plink <- function(prefix, flags = "--nonfounders", prune = FALSE, as.matrix = TRUE, ...) {
 	
 	require(Matrix)
 	
@@ -659,22 +659,24 @@ ibd.plink <- function(prefix, flags = "--nonfounders", prune = FALSE, ...) {
 		prefix.new <- prune.plink(prefix, ...)
 	}
 	
-	cmd <- paste("--genome --min 0.0", flags)
+	cmd <- paste("--genome full --min 0.0", flags)
 	success <- .plink.command(prefix.new, cmd, list("genome"), ...)
 	if (is.character(success)) {
 		ibd.file <- paste0(success, ".genome")
 		ibd <- read.table(ibd.file, header = TRUE, strip.white = TRUE, stringsAsFactors = FALSE)
-		iid <- union( ibd$IID1, ibd$IID2 )
-		#nr <- nrow(ibd)
-		#nind <- round( (1 + sqrt(1 + 4*2*nr))/2 )
-		nind <- length(iid)
-		K <- matrix(0, nrow = nind, ncol = nind)
-		colnames(K) <- iid
-		rownames(K) <- iid
-		for (i in 1:nrow(ibd)) {
-			K[ ibd$IID1[i], ibd$IID2[i] ] <- ibd$PI_HAT[i]
+		if (as.matrix) {
+			iid <- union( ibd$IID1, ibd$IID2 )
+			nind <- length(iid)
+			K <- matrix(0, nrow = nind, ncol = nind)
+			colnames(K) <- iid
+			rownames(K) <- iid
+			for (i in 1:nrow(ibd)) {
+				K[ ibd$IID1[i], ibd$IID2[i] ] <- ibd$PI_HAT[i]
+			}
+			return(Matrix(K, sparse = TRUE))
 		}
-		return(Matrix(K, sparse = TRUE))
+		else
+			return(ibd)
 	}
 	else {
 		stop( paste0("IBD detection failed.") )
@@ -959,8 +961,8 @@ ld.plink <- function(prefix, dprime = FALSE, index.snp = NULL, markers = NULL, c
 #' 	linkage analysis. Am J Hum Genet 81(3): 559-575. doi:10.1086/519795.
 #' 
 #' @export
-filter.plink <- function(prefix, chr = NULL, from = NULL, to = NULL,
-						 maf = 0, hwe = 0, geno.missing = 0,
+filter.plink <- function(prefix, out = NULL, chr = NULL, from = NULL, to = NULL,
+						 maf = 0, hwe = 1, geno.missing = 0,
 						 ind.missing = 0, attrib = NULL, attrib.file = NULL,
 						 remove = NULL, keep = NULL, remove.fam = NULL, keep.fam = NULL,
 						 flags = "", ...) {
@@ -1018,7 +1020,15 @@ filter.plink <- function(prefix, chr = NULL, from = NULL, to = NULL,
 		cmd <- paste(cmd, "--keep", ff)
 	}
 	
-	success <- .plink.command(prefix, cmd, list("bed","bim","fam"), suffix = "filtered", ...)
+	## allow output to user-specified location instead of TMPDIR
+	if (!is.null(out)) {
+		attr(prefix, "working") <- dirname(out)
+		sfx <- basename(out)
+	}
+	else {
+		sfx <- "filtered"
+	}
+	success <- .plink.command(prefix, cmd, list("bed","bim","fam"), suffix = sfx, ...)
 	if (is.character(success)) {
 		class(success) <- c("plink", class(success))
 		if (!is.null(attr(prefix, "working")))

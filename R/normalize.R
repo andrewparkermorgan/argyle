@@ -97,6 +97,9 @@ quantile.normalize <- function(gty, weights = NULL, force = FALSE, ...) {
 #' @param gty a \code{genotypes} object
 #' @param thresholds thresholds for scaling of x- and y-intensities; defaults recommended in Staaf et al. (2008)
 #' @param clusters a pre-computed matrix of cluster means
+#' @param prenorm logical; if \code{TRUE}, perform quantile normalization on whole dataset before tQN procedure
+#' @param xynorm logical; if \code{TRUE}, perform within-sample normalization of x- vs y-intensities
+#' @param adjust.lrr logical; if \code{TRUE}, normalize post-tQN LRRs against population mean (\code{clusters$Rmean})
 #'
 #' @return A copy of the input object, with raw intensities replaced by the normalized ones.  Two additional attributes
 #' \code{baf} and \code{lrr} store the BAF (B-allele frequency) and LRR (log2 intensity ratio).
@@ -125,7 +128,7 @@ quantile.normalize <- function(gty, weights = NULL, force = FALSE, ...) {
 #' 	clusters at this marker.
 #'
 #' @references
-#' Adapted from code provided by Johan Staaf and John Didion.
+#' Adapted from code provided by Johan Staaf to John Didion.
 #' 
 #' Staaf J et al. (2008) BMC Bioinformatics. doi:10.1186/1471-2105-9-409.
 #' 
@@ -137,7 +140,8 @@ quantile.normalize <- function(gty, weights = NULL, force = FALSE, ...) {
 #' Didion JP et al. (2014) BMC Genomics. doi:10.1186/1471-2164-15-847.
 #'
 #' @export
-tQN <- function(gty, thresholds = c(1.5, 1.5), clusters = NULL, adjust.lrr = TRUE, ...) {
+tQN <- function(gty, thresholds = c(1.5, 1.5), clusters = NULL,
+				prenorm = TRUE, xynorm = TRUE, adjust.lrr = TRUE, ...) {
 	
 	if (!(inherits(gty, "genotypes") && .has.valid.intensity(gty)))
 		stop("Please supply an object of class 'genotypes' with intensity information attached.")
@@ -152,26 +156,34 @@ tQN <- function(gty, thresholds = c(1.5, 1.5), clusters = NULL, adjust.lrr = TRU
 	intens.raw <- attr(gty, "intensity")
 	intens.raw$x[ is.na(intens.raw$x) ] <- 0
 	intens.raw$y[ is.na(intens.raw$y) ] <- 0
-	intens.norm <- list(x = preprocessCore::normalize.quantiles.robust(intens.raw$x),
-						y = preprocessCore::normalize.quantiles.robust(intens.raw$y))
 	
-	message("Performing tQN normalization...")
+	if (prenorm) {
+		message("Performing initial quantile normalization...")
+		intens.norm <- list(x = preprocessCore::normalize.quantiles.robust(intens.raw$x),
+							y = preprocessCore::normalize.quantiles.robust(intens.raw$y))
+	}
+	else {
+		intens.norm <- intens.raw
+	}
+		
+	message(paste("Performing tQN normalization", ifelse(xynorm, "with","without"),
+				  "additional within-sample normalization."))
 	if (interactive())
 		pb <- txtProgressBar(min = 0, max = ncol(gty), style = 3)
 	for (i in seq_len(ncol(gty))) {
 		
+		## add intermediate garbage-collect, in case of big objects (?)
+		if ((i %% 10) && i > 0)
+			gc()
+		
 		rez <- tQN.sample(markers, QN.thresholds = thresholds, clusters = clusters,
 						  intens.raw$x[,i], intens.raw$y[,i],
-						  intens.norm$x[,i], intens.norm$y[,i] )
-		baf[ rownames(rez),i ] <- rez$BAF
+						  intens.norm$x[,i], intens.norm$y[,i],
+						  adjust.lrr = adjust.lrr,
+						  xynorm = xynorm )
 		
-		if (adjust.lrr) {
-			## redo LRR calculation against global mean intensity, rather than cluster-specific mean
-			lrr[ rownames(rez),i ] <- log2( with(intens.raw, rez$X+rez$Y)/clusters[ rownames(rez),"Rmean" ] )
-		}
-		else
-			## use LRR calculation as-is
-			lrr[ rownames(rez),i ] <- rez$LRR
+		baf[ rownames(rez),i ] <- rez$BAF
+		lrr[ rownames(rez),i ] <- rez$LRR
 		
 		xnorm[ rownames(rez),i ] <- rez$X
 		ynorm[ rownames(rez),i ] <- rez$Y
@@ -189,8 +201,8 @@ tQN <- function(gty, thresholds = c(1.5, 1.5), clusters = NULL, adjust.lrr = TRU
 }
 
 ## from JPD: <https://github.com/jdidion/sci/blob/master/projects/megamugaQC/R/normalize.R>
-tQN.sample <- function(markers, X, Y, Xnorm, Ynorm,
-					   QN.thresholds = c(1.5, 1.5), clusters, ...) {
+tQN.sample <- function(markers, X, Y, Xnorm, Ynorm, adjust.lrr = FALSE, mask = character(0),
+					   QN.thresholds = c(1.5, 1.5), clusters, xynorm = FALSE, ...) {
 	
 	result <- data.frame(BAF = rep(NA, length(X)), LRR = rep(NA, length(X)), 
 						 X = rep(NA, length(X)), Y = rep(NA, length(Y)),
@@ -211,6 +223,10 @@ tQN.sample <- function(markers, X, Y, Xnorm, Ynorm,
 	ref <- clusters[ i, ]
 	data <- data[ i, ]
 	inorm <- inorm[ i, ]
+	
+	# normalize X vs Y for *this sample*
+	if (xynorm)
+		inorm <- preprocessCore::normalize.quantiles.robust(inorm)
 	
 	# Calculate R
 	R <- inorm[,1] + inorm[,2]
@@ -236,6 +252,9 @@ tQN.sample <- function(markers, X, Y, Xnorm, Ynorm,
 	baflrr <- tQN_Cpp(R, Th, ref$A.T, ref$A.R, ref$B.T, ref$B.R, ref$H.T, ref$H.R)
 	
 	#result[rownames(data),] <- data.frame(baflrr, X = X, Y = Y)
+	if (adjust.lrr) {
+		baflrr$LRR <- log2( (X+Y)/ref$Rmean )
+	}
 	result[rownames(data),] <- data.frame(BAF = baflrr$BAF, LRR = baflrr$LRR, X = X, Y = Y)
 	return(result)
 	

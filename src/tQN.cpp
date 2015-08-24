@@ -176,6 +176,10 @@ NumericVector H_theta, NumericVector H_r) {
 		}
 	}
 	
+	//if (adj_lrr) {
+	//	lrr = lrr / R_mean;
+	//}
+	
 	// wrap it in a list and return
 	List rez;
 	rez["LRR"] = lrr;

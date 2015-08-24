@@ -30,27 +30,35 @@ plot.QC.result <- function(qc, show = c("point","label"), theme.fn = ggplot2::th
 
 	p2 <- ggplot2::ggplot(intens) +
 		ggplot2::geom_line(ggplot2::aes(x = iid, y = value, group = q, colour = q)) +
-		ggplot2::scale_colour_gradientn("quantile", colours = c(scales::muted("red"), "grey", scales::muted("blue")),
-										label = scales::percent) +
+		ggplot2::scale_colour_distiller("quantile", palette = "Spectral",
+										label = scales::percent, breaks = seq(0,1,0.2)) +
 		#ggplot2::guides(colour = FALSE) +
 		ggplot2::xlab("\nsamples (sorted by median intensity)") +
 		ggplot2::ylab("\nintensity quantiles\n") +
-		theme.fn() + ggplot2::theme(axis.text.x = ggplot2::element_blank(), panel.grid = ggplot2::element_blank(),
-									legend.position = c(1,1), legend.justification = c(1,1))
+		theme.fn() + ggplot2::theme(axis.text.x = ggplot2::element_blank(),
+									panel.grid = ggplot2::element_blank())
 	
 	calls.m <- reshape2::melt(calls, id.vars = c("iid","filter"))
 	colnames(calls.m) <- c("iid","filter","call","value")
 	calls.m$iid <- factor(calls.m$iid, levels = levels(intens$iid))
-	p3 <- ggplot2::ggplot(subset(calls.m, call %in% c("H","N"))) +
-		ggplot2::geom_point(ggplot2::aes(x = iid, y = value, pch = call, colour = filter), fill = "white") +
-		ggplot2::scale_shape_manual(values = c(H=21, N=19)) +
-		ggplot2::scale_colour_manual(values = c("black", scales::muted("red")), na.value = "grey") +
+	calls.m$call <- factor(calls.m$call, levels = c("A","B","H","N"))
+	calls.m$filter.y <- 0
+	call.cols <- RColorBrewer::brewer.pal(4, "Spectral")
+	p3 <- ggplot2::ggplot(calls.m) +
+		#ggplot2::geom_bar(ggplot2::aes(x = iid, y = value, pch = call, colour = filter), fill = "white") +
+		ggplot2::geom_bar(ggplot2::aes(x = iid, y = value, fill = call), position = "stack", stat = "identity") +
+		ggplot2::geom_point(data = subset(calls.m, filter),
+							ggplot2::aes(x = iid, y = filter.y), size = 3, pch = 21,
+							fill = "white", colour = "black") +
+		#ggplot2::scale_shape_manual(values = c(H=21, N=19)) +
+		#ggplot2::scale_colour_manual(values = c("black", scales::muted("red")), na.value = "grey") +
+		ggplot2::scale_fill_manual("genotype\ncall", values = rev(call.cols)) +
 		ggplot2::scale_y_continuous(label = function(x) sprintf("%.1f", x/1e3)) +
 		ggplot2::guides(colour = FALSE) +
-		ggplot2::ylab("number of calls (x1000)\n") +
-		theme.fn() + ggplot2::theme(axis.text.x = ggplot2::element_blank(), axis.title.x = ggplot2::element_blank(),
-									panel.grid = ggplot2::element_blank(),
-									legend.position = c(1,1), legend.justification = c(1,1))
+		ggplot2::ylab("# calls (x1000)\n") +
+		theme.fn() + ggplot2::theme(axis.text.x = ggplot2::element_blank(),
+									axis.title.x = ggplot2::element_blank(),
+									panel.grid = ggplot2::element_blank())
 		
 	rez <- gtable:::rbind_gtable( ggplot2::ggplotGrob(p3), ggplot2::ggplotGrob(p2),
 								  size = "first")
@@ -71,10 +79,10 @@ plot.QC.result <- function(qc, show = c("point","label"), theme.fn = ggplot2::th
 #' @details This function will plot any existing QC result attached to \code{gty}; if none is present,
 #' 	\code{run.sample.qc(gty)} will be run to generate it.
 #' 
-#' 	The QC plot has two panels. The upper panel displays the count of heterozygous (H) and missing
-#' 	(N, no-call) calls for each sample.  The lower panel displays a the "sum intensity" quantiles of each sample.
+#' 	The QC plot has two panels. The upper panel displays the distribution of A, B, H and N (missing) calls for
+#' 	each sample.  The lower panel displays a the "sum intensity" quantiles of each sample.
 #' 	Samples are sorted from left to right in increasing order of median intensity, and the sort order is matched
-#' 	between panels.  Samples for which the quality filter is set are shown in dark red in the upper panel.
+#' 	between panels.  Samples for which the quality filter is set are marked with an open dot in the upper panel.
 #' 	
 #' 	Although somewhat crude, the count of H and N calls relative to expectations is anecdotally a robust
 #' 	measure of genotyping quality (see Didion et al. (2014)).  (But the expectations are important: an outbred
@@ -152,12 +160,13 @@ plot.clusters <- function(gty, markers = NULL, theme.fn = ggplot2::theme_bw, for
 		stop("No markers selected.")
 	
 	gty <- recode.genotypes(gty[ markers, ], "01")
+	#print(rownames(gty))
 	
 	if (nrow(gty) > 10 && !force)
 		stop("Resulting plot will have more than 10 panels. Use force = TRUE to proceed anyway.")
 	
-	df <- get.intensity(gty, markers)
-	df <- merge(df, get.call(gty, markers))
+	df <- get.intensity(gty)
+	df <- merge(df, get.call(gty))
 	df$call <- as.character(df$call)
 	df$call[ is.na(df$call) ] <- "N"
 	df$call <- factor(df$call, levels = c(0,1,2,"N"))
@@ -177,8 +186,15 @@ plot.clusters <- function(gty, markers = NULL, theme.fn = ggplot2::theme_bw, for
 	
 }
 
+#' Plot a heatmap representing genetic distances between samples
+#' 
+#' @param gty a \code{genotypes} object
+#' 
+#' @return a (hierarchically-clustered) matrix representation of pairwise genetic distances between
+#' 	samples, normalized to [0,1].
+#' 
 #' @export
-heatmap <- function(gty, ...) {
+heatmap.genotypes <- function(gty, ...) {
 	
 	if (!(inherits(gty, "genotypes")))
 		stop("Please supply an object of class 'genotypes'.")
@@ -201,21 +217,47 @@ heatmap <- function(gty, ...) {
 		
 	
 }
+heatmap <- function(x, ...) UseMethod("heatmap")
 
 #' Plot histogram of (sum-)intensities by sample
+#' 
+#' @param gty a \code{genotypes} object
+#' @param ref.line numeric; reference value for mean array-wide intensity
+#' 
+#' @return histograms of array-wide sum-intensity, one panel per sample
+#' 
+#' @details Each sample's mean intensity is indicated by a dotted line, and the reference intensity
+#' 	(specified in \code{ref.line}, if any) is indicated by a dashed line.  If any sample filters have
+#' 	been set, either manually or by an automatic QC procedure, that sample's histogram will be plotted in red.
+#' 
 #' @export
-intensityhist <- function(gty, ...) {
+intensityhist <- function(gty, ref.line = NULL, ...) {
 	
 	if (!(inherits(gty, "genotypes") && .has.valid.intensity(gty)))
 		stop("Please supply an object of class 'genotypes' with valid intensity matrices attached.")
 	
+	nsamples <- ncol(gty)
+	ncol <- if (nsamples <= 5) 5 else 3
+	
 	df <- get.intensity(gty, TRUE)
 	df$si <- with(df, sqrt(x^2 + y^2))
-	ggplot2::ggplot(df) +
-		ggplot2::geom_histogram(ggplot2::aes(x = si), binwidth = diff(range(df$si, na.rm = TRUE))/50) +
-		ggplot2::facet_wrap(~ iid, ncol = 3) +
-		ggplot2::ylab("count of markers\n") + 
+	df.summ <- plyr::ddply(df, .(iid), plyr::summarize, med = median(si, na.rm = TRUE), mu = mean(si, na.rm = TRUE))
+	flt <- filters(gty)$samples == ""
+	df$filter <- df$iid %in% names(which(flt))
+	fill.cols <- c("#E41A1C","black") # ColorBrewer::Set1 red for flagged samples; black otherwise
+	p0 <- ggplot2::ggplot(df) +
+		ggplot2::geom_histogram(ggplot2::aes(x = si, fill = filter), binwidth = diff(range(df$si, na.rm = TRUE))/50) +
+		ggplot2::geom_vline(data = df.summ, ggplot2::aes(xintercept = mu), lty = "dotted", col = "grey") +
+		ggplot2::scale_fill_manual(values = fill.cols) +
+		ggplot2::guides(fill = FALSE) +
+		ggplot2::facet_wrap(~ iid, ncol = ncol) +
+		ggplot2::ylab("# markers\n") + 
 		ggplot2::xlab(expression(atop("", paste("sum-intensity = ", sqrt(x^2 + y^2)))))
+	
+	if (!is.null(ref.line) && is.numeric(ref.line))
+		p0 <- p0 + ggplot::geom_vline(xintercept = vline, lty = "dashed", col = "grey")
+	
+	return(p0)
 	
 }
 
@@ -259,13 +301,13 @@ bafplot <- function(gty, sm = TRUE, smooth = "cv", draw = TRUE, ...) {
 						 levels = c(0,1,2) )
 	baf$.col <- factor(baf$chr):factor(baf$.call)
 	call.cols <- rep_len( c("lightblue","mediumpurple1","pink","darkblue","purple4","red"),
-						  length.out = nlevels(baf$.col) )
+						  length.out = nlevels(baf$chr)*3 )
 	
 	p1 <- ggmanhattan(baf) +
 		ggplot2::geom_point(ggplot2::aes(y = BAF, colour = .col)) +
 		ggplot2::geom_point(ggplot2::aes(y = BAF.smooth), colour = "red") +
 		ggplot2::scale_alpha_discrete(range = c(0.5,1)) +
-		ggplot2::scale_colour_manual(values = call.cols, na.value = "grey") +
+		ggplot2::scale_colour_manual(values = call.cols, na.value = "grey", drop = TRUE) +
 		ggplot2::guides(colour = FALSE, alpha = FALSE) +
 		ggplot2::theme_bw() + ggplot2::theme(axis.title.x = ggplot2::element_blank(),
 											 axis.text.x = ggplot2::element_blank(),
@@ -331,7 +373,7 @@ bafplot <- function(gty, sm = TRUE, smooth = "cv", draw = TRUE, ...) {
 #' @seealso \code{\link{plot.clusters}} for intensity plots by marker
 #'
 #' @export
-dotplot.genotypes <- function(gty, size = 2, meta = NULL, shape = c("point","tile"), force = FALSE, ...) {
+dotplot.genotypes <- function(gty, size = 2, meta = NULL, shape = c("point","tile","nothing"), color.by = NULL, force = FALSE, ...) {
 	
 	## check that input is right sort
 	if (!(inherits(gty, "genotypes") && .has.valid.map(gty)))
@@ -344,14 +386,24 @@ dotplot.genotypes <- function(gty, size = 2, meta = NULL, shape = c("point","til
 	map <- attr(gty, "map")
 	if (length(unique(map$chr)) > 1)
 		stop("Dotplot works only for one chromosome at a time.")
+	rng <- range(map$pos)
 	map$i <- as.numeric(factor(map$pos))
 	map$ipos <- map$pos - min(map$pos)
-	map$relpos <- map$ipos/diff(range(map$pos)) * max(map$i)
+	map$relpos <- map$ipos/diff(rng) * max(map$i)
 	map <- map[ with(map, order(i)), ] # important
+	
+	## set upper limit of connector lines between true position and discrete position
+	if (shape == "point")
+		ruler.top <- 0.8
+	else if (shape == "tile")
+		ruler.top <- 0.4
+	else
+		ruler.top <- 0
+	map$ruler.top <- ruler.top
 	
 	## convert genotypes to long-form for ggplot
 	df <- reshape2::melt(gty)
-	colnames(df) <- c("marker","id","ibs")
+	colnames(df) <- c("marker","iid","ibs")
 	if (is.numeric(gty))
 		df$ibs.code <- factor(df$ibs, levels = c(0,1,2))
 	else
@@ -360,12 +412,17 @@ dotplot.genotypes <- function(gty, size = 2, meta = NULL, shape = c("point","til
 	
 	## add family info, if present
 	if (!is.null(attr(gty, "ped")))
-		df <- merge(df, attr(gty, "ped"), by.x = "id", by.y = "iid", all.x = TRUE)
+		df <- merge(df, attr(gty, "ped"), by.x = "iid", by.y = "iid", all.x = TRUE)
 	
 	## add metadata, if provided
 	if (!is.null(meta))
 		df <- merge(df, meta, all.x = TRUE)
-	
+
+	## set fill color of points
+	if (is.null(color.by))
+		df$fill.by <- df$ibs.code
+	else
+		df$fill.by <- df[ ,color.by ]
 	
 	## check that dimensions still match
 	stopifnot(nrow(df) == prod(dim(gty)))
@@ -373,13 +430,19 @@ dotplot.genotypes <- function(gty, size = 2, meta = NULL, shape = c("point","til
 	shape <- match.arg(shape)
 	if (shape == "tile")
 		geom.fn <- ggplot2::geom_tile
-	else
+	else if (shape == "point")
 		geom.fn <- ggplot2::geom_point
+	else
+		geom.fn <- ggplot2::geom_blank
+	
+	if (!is.factor(df$fid))
+		df$fid <- factor(df$fid)
+	df$iid <- reorder(df$iid, as.numeric(df$fid), mean)
 	
 	p <- ggplot2::ggplot(subset(df, !is.na(ibs))) +
-		geom.fn(ggplot2::aes(x = i, y = id, fill = ibs.code), pch = 21, size = size) +
+		geom.fn(ggplot2::aes(x = i, y = iid, fill = fill.by), pch = 21, size = size) +
 		ggplot2::geom_segment(data = map,
-							  ggplot2::aes(x = i, xend = relpos, y = 0.8, yend = 0), colour = "grey70") +
+							  ggplot2::aes(x = i, xend = relpos, y = ruler.top, yend = 0), colour = "grey70") +
 		ggplot2::geom_hline(yintercept = 0) +
 		ggplot2::scale_x_continuous(breaks = warped.breaks(map$relpos, map$relpos, map$pos),
 						   labels = round(warped.breaks(map$relpos, map$relpos, map$pos, scale = "transformed")/1e6, 2)) +
@@ -392,6 +455,7 @@ dotplot.genotypes <- function(gty, size = 2, meta = NULL, shape = c("point","til
 		p <- p + ggplot2::scale_fill_manual("call", values = RColorBrewer::brewer.pal(9, "Set1")[ c(1:4,9) ], drop = FALSE)
 	
 	attr(p, "map") <- map
+	attr(p, "range") <- rng
 	
 	return(p)
 	
@@ -414,11 +478,6 @@ dotplot <- function(x, ...) UseMethod("dotplot")
 #' @export
 ggmanhattan <- function(df, chroms = NULL, scale = c("Mbp", "cM"), space = NULL, cols = c("grey30","grey60"), ...) {
 	
-	if (all(c("chr","pos") %in% colnames(df)))
-		df <- df[ ,c("chr","pos", setdiff(colnames(df), c("chr","pos"))) ]
-	else
-		stop("We require a dataframe with at least columns 'chr' and 'pos'.")
-	
 	scale <- match.arg(scale)
 	if (scale == "Mbp") {
 		denom <- 1e6
@@ -430,7 +489,30 @@ ggmanhattan <- function(df, chroms = NULL, scale = c("Mbp", "cM"), space = NULL,
 		if (is.null(space))
 			space <- 5
 	}
-		
+	
+	df <- concat.chroms(df, space = space, denom = denom)
+	
+	rez <- ggplot2::ggplot(df, ggplot2::aes(x = .x, colour = .colour))
+	rez <- rez +
+		ggplot2::scale_x_continuous(breaks = attr(df, "ticks"), minor_breaks = attr(df, "adj"),
+						   labels = gsub("^chr", "", names(attr(df, "chrlen")))) +
+		ggplot2::scale_colour_manual(values = cols) +
+		ggplot2::guides(colour = FALSE) +
+		ggplot2::theme_bw() + ggplot2::theme(axis.title.x = ggplot2::element_blank(),
+						   panel.grid.minor = ggplot2::element_line(colour = "grey90"),
+						   panel.grid.minor = ggplot2::element_blank())
+	return(rez)
+	
+}
+
+## create new x-coordinates for making plots with chromosomes lined up along same axis
+concat.chroms <- function(df, chroms = NULL, space = 5, denom = 1e6, ...) {
+	
+	if (all(c("chr","pos") %in% colnames(df)))
+		df <- df[ ,c("chr","pos", setdiff(colnames(df), c("chr","pos"))) ]
+	else
+		stop("We require a dataframe with at least columns 'chr' and 'pos'.")
+	
 	if (!is.factor(df[,1]))
 		if (!is.null(chroms))
 			df[,1] <- factor(df[,1], levels = chroms)
@@ -453,16 +535,10 @@ ggmanhattan <- function(df, chroms = NULL, scale = c("Mbp", "cM"), space = NULL,
 	df$.colour <- factor(colmap[ df$.chr ])
 	#print(tapply(df$.x, df$.chr, max))
 	
-	rez <- ggplot2::ggplot(df, ggplot2::aes(x = .x, colour = .colour))
-	rez <- rez +
-		ggplot2::scale_x_continuous(breaks = ticks, minor_breaks = adj,
-						   labels = gsub("^chr", "", names(chrlen))) +
-		ggplot2::scale_colour_manual(values = cols) +
-		ggplot2::guides(colour = FALSE) +
-		ggplot2::theme_bw() + ggplot2::theme(axis.title.x = ggplot2::element_blank(),
-						   panel.grid.minor = ggplot2::element_line(colour = "grey90"),
-						   panel.grid.minor = ggplot2::element_blank())
-	return(rez)
+	attr(df, "chrlen") <- chrlen
+	attr(df, "ticks") <- ticks
+	attr(df, "adj") <- adj
+	return(df)
 	
 }
 

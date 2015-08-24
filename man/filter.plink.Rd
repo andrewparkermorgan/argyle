@@ -4,8 +4,8 @@
 \alias{filter.plink}
 \title{Filter markers and samples from a dataset with PLINK}
 \usage{
-filter.plink(prefix, chr = NULL, from = NULL, to = NULL, maf = 0,
-  hwe = 0, geno.missing = 0, ind.missing = 0, attrib = NULL,
+filter.plink(prefix, out = NULL, chr = NULL, from = NULL, to = NULL,
+  maf = 0, hwe = 1, geno.missing = 0, ind.missing = 0, attrib = NULL,
   attrib.file = NULL, remove = NULL, keep = NULL, remove.fam = NULL,
   keep.fam = NULL, flags = "", ...)
 }

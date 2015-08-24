@@ -21,10 +21,10 @@ Produce a visual summary of QC measures
 This function will plot any existing QC result attached to \code{gty}; if none is present,
 	\code{run.sample.qc(gty)} will be run to generate it.
 
-	The QC plot has two panels. The upper panel displays the count of heterozygous (H) and missing
-	(N, no-call) calls for each sample.  The lower panel displays a the "sum intensity" quantiles of each sample.
+	The QC plot has two panels. The upper panel displays the distribution of A, B, H and N (missing) calls for
+	each sample.  The lower panel displays a the "sum intensity" quantiles of each sample.
 	Samples are sorted from left to right in increasing order of median intensity, and the sort order is matched
-	between panels.  Samples for which the quality filter is set are shown in dark red in the upper panel.
+	between panels.  Samples for which the quality filter is set are marked with an open dot in the upper panel.
 
 	Although somewhat crude, the count of H and N calls relative to expectations is anecdotally a robust
 	measure of genotyping quality (see Didion et al. (2014)).  (But the expectations are important: an outbred

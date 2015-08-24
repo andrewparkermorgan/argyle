@@ -5,7 +5,7 @@
 \title{Show a visual representation of a slice of a genotype matrix}
 \usage{
 \method{dotplot}{genotypes}(gty, size = 2, meta = NULL, shape = c("point",
-  "tile"), force = FALSE, ...)
+  "tile", "nothing"), color.by = NULL, force = FALSE, ...)
 }
 \arguments{
 \item{size}{numeric; size of points}

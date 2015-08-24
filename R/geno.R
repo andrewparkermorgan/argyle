@@ -94,7 +94,7 @@ summary.genotypes <- function(gty, ...) {
 		cat("\n")
 	}
 	
-	filt <- summarize.filters(gty)
+	filt <- colSums( summarize.filters(gty) )
 	cat("Filters set:", filt[1], "sites /", filt[2], "samples", "\n")
 	
 	if (!is.null(attr(gty, "source")))
@@ -267,6 +267,7 @@ get.intensity <- function(gty, markers, ...) {
 	rez <- reshape2:::melt.matrix(attr(gty, "intensity")$x[ markers,,drop = FALSE ])
 	colnames(rez) <- c("marker","iid","x")
 	rez <- cbind(rez, y = reshape2:::melt.matrix(attr(gty, "intensity")$y[ markers,,drop = FALSE ])[ ,3 ])
+	rez$si <- with(rez, sqrt(x^2+y^2))
 	
 	if (.has.valid.map(gty))
 		rez <- merge(rez, attr(gty, "map"))
@@ -275,6 +276,77 @@ get.intensity <- function(gty, markers, ...) {
 		rez <- merge(rez, attr(gty, "ped"))
 	
 	return(rez)
+	
+}
+
+#' Rename some or all samples
+#' 
+#' @param gty a \code{genotypes} object
+#' @param nn a vector of new sample names
+#' 
+#' @details The values in \code{nn} are used to replace existing names using the following rules. First, if \code{nn}
+#' 	is a named vector, it is assumed to map old names to new names.  Otherwise \code{nn} must have length equal to the
+#' 	number of samples in \code{gty}, and each element should be a new name to replace an old one.  Missing values are
+#' 	not permitted, for obvious reasons.
+#' 
+#' @export
+replace.names <- function(gty, nn, ...) {
+
+	if (!inherits(gty, "genotypes"))
+		stop("Please supply an object of class 'genotypes'.")
+	
+	if (length(nn) < 1 || any(is.na(nn)))
+		stop("Names cannot have zero length or contain missing values.")
+	
+	## if 'nn' is named vector, assume it maps old names -> new names
+	if (!is.null(names(nn))) {
+		olds <- intersect(colnames(gty), names(nn))
+		same <- setdiff(colnames(gty), olds)
+		same <- setNames(same, same)
+		nn <- c(nn, same)[ colnames(gty) ]
+	}
+	## otherwise assume 'nn' is parallel to columns of genotype matrix
+	else if (length(nn) == ncol(gty)) {
+		nn <- setNames(nn, colnames(gty))
+	}
+	else {
+		stop("New sample names in 'nn' should be either named, or have same length as ",
+			 "the number of samples.")
+	}
+	
+	## check for duplicates
+	on <- colnames(gty)
+	rn <- nn[on]
+	dups <- duplicated(rn)
+	if (any(dups)) {
+		warning("The following sample names are duplicates; they will be uniquified, but you ",
+				"should check what's going on: ", paste(nn[dups], collapse = ","))
+	}
+	rn <- make.unique(rn)
+	
+	## now actually do the renaming
+	colnames(gty) <- rn
+	
+	if (.has.valid.ped(gty)) {
+		attr(gty, "ped")$iid <- as.character(attr(gty, "ped")$iid)
+		attr(gty, "ped")$iid <- nn[on]
+		rownames(attr(gty, "ped")) <- attr(gty, "ped")$iid
+	}
+	
+	if (.has.valid.intensity(gty)) {
+		colnames(attr(gty, "intensity")$x) <- rn
+		colnames(attr(gty, "intensity")$y) <- rn
+	}
+	
+	if (.has.valid.baflrr(gty)) {
+		colnames(attr(gty, "baf")) <- rn
+		colnames(attr(gty, "lrr")) <- rn
+	}
+	
+	if (!is.null(attr(gty, "filter.samples")))
+		names(attr(gty, "filter.samples")) <- rn
+	
+	return(gty)
 	
 }
 

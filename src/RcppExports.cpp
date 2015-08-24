@@ -9,36 +9,28 @@ using namespace Rcpp;
 NumericMatrix dist_ibs(NumericMatrix x);
 RcppExport SEXP argyle_dist_ibs(SEXP xSEXP) {
 BEGIN_RCPP
-    SEXP __sexp_result;
-    {
-        Rcpp::RNGScope __rngScope;
-        Rcpp::traits::input_parameter< NumericMatrix >::type x(xSEXP );
-        NumericMatrix __result = dist_ibs(x);
-        PROTECT(__sexp_result = Rcpp::wrap(__result));
-    }
-    UNPROTECT(1);
-    return __sexp_result;
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< NumericMatrix >::type x(xSEXP);
+    __result = Rcpp::wrap(dist_ibs(x));
+    return __result;
 END_RCPP
 }
 // tQN_Cpp
 List tQN_Cpp(NumericVector r, NumericVector theta, NumericVector A_theta, NumericVector A_r, NumericVector B_theta, NumericVector B_r, NumericVector H_theta, NumericVector H_r);
 RcppExport SEXP argyle_tQN_Cpp(SEXP rSEXP, SEXP thetaSEXP, SEXP A_thetaSEXP, SEXP A_rSEXP, SEXP B_thetaSEXP, SEXP B_rSEXP, SEXP H_thetaSEXP, SEXP H_rSEXP) {
 BEGIN_RCPP
-    SEXP __sexp_result;
-    {
-        Rcpp::RNGScope __rngScope;
-        Rcpp::traits::input_parameter< NumericVector >::type r(rSEXP );
-        Rcpp::traits::input_parameter< NumericVector >::type theta(thetaSEXP );
-        Rcpp::traits::input_parameter< NumericVector >::type A_theta(A_thetaSEXP );
-        Rcpp::traits::input_parameter< NumericVector >::type A_r(A_rSEXP );
-        Rcpp::traits::input_parameter< NumericVector >::type B_theta(B_thetaSEXP );
-        Rcpp::traits::input_parameter< NumericVector >::type B_r(B_rSEXP );
-        Rcpp::traits::input_parameter< NumericVector >::type H_theta(H_thetaSEXP );
-        Rcpp::traits::input_parameter< NumericVector >::type H_r(H_rSEXP );
-        List __result = tQN_Cpp(r, theta, A_theta, A_r, B_theta, B_r, H_theta, H_r);
-        PROTECT(__sexp_result = Rcpp::wrap(__result));
-    }
-    UNPROTECT(1);
-    return __sexp_result;
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< NumericVector >::type r(rSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type theta(thetaSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type A_theta(A_thetaSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type A_r(A_rSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type B_theta(B_thetaSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type B_r(B_rSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type H_theta(H_thetaSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type H_r(H_rSEXP);
+    __result = Rcpp::wrap(tQN_Cpp(r, theta, A_theta, A_r, B_theta, B_r, H_theta, H_r));
+    return __result;
 END_RCPP
 }

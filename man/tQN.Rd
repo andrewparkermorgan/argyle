@@ -4,8 +4,8 @@
 \alias{tQN}
 \title{Perform tQN normalization of intensity data.}
 \usage{
-tQN(gty, thresholds = c(1.5, 1.5), clusters = NULL, adjust.lrr = TRUE,
-  ...)
+tQN(gty, thresholds = c(1.5, 1.5), clusters = NULL, prenorm = TRUE,
+  xynorm = TRUE, adjust.lrr = TRUE, ...)
 }
 \arguments{
 \item{gty}{a \code{genotypes} object}
@@ -13,6 +13,12 @@ tQN(gty, thresholds = c(1.5, 1.5), clusters = NULL, adjust.lrr = TRUE,
 \item{thresholds}{thresholds for scaling of x- and y-intensities; defaults recommended in Staaf et al. (2008)}
 
 \item{clusters}{a pre-computed matrix of cluster means}
+
+\item{prenorm}{logical; if \code{TRUE}, perform quantile normalization on whole dataset before tQN procedure}
+
+\item{xynorm}{logical; if \code{TRUE}, perform within-sample normalization of x- vs y-intensities}
+
+\item{adjust.lrr}{logical; if \code{TRUE}, normalize post-tQN LRRs against population mean (\code{clusters$Rmean})}
 }
 \value{
 A copy of the input object, with raw intensities replaced by the normalized ones.  Two additional attributes
@@ -46,7 +52,7 @@ Implements thresholded quantile normalization (tQN) as described in Staaf et al.
 	clusters at this marker.
 }
 \references{
-Adapted from code provided by Johan Staaf and John Didion.
+Adapted from code provided by Johan Staaf to John Didion.
 
 Staaf J et al. (2008) BMC Bioinformatics. doi:10.1186/1471-2105-9-409.
 

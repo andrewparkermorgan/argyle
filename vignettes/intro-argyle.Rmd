@@ -35,7 +35,7 @@ We created `argyle` to fill a specific niche: quality control and basic explorat
 
 This package explicitly favors *simplicity* and *readability* of code over raw efficiency.  It is appropriate for the "medium-sized" data -- say, tens of thousands of markers and hundreds of individuals -- regularly encountered in experimental genetics.  Users with larger datasets routinely collected in human genetics -- say, millions of markers and thousands of individuals -- which do not fit comfortably in memory as plain-vanilla `R` objects probably want to explore more sophisticated `R` packages (such as the [`GenABEL` suite](http://www.genabel.org/)).
 
-A zoo of `R` packages already exists for normalization of raw intensity data from Illumina platforms: see `lumi` [@Du2008] and `beadarray` [@Dunning2007] among others.  Users interested in exploiting the copy-number signal from Illumina arrays should consult these packages and related references.  Gross copy-number aberrations affecting hundreds or thousands of markers, such as (partial) aneuploidy, *can* be identified in `argyle`; see **Intensity-based analyses** for more.
+A zoo of `R` packages already exists for normalization of raw intensity data from Illumina platforms: see `beadarray` [@Dunning2007],  and `crlmm`[@Ritchie2009], among others.  Users interested in exploiting the copy-number signal from Illumina arrays should consult these packages and related references.  Gross copy-number aberrations affecting hundreds or thousands of markers, such as (partial) aneuploidy, *can* be identified in `argyle`; see **Intensity-based analyses** for more.
 
 Although `argyle` implements some basic frequency calculations for use in genotyping quality control, it makes no effort to duplicate or replace the functionality of existing `R` packages for statistical and population genetics.  More serious calculations -- marker LD, Hardy-Weinbery equilibrium tests, association tests -- can be accessed through the pacakge's `PLINK` wrappers.  (These calls don't require holding the genotypes themselves in memory in the `R` session, so they can be applied to quite large datasets.)
 
@@ -355,7 +355,7 @@ The B-allele frequency is not, in fact, anything to do with a true allele freque
 Technical artefacts at the hybridization or scanning steps can introduce bias in BAF and LRR. The function `argyle::tQN()` (re-)implements a normalization procedure described in [@Staaf2008], using code borrowed from the `CLASP` package [@Didion2014].  Briefly, quantile normalization (see [@Bolstad2003]) is applied to the array-wide $x$ and $y$ intensities per sample to account for systematic differences in signal intensity from the two fluorophores used in the Infinium chemistry.  Relative differences between the pre- and post-normalization intensities are subject to a pre-specified threshold (by default, $1.5$).  Then BAF and LRR are computed using a matrix of (*AA*, *AB*, *BB*) reference cluster centroids.
 
 The tQN procedure is somewhat time-consuming; for the purposes of this vignette we demonstrate it on a single sample (an F1 offspring of a cross between the inbred mouse strains A/J and NOD/ShiLtJ.)  The `clusters` object contains reference cluster centroids for the GigaMUGA array.
-```{r, echo=FALSE, eval=FALSE}
+```{r, echo=FALSE, eval=TRUE}
 load("~/Dropbox/GigaMUGA_design/annotation/control.clusters.Rdata")
 ```
 ```{r, warning=FALSE, eval=FALSE}
@@ -387,7 +387,7 @@ ex <- recode(ex, "01")
 attr(ex, "ped")$fid <- substr(samples(ex)$iid, 1, 2)
 ```
 
-The `genoapply()` function is a generalization of `R`'s `apply` family for `genotypes` objects.  Just as `apply(x, 1, ...)` applies a function over the rows of a matrix, `genoapply(x, margin = 1, grp, fn, ...)` applies `fn()` by samples (rows in the genotypes matrix.)  Unlike `apply()`, the `genoapply()` function takes an additional grouping expression `grp` to apply a function by marker (with `margin = 1`) or sample groups (with `margin = 2`) defined by the value of `grp`.  We demonstrate `genoapply()` to compute the consensus genotype of the parental strains in our example cross.  For these analyses we will, of course, ignore the Y-chromosome.
+The `genoapply()` function is a generalization of `R`'s `apply` family for `genotypes` objects.  Just as `apply(x, 1, ...)` applies a function over the rows of a matrix, `genoapply(x, margin = 1, grp, fn, ...)` applies `fn()` by markers (rows in the genotypes matrix.)  Unlike `apply()`, the `genoapply()` function takes an additional grouping expression `grp` to apply a function by marker groups (with `margin = 1`) or sample groups (with `margin = 2`) defined by the value of `grp`.  We demonstrate `genoapply()` to compute the consensus genotype of the parental strains in our example cross.  For these analyses we will, of course, ignore the Y-chromosome.
 ```{r}
 ex <- subset(ex, chr != "Y")
 parents <- subset(ex, fid == "AA" | fid == "DD", by = "samples")

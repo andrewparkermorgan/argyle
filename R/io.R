@@ -144,7 +144,7 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	samplefile <- infile
 	if (as.zip)
 		samplefile <- unz(infile, "Sample_Map.txt")
-	message(paste("Reading sample manifest from <", samplefile, "> ..."))
+	message(paste("Reading sample manifest from <", infile, "> ..."))
 	samples.df <- read.delim(samplefile, stringsAsFactors = FALSE)
 	## handle case of duplicated IDs
 	renamer <- make.unique(as.character(samples.df$Name))
@@ -177,7 +177,7 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	piper <- infile
 	if (as.zip) {
 		## check that system supports unzip
-		piper <- paste("unzip -ap", infile)
+		piper <- paste0("unzip -ap '", infile, "'")
 		rez <- system(paste(piper, "| head -n 10"), intern = FALSE, ignore.stdout = TRUE, ignore.stderr = TRUE)
 		if (rez) {
 			## nope, system can't unzip
@@ -189,7 +189,7 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	## first check header to get # of SNPs
 	genofile <- infile
 	if (as.zip)
-		genofile <- unz(infile, gsub("\\.zip$",".txt", infile))
+		genofile <- unz(infile, gsub("\\.zip$",".txt", basename(infile)))
 	header <- read.delim(genofile, header = FALSE, sep = "\t", nrows = 8, skip = 1,
 						 colClasses = "character", stringsAsFactors = FALSE)
 	if (!all(ncol(header) >= 2, "NUM SNPS" %in% toupper(header[,1])))

@@ -39,6 +39,7 @@ test/*
 
 # manuscript files
 manuscript/*
+datasets/*
 
 # Image sources
 *.ai
