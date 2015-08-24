@@ -9,12 +9,13 @@ NumericMatrix dist_ibs(NumericMatrix x) {
    int nc = x.ncol();
    NumericMatrix D = NumericMatrix(nc, nc);
    
-   for (int i = 0; i < nc; i++) { //columns
-   	// assume rows >> columns for most applications, so checking for
-   	// user interrupt here is not too expensive
+   for (int i = 0; i < nc; i++) { // indiv 1
+    // check for user interrupt once every row
+   	// of final distance matrix, not too expensive
    	checkUserInterrupt();
-   	for (int j = i+1; j < nc; j++) { //rows
-   		D(j,i) = sum(abs(na_omit(x(_,i)-x(_,j)))) / (2*nr);
+   	for (int j = i+1; j < nc; j++) { // indiv 2
+   		NumericVector nna = ifelse( is_na(x(_,i)) | is_na(x(_,j)), 0.0, 1.0 );
+   		D(j,i) = sum( abs(na_omit(x(_,j) - x(_,i))) )/(2*sum(nna));
    	}
    }
    
