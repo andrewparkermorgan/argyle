@@ -1,6 +1,5 @@
 ## hmm.R
 ## *very* basic haplotype reconstruction from genotypes
-library(HMM)
 
 #' Perform (simplistic) haplotype reconstruction, given parental genotypes
 #' 
