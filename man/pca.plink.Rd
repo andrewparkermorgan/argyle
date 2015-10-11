@@ -15,6 +15,8 @@
 \item{K}{return the projection of samples onto the top K PCs}
 
 \item{by}{project individuals (\code{"indiv"}) or markers (\code{"var"}) onto PCs?}
+
+\item{...}{ignored}
 }
 \value{
 When \code{by = "indiv"} (the default), a dataframe with individual IDs, family IDs,

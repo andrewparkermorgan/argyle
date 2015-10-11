@@ -13,6 +13,8 @@
 
 \item{j}{column index (logical, character, or numeric), recycled if needed}
 
+\item{...}{ignored}
+
 \item{drop}{allow reduction of the dimensions of \code{x} if \code{i,j} are of length 1?}
 }
 \value{
@@ -23,7 +25,9 @@ Allows indexing into a genotype matrix, trimming marker and sample metadata, fil
 and intensity matrices accordingly.
 }
 \examples{
+\dontrun{
 geno[ 1:10, ]
 geno[ ,c("sample1","sample2") ]
+}
 }
 

@@ -4,6 +4,7 @@
 #' Read a PLINK binary fileset into a \code{genotypes} object
 #' 
 #' @param prefix path to a PLINK fileset, excluding \code{*.bed} suffix
+#' @param ... ignored
 #' 
 #' @return a \code{genotypes} object, with alleles in the "01" encoding (see \code{\link{recode.genotypes}})
 #' 
@@ -85,6 +86,7 @@ read.plink <- function(prefix, ...) {
 #' @param prefix path to the PLINK fileset to generate, excluding \code{*.bed} suffix
 #' @param map a valid marker map; overrides existing map
 #' @param fam sample metadata to override any existing metadata
+#' @param ... ignored
 #' 
 #' @return \code{TRUE} on completion
 #' 
@@ -257,11 +259,10 @@ write.plink.file <- function(x, ..., fix.missing = NA) {
 #' 
 #' @param gty a length-1 character vector containing the path to an existing PLINK fileset, OR a
 #' 	\code{genotypes} object which will be converted to one
-#' @param map if \code{gty} a \code{genotypes} object, a marker map to override its current one
-#' @param map if \code{gty} a \code{genotypes} object, sample metadata to override any existing metadata
 #' @param where if \code{gty}, directory in which to write the new PLINK fileset
 #' @param prefix basename of the fileset to be created
 #' @param flags (ignored)
+#' @param ... ignored
 #' 
 #' @return a length-1 character vector with path to a PLINK binary fileset, of class \code{"plink"}
 #' 
@@ -310,6 +311,11 @@ plinkify <- function(gty, where = tempdir(), prefix = "stuff", flags = "", ...) 
 	
 }
 
+#' Show quick summary of a \code{PLINK} pointer
+#' 
+#' @param prefix a pointer to a \code{PLINK} fileset on disk (class \code{plink})
+#' @param ... ignored
+#' 
 #' @export
 summary.plink <- function(prefix, ...) {
 	
@@ -319,6 +325,11 @@ summary.plink <- function(prefix, ...) {
 	
 }
 
+#' Show quick summary of a \code{PLINK} pointer
+#' 
+#' @param prefix a pointer to a \code{PLINK} fileset on disk (class \code{plink})
+#' @param ... ignored
+#' 
 #' @export
 print.plink <- function(prefix, ...) {
 	summary.plink(prefix, ...)
@@ -439,6 +450,7 @@ read.map <- function(f, ...) {
 #' 
 #' @param prefix a pointer to a PLINK fileset (of class \code{plink})
 #' @param prune.by command-line flags to control LD-pruning
+#' @param ... ignored
 #' 
 #' @return a pointer to a new, pruned PLINK fileset
 #' 
@@ -480,6 +492,7 @@ prune.plink <- function(prefix, prune.by = "--make-founders --indep 50 5 2", ...
 #' @param maf drop markers with minor-allele frequency lower than this threhsold
 #' @param hwe drop markers p-value less than this threshold for test of Hardy-Weinbery equilibrium
 #' @param flags additional command-line flags passed directly to PLINK call
+#' @param ... ignored
 #' 
 #' @return a dataframe with association results, having the following columns:
 #' \itemize{
@@ -585,6 +598,7 @@ assoc.plink <- function(prefix, model = c("assoc","linear","logistic"),
 #' @param maf drop markers with minor-allele frequency lower than this threhsold
 #' @param hwe drop markers p-value less than this threshold for test of Hardy-Weinbery equilibrium
 #' @param flags additional command-line flags passed directly to PLINK call
+#' @param ... ignored
 #' 
 #' @return a dataframe with association results, having the following columns:
 #' \itemize{
@@ -688,6 +702,9 @@ ibd.plink <- function(prefix, flags = "--nonfounders", prune = FALSE, as.matrix 
 #' 
 #' @param prefix a pointer to a PLINK fileset (of class \code{plink})
 #' @param flags command-line flags passed directly to underlying PLINK call
+#' @param method command-line flags for \code{PLINK}, controlling underlying calculation
+#' @param prune logical; if \code{TRUE}, do a round of LD-pruning before calculating kinship matrix
+#' @param ... ignored
 #' 
 #' @return a square matrix of genetic distances (or similarities), with row and column names
 #' 	equal to the sample IDs
@@ -736,6 +753,7 @@ kinship.plink <- function(prefix, method = "--distance square 1-ibs", flags = ""
 #' @param per.locus logical: if \code{TRUE}, return one value per marker; else return aggregate
 #' @param chr restrict analysis to this chromosome (if \code{NULL}, all chromosomes)
 #' @param flags command-line flags passed directly to underlying PLINK call
+#' @param ... ignored
 #' 
 #' @return a square matrix of pairwise F_st values; diagonal has mean heterozygosity within
 #' 	each population as defined by the labels in \code{by}
@@ -871,6 +889,7 @@ qc.plink <- function(prefix, flags = "--nonfounders", ...) {
 #' @param window (ignored)
 #' @param window.r2 keep calculating until pairwise LD falls below this threshold
 #' @param flags command-line flags passed directly to underlying PLINK call
+#' @param ... ignored
 #' 
 #' @return a \code{data.table} of pairwise LD values, one marker pair per row
 #' 
@@ -947,6 +966,7 @@ ld.plink <- function(prefix, dprime = FALSE, index.snp = NULL, markers = NULL, c
 #' @param remove.fam character vector of family IDs to exclude
 #' @param keep.fam character vector of family IDs to keep
 #' @param flags additional command-line flags passed directly to PLINK call
+#' @param ... ignored
 #' 
 #' @return a pointer (of class \code{plink}) to a new PLINK binary fileset after application
 #' 	of the above filters
@@ -1047,6 +1067,7 @@ filter.plink <- function(prefix, out = NULL, chr = NULL, from = NULL, to = NULL,
 #' @param prefix a pointer to a PLINK fileset (of class \code{plink})
 #' @param flags command-line flags passed directly to underlying PLINK call
 #' @param K project samples onto this many dimensions
+#' @param ... ignored
 #' 
 #' @return a dataframe with individual IDs, family IDs, and then projections in columns
 #' 	"MDS1"..."MDS{k}".
@@ -1095,6 +1116,7 @@ mds.plink <- function(prefix, flags = "--autosome", K = 3, ...) {
 #' @param flags command-line flags passed directly to underlying PLINK call
 #' @param K return the projection of samples onto the top K PCs
 #' @param by project individuals (\code{"indiv"}) or markers (\code{"var"}) onto PCs?
+#' @param ... ignored
 #' 
 #' @return When \code{by = "indiv"} (the default), a dataframe with individual IDs, family IDs,
 #' and then projections in columns "PC1"..."PC{k}".  When \code{by == "var"}, a dataframe with

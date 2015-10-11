@@ -10,6 +10,8 @@ replace.names(gty, nn, ...)
 \item{gty}{a \code{genotypes} object}
 
 \item{nn}{a vector of new sample names}
+
+\item{...}{ignored}
 }
 \description{
 Rename some or all samples

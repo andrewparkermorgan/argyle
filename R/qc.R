@@ -232,6 +232,67 @@ run.sample.qc <- function(gty, ref.intensity = NULL,
 	
 }
 
+#' Perform basic marker-wise QC on genotype calls
+#'
+#' @param gty a \code{genotypes} object
+#' @param max.H threshold for count of heterozygous calls, above which a site is flagged
+#' @param max.N threshold for count of no-calls, above which a site is flagged
+#' @param min.hom threshold for count of homozygous calls, at or below which a site is flagged
+#' @param apply logical; if \code{TRUE}, remove samples failing the filters, rather than flagging them
+#' 
+#' @return a copy of the input with sample filters set, and an object of class \code{marker.QC.result} in
+#' 	attr(,"marker.qc")
+#' 	
+#' @details A wrapper for the marker-level QC functions, applied to genotype calls.  Samplies which
+#' 	fail are flagged but not actually dropped from the result (unless \code{apply = TRUE}.)
+#' 	
+#' @seealso \code{\link{summarize.calls}}, \code{\link{run.sample.qc}}, \code{\link{apply.filters}}
+#' 
+#' @export
+run.marker.qc <- function(gty, max.H = Inf, max.N = Inf, min.hom = 0, hits = 0, apply = FALSE, ...) {
+	
+	if (!inherits(gty, "genotypes"))
+		stop("Please supply an object of class 'genotypes'.")
+	
+	fl <- get.filters(gty)
+	
+	if (length(fl$sites) != nrow(gty))
+		warning("Site filters don't match dimensions of genotype matrix.")
+	if (length(fl$samples) != ncol(gty))
+		warning("Sample filters don't match dimensions of genotype matrix.")
+	
+	qc.rez <- list()
+	message("Performing QC checks on genotype calls per marker...")
+	qc.rez$calls <- summarize.calls(gty, "markers")
+	
+	fail.hets <- as.vector(qc.rez$calls$H > max.H)
+	fail.ns <- as.vector(qc.rez$calls$N > max.N)
+	fail.freq <- as.vector(with(qc.rez$calls, A+B <= min.hom))
+	
+	fl$sites[fail.hets] <- paste0(fl$sites[fail.hets], "H")
+	fl$sites[fail.ns] <- paste0(fl$sites[fail.ns], "N")
+	fl$sites[fail.freq] <- paste0(fl$sites[fail.ns], "F")
+	isfl <- lapply(fl, function(x) {
+		x[ is.na(x) ] <- ""
+		nchar(x) > hits
+	})
+	
+	qc.rez$calls$filter <- isfl$sites
+	
+	message(paste(sum(isfl$sites),"markers and", sum(isfl$samples), "samples now flagged as low-quality."))
+	class(qc.rez) <- c("marker.QC.result", class(qc.rez))
+	
+	attr(gty, "marker.qc") <- qc.rez
+	attr(gty, "filter.sites") <- fl$sites
+	attr(gty, "filter.samples") <- fl$samples
+	
+	if (apply)
+		gty <- apply.filters(gty)
+	
+	return(gty)
+	
+}
+
 ## given a list of filters, update it with 'data' a list(filter_name = logical(to_filter))
 .update.filters <- function(fl, what = c("samples","markers"), data, ...) {
 	

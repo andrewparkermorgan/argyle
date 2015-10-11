@@ -7,6 +7,8 @@
 drop.intensity(gty, ...)
 }
 \arguments{
+\item{...}{ignored}
+
 \item{a}{\code{genotypes} object}
 }
 \value{

@@ -16,9 +16,7 @@ plinkify(gty, where = tempdir(), prefix = "stuff", flags = "", ...)
 
 \item{flags}{(ignored)}
 
-\item{map}{if \code{gty} a \code{genotypes} object, a marker map to override its current one}
-
-\item{map}{if \code{gty} a \code{genotypes} object, sample metadata to override any existing metadata}
+\item{...}{ignored}
 }
 \value{
 a length-1 character vector with path to a PLINK binary fileset, of class \code{"plink"}

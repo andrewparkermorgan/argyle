@@ -15,7 +15,9 @@
 \item{allowed}{a vector of allowable alleles for character-encoded genotypes}
 
 \item{alleles}{a 2-column character matrix containing the reference and alternate allele
-    at each marker in the input object; if null, obtained from marker map}
+at each marker in the input object; if null, obtained from marker map}
+
+\item{...}{ignored}
 }
 \value{
 a copy of \code{gty} with alleles converted to the requested encoding

@@ -9,6 +9,8 @@
 }
 \arguments{
 \item{gty}{a \code{genotypes} object}
+
+\item{...}{ignored}
 }
 \value{
 a dataframe of marker information (chr, cM, pos, ...) which should run parallel to the

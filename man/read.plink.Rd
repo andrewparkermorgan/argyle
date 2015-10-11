@@ -8,6 +8,8 @@ read.plink(prefix, ...)
 }
 \arguments{
 \item{prefix}{path to a PLINK fileset, excluding \code{*.bed} suffix}
+
+\item{...}{ignored}
 }
 \value{
 a \code{genotypes} object, with alleles in the "01" encoding (see \code{\link{recode.genotypes}})

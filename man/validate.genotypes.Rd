@@ -8,6 +8,8 @@
 }
 \arguments{
 \item{gty}{a \code{genotypes} object}
+
+\item{...}{ignored}
 }
 \value{
 Logical scalar indicating whether object passes or fails integrity checks.

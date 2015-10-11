@@ -8,6 +8,8 @@ autosomes(gty, ...)
 }
 \arguments{
 \item{gty}{a \code{genotypes} object}
+
+\item{...}{ignored}
 }
 \value{
 a copy of \code{gty} without chrX, chrY or chrM (or markers not assigned to a chromosome)

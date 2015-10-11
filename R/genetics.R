@@ -105,7 +105,7 @@ nmiss <- function(gty, by = c("markers","samples"), ...) {
 #' @return a named vector of missing-genotype *proportions*
 #' 
 #' @export
-missingness <- function(gty, by = by, ...) {
+missingness <- function(gty, by = c("markers","samples"), ...) {
 	
 	rez <- nmiss(gty, by = by, ...)
 	return( rez/length(rez) )
@@ -432,9 +432,9 @@ mendel.distance <- function(gty, parents, verbose = TRUE, ...) {
 	dads <- dads[ keep, ]
 	
 	## generate possible pairs
-	pairs <- as.matrix(expand.grid( colnames(moms), colnames(dads), stringsAsFactors = FALSE ))
+	#pairs <- as.matrix(expand.grid( colnames(moms), colnames(dads), stringsAsFactors = FALSE ))
 	if (verbose)
-		message("Investigating ", nrow(pairs), " possible mother-father pairs...")
+		message("Investigating ", nrow(pairs), " possible parents...")
 	
 	## get chromosomes by inheritance pattern
 	autos <- autosomes(gty[,1])
@@ -461,8 +461,9 @@ mendel.distance <- function(gty, parents, verbose = TRUE, ...) {
 		dd <- (A/(A+X))*dd + (X/(A+X))*apply(xchrom(dads), 2, ibs0, chrx)
 	}
 	
-	scores <- (dm[ pairs[,1] ] + dd[ pairs[,2] ])/2
-	return( data.frame(mom = pairs[,1], dad = pairs[,2], score = scores) )
+	#scores <- (dm[ pairs[,1] ] + dd[ pairs[,2] ])/2
+	return( rbind(data.frame(iid = colnames(gty), parent = colnames(moms), sex = 2, score = dm[ colnames(moms) ]),
+				  data.frame(iid = colnames(gty), parent = colnames(dads), sex = 1, score = dd[ colnames(dads) ])) )
 	
 }
 
@@ -544,7 +545,7 @@ ibs0.fancy <- function(x, y, ...) {
 #' 
 #' @export
 guess.parents <- function(gty, parents, ...) {
-	
+	## TODO: fix this
 	if (!inherits(gty, "genotypes"))
 		stop("Please supply an object of class 'genotypes'.")
 	

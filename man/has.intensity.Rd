@@ -8,6 +8,8 @@ has.intensity(gty, ...)
 }
 \arguments{
 \item{gty}{a \code{genotypes} object}
+
+\item{...}{ignored}
 }
 \value{
 logical scalar; TRUE is intensity data is present

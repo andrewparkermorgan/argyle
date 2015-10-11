@@ -9,6 +9,8 @@
 }
 \arguments{
 \item{gty}{a \code{genotypes} object}
+
+\item{...}{ignored}
 }
 \value{
 list of length 2 with elements \code{sites} and \code{samples} which should run parallel to the

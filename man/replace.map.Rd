@@ -10,6 +10,8 @@ replace.map(gty, newmap, ...)
 \item{gty}{a \code{genotypes} object}
 
 \item{newmap}{a valid marker map (especially: rownames same as marker names)}
+
+\item{...}{ignored}
 }
 \value{
 a copy of \code{gty} with old marker map replaced by the new one

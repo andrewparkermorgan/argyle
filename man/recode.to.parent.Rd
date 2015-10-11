@@ -10,7 +10,9 @@
 \item{gty}{a \code{genotypes} object}
 
 \item{parent}{a numeric vector of parental genotypes; a scalar pointing to a reference sample in
-    the input (\code{gty}); or another \code{genotypes} with parental genotypes in the first column}
+the input (\code{gty}); or another \code{genotypes} with parental genotypes in the first column}
+
+\item{...}{ignored}
 }
 \value{
 a recoded \code{genotypes} object

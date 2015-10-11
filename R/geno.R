@@ -9,14 +9,16 @@
 #' @param x an object of class \code{genotypes}
 #' @param i row index (logical, character, or numeric), recycled if needed
 #' @param j column index (logical, character, or numeric), recycled if needed
+#' @param ... ignored
 #' @param drop allow reduction of the dimensions of \code{x} if \code{i,j} are of length 1?
 #'
 #' @return a \code{genotypes} object, preserving any attributes
 #'
 #' @examples
+#' \dontrun{
 #' geno[ 1:10, ]
 #' geno[ ,c("sample1","sample2") ]
-#'
+#'}
 #' @export
 `[.genotypes` <- function(x, i, j, ..., drop = FALSE) {
 	
@@ -65,6 +67,11 @@
 	return(r)
 }
 
+#' Access attributes of a \code{genotypes} object as if they were a list
+#'
+#' @param x an object of class \code{genotypes}
+#' @param expr name of the attribute to extract
+#' 
 #' @export
 `$.genotypes` <- function(x, expr, ...) {
 	
@@ -72,6 +79,16 @@
 	
 }
 
+#' Show a concise summary of a \code{genotypes} object
+#'
+#' @param gty an object of class \code{genotypes}
+#' @param ... ignored
+#' 
+#' @details The summary gives the size of the dataset (markers x samples), number of samples
+#' 	of each sex, storage mode for alleles, presence of intensity data and whether or not
+#' 	intensities have been normalized, and (for files imported with \code{read.beadstudio}) a timestamp
+#' 	and checksum.
+#' 
 #' @export
 summary.genotypes <- function(gty, ...) {
 	
@@ -115,15 +132,52 @@ summary.genotypes <- function(gty, ...) {
 	
 }
 
+
+#' Extract vector of sample sexes
+#'
+#' @param gty an object of class \code{genotypes}
+#' 
+#' @return named numeric vector giving sample sexes: 0=unknown, 1=male, 2=female
+#' 
 #' @export
 sex.genotypes <- function(gty) {
 	if (.has.valid.ped(gty))
-		return( setNames( attr(gty, "ped")$sex, colnames(gty) ) )
+		rez <- setNames( attr(gty, "ped")$sex, colnames(gty) )
 	else
-		return( setNames( rep(0, ncol(gty)), colnames(gty) ) )
+		rez <- setNames( rep(0, ncol(gty)), colnames(gty) )
+	class(rez) <- c("sexes", class(rez))
+	return(rez)
 }
 sex <- function(x) UseMethod("sex")
 
+#' Print summary table of sample sexes
+#' 
+#' Counts the number of samples of each sex, converts numeric codes to human-friendly
+#' labels, and returns the table.
+#'
+#' @param gty an object of class \code{genotypes}
+#'
+#' @export
+sextable <- function(gty, ...) {
+	
+	if (!inherits(gty, "genotypes"))
+		stop("Please supply and object of class 'genotypes'.")
+	
+	s <- sex.genotypes(gty)
+	x <- tabulate(s+1, nbins = 3)
+	x <- x[ c(2,3,1) ]
+	names(x) <- c("male","female","unknown")
+	return(x)
+}
+
+#' Show a concise summary of a \code{genotypes} object
+#'
+#' @param gty an object of class \code{genotypes}
+#' @param ... ignored
+#' 
+#' @details This method exists solely to avoid accidentally flooding the terminal with the
+#' 	contents of a genotypes object.
+#' 
 #' @export
 print.genotypes <- function(gty, ...) {
 	summary.genotypes(gty)
@@ -138,6 +192,15 @@ print.genotypes <- function(gty, ...) {
 	
 }
 
+#' Show the first few samples and markers for a \code{genotypes}
+#'
+#' @param gty an object of class \code{genotypes}
+#' @param n number of markers to show
+#' @param nsamples number of samples to show
+#' @param ... ignored
+#' 
+#' @details Sample names are abbreviated to keep output tidy.
+#' 
 #' @export
 head.genotypes <- function(gty, n = 10, nsamples = min(10,ncol(gty)), ...) {
 	
@@ -188,6 +251,7 @@ head.genotypes <- function(gty, n = 10, nsamples = min(10,ncol(gty)), ...) {
 
 #' Get marker map for a \code{genotypes} object
 #' @param gty a \code{genotypes} object
+#' @param ... ignored
 #' @return a dataframe of marker information (chr, cM, pos, ...) which should run parallel to the
 #' 	rows of the genotypes matrix in the input.  If map is absent, returns \code{NULL.}
 #' @seealso Other accessor functions: \code{\link{samples}} (sample metadata), \code{\link{filters}}
@@ -202,6 +266,7 @@ markers <- function(x) UseMethod("markers")
 
 #' Get sample metadata for a \code{genotypes} object
 #' @param gty a \code{genotypes} object
+#' @param ... ignored
 #' @return a dataframe of sample metadata (iid, ...) which should run parallel to the
 #' 	columns of the genotypes matrix in the input.  If sample data is absent, returns \code{NULL.}
 #' @seealso Other accessor functions: \code{\link{markers}} (marker map), \code{\link{filters}}
@@ -219,6 +284,7 @@ samples <- function(x) UseMethod("samples")
 
 #' Get filters attached to a \code{genotypes} object
 #' @param gty a \code{genotypes} object
+#' @param ... ignored
 #' @return list of length 2 with elements \code{sites} and \code{samples} which should run parallel to the
 #' 	row and columns, respectively, of the genotypes matrix in the input.  If fitlers are absent, returns vector
 #' 	with appropriate dimensions in which all elements are empty.  These vectors have names matching the row
@@ -235,6 +301,7 @@ filters <- function(x) UseMethod("filters")
 
 #' Get intensity matrices attached to a \code{genotypes} object
 #' @param gty a \code{genotypes} object
+#' @param ... ignored
 #' @return list of length 2 with elements \code{x} and \code{y}, respectively the x- and y-intensity matrices,
 #' 	which both have dimensions and row/column names equal to those of the genotypes matrix in the input.
 #' @seealso Other accessor functions: \code{\link{markers}} (marker map), \code{\link{samples}}
@@ -250,6 +317,7 @@ intensity <- function(x) UseMethod("intensity")
 #' Check if a \code{genotypes} object has intensity data attached
 #'
 #' @param gty a \code{genotypes} object
+#' @param ... ignored
 #' 
 #' @return logical scalar; TRUE is intensity data is present
 #'
@@ -258,7 +326,15 @@ has.intensity <- function(gty, ...) {
 	.has.valid.intensity(gty)
 }
 
-## grab intensities for given markers as nice dataframe for plotting
+#' Extract hybridization intensities as a dataframe
+#'
+#' @param gty an object of class \code{genotypes}
+#' @param markers indexing vector to choose which markers (rows) to extract
+#' @param ... ignored
+#' 
+#' @return a dataframe containing sample metadata, marker metadata, and hybridization intensities
+#' 
+#' @export
 get.intensity <- function(gty, markers, ...) {
 	
 	if (!(inherits(gty, "genotypes") && .has.valid.intensity(gty)))
@@ -283,6 +359,7 @@ get.intensity <- function(gty, markers, ...) {
 #' 
 #' @param gty a \code{genotypes} object
 #' @param nn a vector of new sample names
+#' @param ... ignored
 #' 
 #' @details The values in \code{nn} are used to replace existing names using the following rules. First, if \code{nn}
 #' 	is a named vector, it is assumed to map old names to new names.  Otherwise \code{nn} must have length equal to the
@@ -350,7 +427,15 @@ replace.names <- function(gty, nn, ...) {
 	
 }
 
-## grab genotype calls at specified marker(s)
+#' Extract genotype calls as a dataframe
+#'
+#' @param gty an object of class \code{genotypes}
+#' @param markers indexing vector to choose which markers (rows) to extract
+#' @param ... ignored
+#' 
+#' @return a dataframe containing sample metadata, marker metadata, and genotype calls
+#' 
+#' @export
 get.call <- function(gty, markers, ...) {
 	
 	if (!(inherits(gty, "genotypes")))
@@ -369,7 +454,17 @@ get.call <- function(gty, markers, ...) {
 	
 }
 
-## grab BAF+LRR for given markers as nice dataframe for plotting
+#' Extract BAF/LRR as a dataframe
+#'
+#' @param gty an object of class \code{genotypes}
+#' @param markers indexing vector to choose which markers (rows) to extract
+#' @param ... ignored
+#' 
+#' @return a dataframe containing sample metadata, marker metadata, and BAF/LRR values
+#' 
+#' @details BAF and LRR must have already been computed using the \code{\link{tQN}} function.
+#' 
+#' @export
 get.baf <- function(gty, markers = NULL, ...) {
 	
 	if (!(inherits(gty, "genotypes") && .has.valid.baflrr(gty)))
@@ -399,6 +494,7 @@ get.baf <- function(gty, markers = NULL, ...) {
 #' @param expr logical expression indicating elements or rows to keep: missing values are taken as false
 #' 	(just like \code{subset.data.frame()})
 #' @param by should \code{expr} be evaluated in the context of markers (eg. by rows) or samples (eg. by columns)?
+#' @param ... ignored
 #' 
 #' @return a \code{genotypes} object similar to \code{gty}, but with only the selected rows (\code{by == "markers"})
 #' 	or columns (\code{by == "samples"}).  Attributes of \code{gty} including intensity matrices, filters,
@@ -440,7 +536,8 @@ subset.genotypes <- function(gty, expr, by = c("markers","samples"), ...) {
 #' Shortcut for grabbing just the autosomes
 #' 
 #' @param gty a \code{genotypes} object
-#' 
+#' @param ... ignored
+#'  
 #' @return a copy of \code{gty} without chrX, chrY or chrM (or markers not assigned to a chromosome)
 #' 
 #' @export
@@ -456,6 +553,7 @@ autosomes <- function(gty, ...) {
 #' Shortcut for grabbing just chrX
 #' 
 #' @param gty a \code{genotypes} object
+#' @param ... ignored
 #' 
 #' @return a copy of \code{gty} with only chrX
 #'
@@ -472,6 +570,7 @@ xchrom <- function(gty, ...) {
 #' Shortcut for grabbing just chrY
 #' 
 #' @param gty a \code{genotypes} object
+#' @param ... ignored
 #' 
 #' @return a copy of \code{gty} with only chrY
 #'
@@ -485,8 +584,17 @@ ychrom <- function(gty, ...) {
 	
 }
 
-## overload cbind() to join not only genotype matrix but also sample metadata
-## NB: intensities and filters are dropped at this point
+#' Concatenate two \code{genotypes} objects 'horizontally'
+#'
+#' @param a an object of class \code{genotypes}
+#' @param b another object of class \code{genotypes}
+#' @param ... ignored
+#' 
+#' @details The objects \code{a} and \code{b} must represent the same markers typed on non-overlapping sets
+#' 	of samples in order for this operation to be meaningful. That means their row names must match.
+#' 	Intensity data and any sample or site filters are dropped in the result.
+#' 
+#' @export
 cbind.genotypes <- function(a, b, ...) {
 	
 	if (!inherits(b, "genotypes"))
@@ -508,8 +616,17 @@ cbind.genotypes <- function(a, b, ...) {
 	
 }
 
-## overload rbind() to join not only genotype matrix but also marker metadata
-## NB: intensities and filters are dropped at this point
+#' Concatenate two \code{genotypes} objects 'vertically'
+#'
+#' @param a an object of class \code{genotypes}
+#' @param b another object of class \code{genotypes}
+#' @param ... ignored
+#' 
+#' @details The objects \code{a} and \code{b} must represent the same samples at non-overlapping sets
+#' 	of markers in order for this operation to be meaningful. That means their column names must match.
+#' 	Intensity data and any sample or site filters are dropped in the result.
+#' 
+#' @export
 rbind.genotypes <- function(a, b, ...) {
 	
 	if (!inherits(b, "genotypes"))
@@ -518,7 +635,7 @@ rbind.genotypes <- function(a, b, ...) {
 	cols.a <- colnames(a)
 	cols.b <- colnames(b)
 	if (length(setdiff(a,b)) || length(setdiff(b,a)))
-		stop("Number and names of markers don't match.  Try merging genotypes instead of rbind-ing.")
+		stop("Number and names of samples don't match.  Try merging genotypes instead of rbind-ing.")
 	
 	message(paste0("Adding ",nrow(b)," markers to the existing ",nrow(a),"."))
 	
@@ -540,7 +657,8 @@ rbind.genotypes <- function(a, b, ...) {
 #' @param join what sort of join to perform: at present, only \code{"inner"} (intersection of \code{a}'s and \code{b}'s
 #' 	marker sets) is supported
 #' @param check.alleles logical; if \code{TRUE}, attempt to verify compatibility of marker maps and fix allele or strand swaps
-#' 
+#' @param ... ignored
+#'  
 #' @return a \code{genotypes} object containing all samples in \code{a} and \code{b}, at all markers shared
 #' 	by \code{a} and \code{b}
 #' 	
@@ -840,7 +958,8 @@ merge.genotypes <- function(a, b, join = c("inner","left"), check.alleles = FALS
 #' Check the integrity of a \code{genotypes} object
 #'
 #' @param gty a \code{genotypes} object
-#'
+#' @param ... ignored
+#' 
 #' @return Logical scalar indicating whether object passes or fails integrity checks.
 #'
 #' @details A valid genotypes object must have the following: a genotypes matrix with row and column names;
@@ -960,7 +1079,8 @@ validate <- function(x) UseMethod("validate")
 #' Strip intensity matrices from a \code{genotypes} object
 #' 
 #' @param a \code{genotypes} object
-#' 
+#' @param ... ignored
+#'
 #' @return a copy of \code{gty} without intensity data (but with any QC summaries still present)
 #' 
 #' @export
@@ -976,7 +1096,38 @@ drop.intensity <- function(gty, ...) {
 	
 }
 
-## apply a function over samples in a genotype matrix, by sample groups
+#' Apply a function over a \code{genotypes} object, by sample or marker groups
+#'
+#' An homage to base \code{R}'s \code{apply} family of functions.
+#'
+#' @param gty an object of class \code{genotypes}
+#' @param margin dimension of the array over which to apply \code{expr} (1=rows, 2=columns)
+#' @param expr an expression defining subsets of \code{gty}, either by markers (\code{margin = 1})
+#' 	or samples (\code{margin = 1})
+#' @param fn the function to apply over the subsets defined by \code{expr}
+#' @param strip logical; if \code{TRUE}, strip metadata before evaluating \code{fn()}
+#' @param ... other arguments passed-through to \code{fn()}
+#' 
+#' @return a list with one element per value of the grouping expression (\code{expr}); the value of that
+#' 	element is the return value of \code{fn()} applied to the subset of \code{gty} defined
+#' 	by \code{expr}
+#' 
+#' @details The grouping expression \code{expr} is evaluated in the parent environment by default. Use the
+#' 	dot function to get lazy evaluation like with \code{subset()} (see examples).
+#' 
+#' 	When \code{fn()} will involve heavy use of array slicing, use \code{strip} to avoid having to
+#' 	slice sample/marker metadata repeatedly.
+#' 
+#' @examples
+#' # lazy evaluation 1: apply over chromosomes
+#' \dontrun{
+#' genoapply(x, 1, .(chr), myfunction, extra.arg = TRUE)
+#' }
+# lazy evaluation 2: apply over families
+#' \dontrun{
+#' genoapply(x, 2, .(fid), myfunction, extra.arg = TRUE)
+#' }
+#' 
 #' @export
 genoapply <- function(gty, margin = c(1,2), expr = 1, fn = NULL, strip = FALSE, ...) {
 	
@@ -1031,7 +1182,8 @@ genoapply <- function(gty, margin = c(1,2), expr = 1, fn = NULL, strip = FALSE, 
 #' @param allowed a vector of allowable alleles for character-encoded genotypes
 #' @param alleles a 2-column character matrix containing the reference and alternate allele
 #' 	at each marker in the input object; if null, obtained from marker map
-#' 	
+#' @param ... ignored
+#' 
 #' @return a copy of \code{gty} with alleles converted to the requested encoding
 #' 
 #' @details Genotypes on Illumina Infinium arrays are assumed to correspond to biallelic SNPs.
@@ -1204,6 +1356,7 @@ recode <- function(x, ...) UseMethod("recode", x)
 #' @param gty a \code{genotypes} object
 #' @param parent a numeric vector of parental genotypes; a scalar pointing to a reference sample in
 #' 	the input (\code{gty}); or another \code{genotypes} with parental genotypes in the first column
+#' @param ... ignored
 #' 
 #' @return a recoded \code{genotypes} object
 #' 
@@ -1263,7 +1416,8 @@ recode.to.parent <- function(gty, parent, ...) {
 #' 
 #' @param gty a \code{genotypes} object
 #' @param newmap a valid marker map (especially: rownames same as marker names)
-#' 	
+#' @param ... ignored
+#' 		
 #' @return a copy of \code{gty} with old marker map replaced by the new one
 #' 
 #' @details Replacement of the marker map relies on marker names: only markers with which are shared

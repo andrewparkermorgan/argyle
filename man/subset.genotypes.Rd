@@ -13,6 +13,8 @@
 (just like \code{subset.data.frame()})}
 
 \item{by}{should \code{expr} be evaluated in the context of markers (eg. by rows) or samples (eg. by columns)?}
+
+\item{...}{ignored}
 }
 \value{
 a \code{genotypes} object similar to \code{gty}, but with only the selected rows (\code{by == "markers"})

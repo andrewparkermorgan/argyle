@@ -278,7 +278,7 @@ geno <- read.beadstudio(prefix = "", snps, in.path = "path/to/containing/folder"
 Reading a `PLINK` binary fileset with `argyle` is simple with `read.plink()`.  As an example, we can load genotypes of 28 wild mice from the Mouse Diversity Array [@Yang2011], provided in this package's "data/" directory.  Genotypes from `PLINK` filesets are always read directly to the `"01"` encoding.
 
 ```{r}
-infile <- system.file("data/wild.chr19.bed", package = "argyle")
+infile <- system.file("inst/extdata/wild.chr19.bed", package = "argyle")
 wild <- read.plink(infile)
 
 print(wild)
@@ -432,7 +432,7 @@ To demonstrate the use of `argyle` on population-genetic data, we use genotypes 
 
 First load the genotypes from the `PLINK` fileset.  Genotypes from `PLINK` are always loaded in the `"01"` encoding.
 ```{r}
-ff <- system.file("data/wild.chr19.bed", package = "argyle")
+ff <- system.file("inst/extdata/wild.chr19.bed", package = "argyle")
 wild <- read.plink(ff)
 
 summary(wild)

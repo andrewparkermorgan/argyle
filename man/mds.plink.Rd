@@ -12,6 +12,8 @@ mds.plink(prefix, flags = "--autosome", K = 3, ...)
 \item{flags}{command-line flags passed directly to underlying PLINK call}
 
 \item{K}{project samples onto this many dimensions}
+
+\item{...}{ignored}
 }
 \value{
 a dataframe with individual IDs, family IDs, and then projections in columns

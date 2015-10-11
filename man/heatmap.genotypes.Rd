@@ -4,10 +4,12 @@
 \alias{heatmap.genotypes}
 \title{Plot a heatmap representing genetic distances between samples}
 \usage{
-\method{heatmap}{genotypes}(gty, ...)
+\method{heatmap}{genotypes}(gty, d = NULL, ...)
 }
 \arguments{
 \item{gty}{a \code{genotypes} object}
+
+\item{d}{a distance matrix (of class \code{dist}), to avoid re-computing}
 }
 \value{
 a (hierarchically-clustered) matrix representation of pairwise genetic distances between
@@ -15,5 +17,10 @@ a (hierarchically-clustered) matrix representation of pairwise genetic distances
 }
 \description{
 Plot a heatmap representing genetic distances between samples
+}
+\details{
+Computation of pairwise distances in a large set of samples will be somewhat expensive,
+	so there is advantage to pre-computing this matrix (using \code{argyle::dist()}) if it may
+	be useful in other analyses.
 }
 

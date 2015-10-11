@@ -8,6 +8,8 @@ ychrom(gty, ...)
 }
 \arguments{
 \item{gty}{a \code{genotypes} object}
+
+\item{...}{ignored}
 }
 \value{
 a copy of \code{gty} with only chrY

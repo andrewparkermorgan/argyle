@@ -24,6 +24,5 @@
 #' 
 #' @usage
 #' 	data(ex); data(inbreds)
-#' @source Morgan AP et al. (2015) The Mouse Universal Genotying Array: from sister
-#' 	strain to sister species. In preparation.
-"ex"
+#' @source Morgan AP et al. (2015) The Mouse Universal Genotying Array: from substrains
+#' 	to subspecies. Submitted to G3.

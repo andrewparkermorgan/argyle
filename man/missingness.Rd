@@ -4,7 +4,7 @@
 \alias{missingness}
 \title{Calculate rate of missing genoypes by marker or sample}
 \usage{
-missingness(gty, by = by, ...)
+missingness(gty, by = c("markers", "samples"), ...)
 }
 \arguments{
 \item{gty}{a \code{genotypes} object}

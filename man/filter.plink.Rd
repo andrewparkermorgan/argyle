@@ -39,6 +39,8 @@ filter.plink(prefix, out = NULL, chr = NULL, from = NULL, to = NULL,
 \item{keep.fam}{character vector of family IDs to keep}
 
 \item{flags}{additional command-line flags passed directly to PLINK call}
+
+\item{...}{ignored}
 }
 \value{
 a pointer (of class \code{plink}) to a new PLINK binary fileset after application

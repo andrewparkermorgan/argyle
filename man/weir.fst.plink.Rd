@@ -17,6 +17,8 @@ weir.fst.plink(prefix, by = NULL, per.locus = FALSE, chr = NULL,
 \item{chr}{restrict analysis to this chromosome (if \code{NULL}, all chromosomes)}
 
 \item{flags}{command-line flags passed directly to underlying PLINK call}
+
+\item{...}{ignored}
 }
 \value{
 a square matrix of pairwise F_st values; diagonal has mean heterozygosity within

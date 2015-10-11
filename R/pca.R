@@ -135,12 +135,6 @@
 #' 	of variance explained) are provided as \code{attr(,"explained")}.
 #'
 #' @seealso \code{pca.plink()} for using PLINK's (much faster and more powerful) implementation
-#' @aliases pca
-#'
-#' @examples
-#' pca.genotypes(geno)
-#' # equivalently, as shortcut:
-#' pca(geno)
 #'
 #' @export
 pca.genotypes <- function(gty, extras = NULL, what = c("genotypes","intensity"), K = 3, fast = FALSE, ...) {

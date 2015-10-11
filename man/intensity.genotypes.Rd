@@ -9,6 +9,8 @@
 }
 \arguments{
 \item{gty}{a \code{genotypes} object}
+
+\item{...}{ignored}
 }
 \value{
 list of length 2 with elements \code{x} and \code{y}, respectively the x- and y-intensity matrices,

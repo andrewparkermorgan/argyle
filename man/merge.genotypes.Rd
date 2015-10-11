@@ -16,6 +16,8 @@
 marker sets) is supported}
 
 \item{check.alleles}{logical; if \code{TRUE}, attempt to verify compatibility of marker maps and fix allele or strand swaps}
+
+\item{...}{ignored}
 }
 \value{
 a \code{genotypes} object containing all samples in \code{a} and \code{b}, at all markers shared

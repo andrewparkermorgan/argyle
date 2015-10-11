@@ -9,6 +9,8 @@
 }
 \arguments{
 \item{gty}{a \code{genotypes} object}
+
+\item{...}{ignored}
 }
 \value{
 a dataframe of sample metadata (iid, ...) which should run parallel to the

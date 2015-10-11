@@ -189,12 +189,17 @@ plot.clusters <- function(gty, markers = NULL, theme.fn = ggplot2::theme_bw, for
 #' Plot a heatmap representing genetic distances between samples
 #' 
 #' @param gty a \code{genotypes} object
+#' @param d a distance matrix (of class \code{dist}), to avoid re-computing
 #' 
 #' @return a (hierarchically-clustered) matrix representation of pairwise genetic distances between
 #' 	samples, normalized to [0,1].
+#' 	
+#' @details Computation of pairwise distances in a large set of samples will be somewhat expensive,
+#' 	so there is advantage to pre-computing this matrix (using \code{argyle::dist()}) if it may
+#' 	be useful in other analyses.
 #' 
 #' @export
-heatmap.genotypes <- function(gty, ...) {
+heatmap.genotypes <- function(gty, d = NULL, ...) {
 	
 	if (!(inherits(gty, "genotypes")))
 		stop("Please supply an object of class 'genotypes'.")
@@ -203,18 +208,26 @@ heatmap.genotypes <- function(gty, ...) {
 	gty <- recode(gty, "01")
 	
 	## get distance matrix
-	d <- dist.genotypes(gty)
+	if (is.null(d))
+		d <- dist.genotypes(gty)
+	else
+		message("Using user-supplied distance matrix.")
 	cl <- hclust(d)
 	k <- as.matrix(d)
 	k <- k[ cl$order,cl$order ]
+	#k[ diag(k) ] <- NA
 	
 	message("Rendering heatmap...")
-	ggplot2::ggplot(reshape2::melt(1-k)) +
+	rez <- ggplot2::ggplot(reshape2::melt(1-k)) +
 		ggplot2::geom_tile(ggplot2::aes(x = Var1, y = Var2, fill = value)) +
 		scale_fill_heatmap("P(IBS)") +
 		ggplot2::coord_equal() +
 		theme_heatmap()
 		
+	## add distance matrix to result, to avoid recomputing
+	attr(rez, "dist") <- d
+	return(rez)
+	
 	
 }
 #' @export

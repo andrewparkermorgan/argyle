@@ -30,6 +30,8 @@ case-control contingency table; \code{"linear"} for linear model on quantitative
 \item{hwe}{drop markers p-value less than this threshold for test of Hardy-Weinbery equilibrium}
 
 \item{flags}{additional command-line flags passed directly to PLINK call}
+
+\item{...}{ignored}
 }
 \value{
 a dataframe with association results, having the following columns:

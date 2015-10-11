@@ -14,6 +14,8 @@ write.plink(gty, prefix, map = NULL, fam = NULL, ...)
 \item{map}{a valid marker map; overrides existing map}
 
 \item{fam}{sample metadata to override any existing metadata}
+
+\item{...}{ignored}
 }
 \value{
 \code{TRUE} on completion

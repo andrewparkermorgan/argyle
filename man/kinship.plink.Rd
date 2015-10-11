@@ -10,7 +10,13 @@ kinship.plink(prefix, method = "--distance square 1-ibs", flags = "",
 \arguments{
 \item{prefix}{a pointer to a PLINK fileset (of class \code{plink})}
 
+\item{method}{command-line flags for \code{PLINK}, controlling underlying calculation}
+
 \item{flags}{command-line flags passed directly to underlying PLINK call}
+
+\item{prune}{logical; if \code{TRUE}, do a round of LD-pruning before calculating kinship matrix}
+
+\item{...}{ignored}
 }
 \value{
 a square matrix of genetic distances (or similarities), with row and column names

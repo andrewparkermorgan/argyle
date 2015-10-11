@@ -28,6 +28,8 @@ ld.plink(prefix, dprime = FALSE, index.snp = NULL, markers = NULL,
 \item{window.r2}{keep calculating until pairwise LD falls below this threshold}
 
 \item{flags}{command-line flags passed directly to underlying PLINK call}
+
+\item{...}{ignored}
 }
 \value{
 a \code{data.table} of pairwise LD values, one marker pair per row

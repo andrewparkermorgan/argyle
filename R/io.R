@@ -57,7 +57,7 @@
 #' 	Inspiration from Dan Gatti's DOQTL package: <https://github.com/dmgatti/DOQTL/blob/master/R/extract.raw.data.R>
 #'
 #' @export
-read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, colmap = NULL,...) {
+read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, colmap = NULL, ...) {
 
 	## stop here if marker map is not well-formed
 	if (!.is.valid.map(snps)) {
@@ -201,7 +201,10 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	
 	## slurp file into a data.table, skipping the 9 header lines
 	message(paste("Reading genotypes and intensities for", nsnps, "markers x", length(renamer), "samples from <", infile, "> ..."))
-	data <- data.table::fread(piper, skip = 9)
+	if (rez) {
+		stop("Problem unzipping FinalReport file.  Please unzip it yourself and then try again.")
+	}
+	data <- data.table::fread(piper, skip = 9, showProgress = interactive(), stringsAsFactors = FALSE, sep = "\t")
 	
 	## Construct the column-naming map
 	cols.needed <- c("marker","iid","x","y","call1","call2")
@@ -365,12 +368,13 @@ export.doqtl <- function(gty, where = "doqtl.Rdata", recode = FALSE, ...) {
 	sex[ sex == "1" ] <- "M"
 	sex[ sex == "2" ] <- "F"
 	sex[ sex == "0" ] <- NA
-	print(sex)
+	#print(sex)
 	snps <- attr(gty, "map")
-	#save(x, y, G, sex, snps, file = where)
+	message(paste("Saving DOQTL input objects in <", where, ">..."))
+	save(x, y, G, sex, snps, file = where)
 	
-	message(paste("Saved DOQTL input objects in <", where, ">."))
-	return(TRUE)
+	message("Done.")
+	invisible(TRUE)
 	
 }
 

@@ -10,6 +10,8 @@ prune.plink(prefix, prune.by = "--make-founders --indep 50 5 2", ...)
 \item{prefix}{a pointer to a PLINK fileset (of class \code{plink})}
 
 \item{prune.by}{command-line flags to control LD-pruning}
+
+\item{...}{ignored}
 }
 \value{
 a pointer to a new, pruned PLINK fileset

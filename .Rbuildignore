@@ -1,2 +1,5 @@
 ^README\.Rmd$
 ^README-*\.png$
+^datasets
+^manuscript
+^vignettes
