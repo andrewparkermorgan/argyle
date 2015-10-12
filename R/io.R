@@ -200,10 +200,8 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 		stop("Can't understand number of markers to read; header says '", nsnps, "'")
 	
 	## slurp file into a data.table, skipping the 9 header lines
-	message(paste("Reading genotypes and intensities for", nsnps, "markers x", length(renamer), "samples from <", infile, "> ..."))
-	if (rez) {
-		stop("Problem unzipping FinalReport file.  Please unzip it yourself and then try again.")
-	}
+	message(paste("Reading genotypes and intensities for", nsnps, "markers x",
+				  length(renamer), "samples from <", infile, "> ..."))
 	data <- data.table::fread(piper, skip = 9, showProgress = interactive(), stringsAsFactors = FALSE, sep = "\t")
 	
 	## Construct the column-naming map

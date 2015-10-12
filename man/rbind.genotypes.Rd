@@ -19,6 +19,6 @@ Concatenate two \code{genotypes} objects 'vertically'
 \details{
 The objects \code{a} and \code{b} must represent the same samples at non-overlapping sets
 	of markers in order for this operation to be meaningful. That means their column names must match.
-	Intensity data and any sample or site filters are dropped in the result.
+	Sample or site filters are dropped in the result.
 }
 

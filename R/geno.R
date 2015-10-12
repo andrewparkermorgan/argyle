@@ -592,7 +592,7 @@ ychrom <- function(gty, ...) {
 #' 
 #' @details The objects \code{a} and \code{b} must represent the same markers typed on non-overlapping sets
 #' 	of samples in order for this operation to be meaningful. That means their row names must match.
-#' 	Intensity data and any sample or site filters are dropped in the result.
+#' 	Any sample or site filters are dropped in the result.
 #' 
 #' @export
 cbind.genotypes <- function(a, b, ...) {
@@ -603,6 +603,11 @@ cbind.genotypes <- function(a, b, ...) {
 	if (nrow(a) != nrow(b) | any(rownames(a) != rownames(b)))
 		stop("Number and names of markers don't match.  Try merging genotypes instead of cbind-ing.")
 	
+	if (any(is.null(attr(a,"alleles")), is.null(attr(b,"alleles"))))
+		stop("Ambiguous allele encoding in one or both of the objects to be merged.")
+	if (attr(a,"alleles") != attr(b,"alleles"))
+		stop("Allele encodings don't match -- nonsensical result.")
+	
 	message(paste0("Adding ",ncol(b)," individuals to the existing ",ncol(a),"."))
 	
 	rez <- cbind(unclass(a), unclass(b))
@@ -611,6 +616,14 @@ cbind.genotypes <- function(a, b, ...) {
 		attr(rez, "map") <- attr(a, "map")
 	if (!is.null(attr(a, "ped")))
 		attr(rez, "ped") <- rbind( attr(a, "ped"), attr(b, "ped") )
+	attr(rez, "alleles") <- attr(a, "alleles")
+	
+	if (.has.valid.intensity(a) && .has.valid.intensity(b)) {
+		message("Updating intensity matrices...")
+		x <- cbind( attr(a, "intensity")$x, attr(b, "intensity")$x )
+		y <- cbind( attr(a, "intensity")$y, attr(b, "intensity")$y )
+		attr(rez, "intensity") <- list(x = x, y = y)
+	}
 	
 	return(rez)
 	
@@ -624,13 +637,18 @@ cbind.genotypes <- function(a, b, ...) {
 #' 
 #' @details The objects \code{a} and \code{b} must represent the same samples at non-overlapping sets
 #' 	of markers in order for this operation to be meaningful. That means their column names must match.
-#' 	Intensity data and any sample or site filters are dropped in the result.
+#' 	Sample or site filters are dropped in the result.
 #' 
 #' @export
 rbind.genotypes <- function(a, b, ...) {
 	
 	if (!inherits(b, "genotypes"))
 		stop("Only willing to bind two objects of class 'genotypes.'")
+	
+	if (any(is.null(attr(a,"alleles")), is.null(attr(b,"alleles"))))
+		stop("Ambiguous allele encoding in one or both of the objects to be merged.")
+	if (attr(a,"alleles") != attr(b,"alleles"))
+		stop("Allele encodings don't match -- nonsensical result.")
 	
 	cols.a <- colnames(a)
 	cols.b <- colnames(b)
@@ -645,6 +663,14 @@ rbind.genotypes <- function(a, b, ...) {
 		attr(rez, "ped") <- attr(a, "ped")
 	if (!is.null(attr(a, "map")) & !is.null(attr(b, "map")))
 		attr(rez, "map") <- rbind( attr(a, "map"), attr(b, "map") )
+	attr(rez, "alleles") <- attr(a, "alleles")
+	
+	if (.has.valid.intensity(a) && .has.valid.intensity(b)) {
+		message("Updating intensity matrices...")
+		x <- rbind( attr(a, "intensity")$x, attr(b, "intensity")$x )
+		y <- rbind( attr(a, "intensity")$y, attr(b, "intensity")$y )
+		attr(rez, "intensity") <- list(x = x, y = y)
+	}
 	
 	return(rez)
 	
