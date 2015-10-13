@@ -6,6 +6,9 @@
 \usage{
 maf(...)
 }
+\arguments{
+\item{...}{passed through to call to \code{freq()}}
+}
 \description{
 Just an alias or \code{freq(x, "markers")}.  Sticklers for nomenclature will be aware that this
 function does not truly return the MAF unless the allele encoding is \code{"relative"}.

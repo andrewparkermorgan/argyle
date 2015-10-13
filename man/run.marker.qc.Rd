@@ -16,7 +16,11 @@ run.marker.qc(gty, max.H = Inf, max.N = Inf, min.hom = 0, hits = 0,
 
 \item{min.hom}{threshold for count of homozygous calls, at or below which a site is flagged}
 
-\item{apply}{logical; if \code{TRUE}, remove samples failing the filters, rather than flagging them}
+\item{hits}{markers failing more than this many filters are flagged}
+
+\item{apply}{logical; if \code{TRUE}, remove markers failing the filters, rather than flagging them}
+
+\item{...}{ignored}
 }
 \value{
 a copy of the input with sample filters set, and an object of class \code{marker.QC.result} in

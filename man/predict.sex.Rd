@@ -4,10 +4,10 @@
 \alias{predict.sex}
 \title{Predict sample sexes based on genotype and intensity data}
 \usage{
-\method{predict}{sex}(gty, method = c("ycalls"), ...)
+\method{predict}{sex}(object, method = c("ycalls"), ...)
 }
 \arguments{
-\item{gty}{a \code{genotypes} object}
+\item{object}{a \code{genotypes} object}
 
 \item{method}{how to go about making sex predictions (see Details)}
 

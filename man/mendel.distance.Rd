@@ -12,6 +12,8 @@ mendel.distance(gty, parents, verbose = TRUE, ...)
 \item{parents}{a \code{genotypes} object containing possible parents for the target individual}
 
 \item{verbose}{logical; if \code{TRUE}, send progress messages to terminal}
+
+\item{...}{ignored}
 }
 \value{
 a dataframe of mother-father pairs and corresponding Mendel distances

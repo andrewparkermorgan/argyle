@@ -11,7 +11,9 @@ summarize.intensity(gty, q = seq(0, 1, 0.1), ..., .progress = "none")
 
 \item{q}{a vector of quantiles (in [0,1])}
 
-\item{.progress}{show a progress bar; passed through to \code{plyr}, see \code{\link{plyr::ddply}}}
+\item{...}{ignored}
+
+\item{.progress}{show a progress bar; passed through to \code{plyr}, see \code{\link[plyr]{ddply}}}
 }
 \value{
 a dataframe containing intensity quantiles for each sample, merged with

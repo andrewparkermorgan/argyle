@@ -14,6 +14,8 @@ freq(gty, by = c("markers", "samples"), na.rm = TRUE, counts = FALSE, ...)
 \item{na.rm}{skip over missing genotypes in frequency calculations}
 
 \item{counts}{logical; if \code{TRUE}, report allele counts instead of relative frequencies}
+
+\item{...}{ignored}
 }
 \value{
 a named vector of allele frequencies

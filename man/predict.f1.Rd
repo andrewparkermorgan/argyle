@@ -4,16 +4,18 @@
 \alias{predict.f1}
 \title{Predict genotype of an F1 individual given genotypes of its parents}
 \usage{
-\method{predict}{f1}(gty, na.rm = FALSE, ...)
+\method{predict}{f1}(object, na.rm = FALSE, ...)
 }
 \arguments{
-\item{gty}{a \code{genotypes} object}
+\item{object}{a \code{genotypes} object}
 
 \item{na.rm}{logical; should missing genotypes be ignored?}
+
+\item{...}{ignored}
 }
 \value{
 a new \code{genotypes} object containing predicted genotypes for all possible F1s between
-	the parents in \code{gty}
+	the parents in \code{object}
 }
 \description{
 Predict genotype of an F1 individual given genotypes of its parents

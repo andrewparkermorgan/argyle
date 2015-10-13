@@ -19,6 +19,8 @@ tQN(gty, thresholds = c(1.5, 1.5), clusters = NULL, prenorm = TRUE,
 \item{xynorm}{logical; if \code{TRUE}, perform within-sample normalization of x- vs y-intensities}
 
 \item{adjust.lrr}{logical; if \code{TRUE}, normalize post-tQN LRRs against population mean (\code{clusters$Rmean})}
+
+\item{...}{ignored}
 }
 \value{
 A copy of the input object, with raw intensities replaced by the normalized ones.  Two additional attributes

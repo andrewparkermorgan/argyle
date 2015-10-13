@@ -5,6 +5,8 @@
 #' 
 #' @param gty a \code{genotypes} object
 #' @param marker indexing vector into \code{gty}: can be logical, character or numeric
+#' @param verbose logical; if \code{TRUE}, preview the contingency table on the console
+#' @param ... ignored
 #' 
 #' @return a dataframe with marker metadata, genotype calls, and sample metadata including phenotype
 #' 
@@ -63,6 +65,7 @@ oneway <- function(gty, marker, verbose = TRUE, ...) {
 #' 
 #' @param df a dataframe from \code{oneway()}
 #' @param space numeric scalar; buffer to add between adjacent squares in the plot
+#' @param ... ignored
 #' 
 #' @return a \code{ggplot} object equivalent to output from base-\code{R}'s \code{mosaicplot()},
 #' 	plotting the (genotype x phenotype) contingency table for a single marker
@@ -135,6 +138,8 @@ oneway.plot <- function(df, space = 1, ...) {
 #' 
 #' @param gty a \code{genotypes} object
 #' @param markers indexing vector into \code{gty}: can be logical, character or numeric
+#' @param verbose logical; if \code{TRUE}, preview the contingency table on the console
+#' @param ... ignored
 #' 
 #' @return a dataframe with marker metadata, genotype calls, and sample metadata including phenotype
 #' 
@@ -169,6 +174,7 @@ twoway <- function(gty, markers, verbose = TRUE, ...) {
 #' 
 #' @param df a dataframe from \code{twoway()}
 #' @param space numeric scalar; buffer to add between adjacent squares in the plot
+#' @param ... ignored
 #' 
 #' @return a \code{ggplot} object equivalent to output from base-\code{R}'s \code{mosaicplot()},
 #' 	plotting the (genotype x genotype) contingency table for a single marker, with fill color

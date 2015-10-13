@@ -12,6 +12,8 @@ segregating(gty, nas.allowed = 0, allow.het = TRUE, ...)
 \item{nas.allowed}{maximum proportion of missing genotypes to ignore}
 
 \item{allow.het}{logical; if \code{FALSE}, ignore samples with heterozygous genotype}
+
+\item{...}{ignored}
 }
 \value{
 a named logical vector, of length equal to the number of rows in \code{gty},

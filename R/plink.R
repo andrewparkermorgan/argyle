@@ -20,7 +20,7 @@
 #' Purcell S et al. (2007) PLINK: a toolset for whole-genome association and population-based 
 #' 	linkage analysis. Am J Hum Genet 81(3): 559-575. doi:10.1086/519795.
 #' 
-#' @export
+#' @export read.plink
 read.plink <- function(prefix, ...) {
 	
 	## construct filenames; check that all are present and accounted for
@@ -107,7 +107,7 @@ read.plink <- function(prefix, ...) {
 #' Purcell S et al. (2007) PLINK: a toolset for whole-genome association and population-based 
 #' 	linkage analysis. Am J Hum Genet 81(3): 559-575. doi:10.1086/519795.
 #' 
-#' @export
+#' @export write.plink
 write.plink <- function(gty, prefix, map = NULL, fam = NULL, ...) {
 	
 	if (!inherits(gty, "genotypes"))
@@ -311,28 +311,18 @@ plinkify <- function(gty, where = tempdir(), prefix = "stuff", flags = "", ...) 
 	
 }
 
-#' Show quick summary of a \code{PLINK} pointer
-#' 
-#' @param prefix a pointer to a \code{PLINK} fileset on disk (class \code{plink})
-#' @param ... ignored
-#' 
 #' @export
-summary.plink <- function(prefix, ...) {
+summary.plink <- function(object, ...) {
 	
 	cat("-- Pointer to a PLINK fileset -- ","\n")
-	cat("Source:", normalizePath(paste0(prefix, ".bed")), "\n")
-	cat("Ouput dir:", normalizePath(attr(prefix, "working")), "\n")
+	cat("Source:", normalizePath(paste0(object, ".bed")), "\n")
+	cat("Ouput dir:", normalizePath(attr(object, "working")), "\n")
 	
 }
 
-#' Show quick summary of a \code{PLINK} pointer
-#' 
-#' @param prefix a pointer to a \code{PLINK} fileset on disk (class \code{plink})
-#' @param ... ignored
-#' 
 #' @export
-print.plink <- function(prefix, ...) {
-	summary.plink(prefix, ...)
+print.plink <- function(x, ...) {
+	summary.plink(x, ...)
 }
 
 ## read a plink fam/tfam file
@@ -487,6 +477,7 @@ prune.plink <- function(prefix, prune.by = "--make-founders --indep 50 5 2", ...
 #' \code{"logistic"} for case-control logistic regression)
 #' @param test family of hypothesis test(s) to perform
 #' @param perms logical: establish significance thresholds using adaptive permutation, or skip it?
+#' @param nperms integer; maximum number of permutations
 #' @param geno.missing drop markers with call rate lower than this threshold
 #' @param ind.missing drop samples with call rate lower than this threshold
 #' @param maf drop markers with minor-allele frequency lower than this threhsold
@@ -520,7 +511,7 @@ prune.plink <- function(prefix, prune.by = "--make-founders --indep 50 5 2", ...
 #' @export
 assoc.plink <- function(prefix, model = c("assoc","linear","logistic"),
 						test = c("additive","genotypic","hethom","dominant","recessive"),
-						perms = TRUE, n.perms = 1e5, geno.missing = 0, ind.missing = 0, maf = 0, hwe = 1,
+						perms = TRUE, nperms = 1e5, geno.missing = 0, ind.missing = 0, maf = 0, hwe = 1,
 						flags = "--keep-allele-order --allow-no-sex --nonfounders", ...) {
 	
 	model <- match.arg(model)
@@ -666,8 +657,6 @@ tdt.plink <- function(prefix, perms = FALSE, geno.missing = 0, ind.missing = 0, 
 ## compute genome-wide IBD estimate (\hat{pi}) with plink, optionally with initial LD pruning step
 ibd.plink <- function(prefix, flags = "--nonfounders", prune = FALSE, as.matrix = TRUE, ...) {
 	
-	require(Matrix)
-	
 	prefix.new <- prefix
 	if (prune) {
 		prefix.new <- prune.plink(prefix, ...)
@@ -687,7 +676,7 @@ ibd.plink <- function(prefix, flags = "--nonfounders", prune = FALSE, as.matrix 
 			for (i in 1:nrow(ibd)) {
 				K[ ibd$IID1[i], ibd$IID2[i] ] <- ibd$PI_HAT[i]
 			}
-			return(Matrix(K, sparse = TRUE))
+			return(Matrix::Matrix(K, sparse = TRUE))
 		}
 		else
 			return(ibd)
@@ -773,7 +762,8 @@ kinship.plink <- function(prefix, method = "--distance square 1-ibs", flags = ""
 #' Weir BS & Cockerham CC (1984) Estimating F-statistics for the analysis of population
 #' 	structure. Evolution 38(6): 1358-1370.
 #' 
-#' @export
+#' @aliases weir.fst
+#' @export weir.fst
 weir.fst.plink <- function(prefix, by = NULL, per.locus = FALSE, chr = NULL, flags = "", ...) {
 	
 	if (!inherits(prefix, "plink"))
@@ -952,6 +942,7 @@ ld.plink <- function(prefix, dprime = FALSE, index.snp = NULL, markers = NULL, c
 #' Filter markers and samples from a dataset with PLINK
 #' 
 #' @param prefix a pointer to a PLINK fileset (of class \code{plink})
+#' @param out filename prefix for filtered PLINK fileset; overrides \code{prefix}
 #' @param chr keep only markers on this chromosome
 #' @param from with \code{chr}, keep only markers with position greater than this
 #' @param to with \code{chr}, keep only markers with position less than this
@@ -1112,7 +1103,7 @@ mds.plink <- function(prefix, flags = "--autosome", K = 3, ...) {
 
 #' Perform PCA on genotypes with PLINK
 #' 
-#' @param prefix a pointer to a PLINK fileset (of class \code{plink})
+#' @param x a pointer to a PLINK fileset (of class \code{plink})
 #' @param flags command-line flags passed directly to underlying PLINK call
 #' @param K return the projection of samples onto the top K PCs
 #' @param by project individuals (\code{"indiv"}) or markers (\code{"var"}) onto PCs?
@@ -1142,12 +1133,13 @@ mds.plink <- function(prefix, flags = "--autosome", K = 3, ...) {
 #' 
 #' @seealso \code{\link{mds.plink}}, \code{\link{plot.pca.result}}
 #' 
+#' @aliases pca
 #' @export
-pca.plink <- function(prefix, flags = "--autosome", K = 20, by = c("indiv","var"), ...) {
+pca.plink <- function(x, flags = "--autosome", K = 20, by = c("indiv","var"), ...) {
 	
-	if (!inherits(prefix, "plink"))
+	if (!inherits(x, "plink"))
 		stop("Not convinced the input is a pointer to a plink fileset.")
-	where <- dirname(prefix)
+	where <- dirname(x)
 	
 	if (K < 1 || !is.numeric(K))
 		stop("You probably don't want a PCA result with no dimensions; specify a number K > 0.")
@@ -1167,7 +1159,7 @@ pca.plink <- function(prefix, flags = "--autosome", K = 20, by = c("indiv","var"
 		stop()
 	}
 	
-	success <- .plink.command(prefix, cmd, expect, ...)
+	success <- .plink.command(x, cmd, expect, ...)
 	if (is.character(success)) {
 		pcs.file <- paste0(success, ".", expect[[1]])
 		pcs <- read.table(pcs.file, header = FALSE, strip.white = TRUE)

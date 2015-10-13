@@ -10,6 +10,8 @@ twoway.plot(df, space = 1, ...)
 \item{df}{a dataframe from \code{twoway()}}
 
 \item{space}{numeric scalar; buffer to add between adjacent squares in the plot}
+
+\item{...}{ignored}
 }
 \value{
 a \code{ggplot} object equivalent to output from base-\code{R}'s \code{mosaicplot()},

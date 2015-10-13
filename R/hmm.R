@@ -7,6 +7,7 @@
 #' @param parents a matrix of parental genotypes
 #' @param scale scaling parameter for expected recombination fraciton (see Details)
 #' @param err genotyping error rate
+#' @param ... ignored
 #' 
 #' @return a dataframe of haplotype segments
 #' 

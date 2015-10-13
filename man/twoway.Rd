@@ -10,6 +10,10 @@ twoway(gty, markers, verbose = TRUE, ...)
 \item{gty}{a \code{genotypes} object}
 
 \item{markers}{indexing vector into \code{gty}: can be logical, character or numeric}
+
+\item{verbose}{logical; if \code{TRUE}, preview the contingency table on the console}
+
+\item{...}{ignored}
 }
 \value{
 a dataframe with marker metadata, genotype calls, and sample metadata including phenotype

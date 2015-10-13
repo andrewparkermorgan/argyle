@@ -4,11 +4,11 @@
 \alias{plot.pca.result}
 \title{Auto-plotting of a PCA result}
 \usage{
-plot.pca.result(pc, K = c(1, 2), screeplot = FALSE, show = c("points",
+plot.pca.result(x, K = c(1, 2), screeplot = FALSE, show = c("points",
   "labels", "nothing"), theme.fn = ggplot2::theme_bw, ...)
 }
 \arguments{
-\item{pc}{a \code{pca.result} object}
+\item{x}{a \code{pca.result} object}
 
 \item{K}{numeric vector of length 2 specifing which PCs to plot against each other; first is on x-axis and second on y-axis}
 
@@ -19,6 +19,8 @@ all available PCs}
 and axes set, but not actually draw anything.}
 
 \item{theme.fn}{a \code{ggplot2}-compatible function to specify formatting}
+
+\item{...}{ignored}
 }
 \value{
 if \code{screeplot = FALSE}, a \code{ggplot}; if \code{screeplot = TRUE}, a \code{gtable::gtable} object which can be

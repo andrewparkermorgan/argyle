@@ -7,9 +7,10 @@
 
 #' Perform quantile normalization of intensity data.
 #'
-#' @param gty a \code{genotypes} object
+#' @param x a \code{genotypes} object
 #' @param weights a vector of column weights
 #' @param force re-run the normalization procedure even if \code{attr(,"normalized")} is set to \code{TRUE}
+#' @param ... ignored
 #'
 #' @return A copy of the input object, with raw intensities replaced by the normalized ones.
 #'
@@ -20,40 +21,40 @@
 #' Bolstad BM et al. (2003) A comparison of normalization methods for high density oligonucleotide
 #' 	array data based on bias and variance. Bioinformatics 19(2): 185-193.
 #'
-#' @export
-quantile.normalize <- function(gty, weights = NULL, force = FALSE, ...) {
+#' @export quantile.normalize
+quantile.normalize <- function(x, weights = NULL, force = FALSE, ...) {
 	
-	if (!(inherits(gty, "genotypes") && .has.valid.intensity(gty)))
+	if (!(inherits(x, "genotypes") && .has.valid.intensity(x)))
 		stop("Please supply an object of class 'genotypes' with intensity information attached.")
 	
-	if (is.null(attr(gty, "normalized")))
-		attr(gty, "normalized") <- FALSE
+	if (is.null(attr(x, "normalized")))
+		attr(x, "normalized") <- FALSE
 	
-	if (attr(gty, "normalized")) {
+	if (attr(x, "normalized")) {
 		if (!force) {
 			message("Intensities seem to already be normalized")
-			return(gty)
+			return(x)
 		}
 		else {
 			warning("Intensities seem to already be normalized; doing it again, but it won't help.")
 		}
 	}	
 	
-	if (!is.null(weights) && length(weights) != ncol(gty))
+	if (!is.null(weights) && length(weights) != ncol(x))
 		stop("Dimensiosn of weight vector and intensity matrices don't match.")
 	
 	message(paste("Performing robust quantile normalization with", ifelse(is.null(weights), "no weights","weights"), "..."))
-	x.norm <- preprocessCore::normalize.quantiles.robust( attr(gty, "intensity")$x, weights = weights)
-	y.norm <- preprocessCore::normalize.quantiles.robust( attr(gty, "intensity")$y, weights = weights)
+	x.norm <- preprocessCore::normalize.quantiles.robust( attr(x, "intensity")$x, weights = weights)
+	y.norm <- preprocessCore::normalize.quantiles.robust( attr(x, "intensity")$y, weights = weights)
 	
-	colnames(x.norm) <- colnames(attr(gty, "intensity")$x)
-	rownames(x.norm) <- rownames(attr(gty, "intensity")$x)
-	colnames(y.norm) <- colnames(attr(gty, "intensity")$y)
-	rownames(y.norm) <- rownames(attr(gty, "intensity")$y)
+	colnames(x.norm) <- colnames(attr(x, "intensity")$x)
+	rownames(x.norm) <- rownames(attr(x, "intensity")$x)
+	colnames(y.norm) <- colnames(attr(x, "intensity")$y)
+	rownames(y.norm) <- rownames(attr(x, "intensity")$y)
 	
-	attr(gty, "intensity") <- list(x = x.norm, y = y.norm)
-	attr(gty, "normalized") <- TRUE
-	return(gty)
+	attr(x, "intensity") <- list(x = x.norm, y = y.norm)
+	attr(x, "normalized") <- TRUE
+	return(x)
 	
 }
 
@@ -100,6 +101,7 @@ quantile.normalize <- function(gty, weights = NULL, force = FALSE, ...) {
 #' @param prenorm logical; if \code{TRUE}, perform quantile normalization on whole dataset before tQN procedure
 #' @param xynorm logical; if \code{TRUE}, perform within-sample normalization of x- vs y-intensities
 #' @param adjust.lrr logical; if \code{TRUE}, normalize post-tQN LRRs against population mean (\code{clusters$Rmean})
+#' @param ... ignored
 #'
 #' @return A copy of the input object, with raw intensities replaced by the normalized ones.  Two additional attributes
 #' \code{baf} and \code{lrr} store the BAF (B-allele frequency) and LRR (log2 intensity ratio).

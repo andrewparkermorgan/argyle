@@ -10,6 +10,8 @@ qcplot(gty, draw = TRUE, ...)
 \item{gty}{a \code{genotypes} object with intensity data attached}
 
 \item{draw}{actually show the plot, in addition to returning it}
+
+\item{...}{ignored}
 }
 \value{
 a \code{gtable} (ineriting from \code{grid::grob}) containg the composite QC plot (see Details)

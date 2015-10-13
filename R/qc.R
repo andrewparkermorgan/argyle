@@ -25,7 +25,8 @@ column.quantiles <- function(x, q = seq(0,1,0.1), ..., .progress = "none") {
 #' 
 #' @param gty a \code{genotypes} object with intensity data attached
 #' @param q a vector of quantiles (in [0,1])
-#' @param .progress show a progress bar; passed through to \code{plyr}, see \code{\link{plyr::ddply}}
+#' @param .progress show a progress bar; passed through to \code{plyr}, see \code{\link[plyr]{ddply}}
+#' @param ... ignored
 #' 
 #' @return a dataframe containing intensity quantiles for each sample, merged with
 #' 	sample metadata (if present)
@@ -58,6 +59,8 @@ summarize.intensity <- function(gty, q = seq(0,1,0.1), ..., .progress = "none") 
 #' 
 #' @param gty a \code{genotypes} object with intensity data attached
 #' @param by get call rates by sample or by marker
+#' @param counts logical; if \code{TRUE}, return absolute counts, otherwise relative frequencies
+#' @param ... ignored
 #' 
 #' @return a dataframe with counts of A (reference or major allele), B (alternate or minor allele),
 #' 	H (heterozygous) and N (missing/no-call) by either sample or marker.
@@ -107,6 +110,7 @@ summarize.calls <- function(gty, by = c("samples","markers"), counts = TRUE, ...
 #' 
 #' @param gty a \code{genotypes} object with intensity data attached
 #' @param ref a matrix, vector or object coercible to such, containing sum-intensities from reference samples
+#' @param ... ignored
 #' 
 #' @return a named vector of D_j, the Kolmogorov-Smirnov test statistic for each sample j
 #' 	
@@ -155,7 +159,9 @@ intensity.vs.ref <- function(gty, ref, ...) {
 #' 	sample is flagged; OR a named list as above
 #' @param min.D lower threshold for D-statistic (see \code{\link{intensity.vs.ref}}) above which a
 #' 	sample is flagged; OR a named list as above
+#' @param hits samples failing more than this many filters are flagged
 #' @param apply logical; if \code{TRUE}, remove samples failing the filters, rather than flagging them
+#' @param ... ignored
 #' 
 #' @return a copy of the input with sample filters set, and an object of class \code{QC.result} in
 #' 	attr(,"qc")
@@ -238,7 +244,9 @@ run.sample.qc <- function(gty, ref.intensity = NULL,
 #' @param max.H threshold for count of heterozygous calls, above which a site is flagged
 #' @param max.N threshold for count of no-calls, above which a site is flagged
 #' @param min.hom threshold for count of homozygous calls, at or below which a site is flagged
-#' @param apply logical; if \code{TRUE}, remove samples failing the filters, rather than flagging them
+#' @param hits markers failing more than this many filters are flagged
+#' @param apply logical; if \code{TRUE}, remove markers failing the filters, rather than flagging them
+#' @param ... ignored
 #' 
 #' @return a copy of the input with sample filters set, and an object of class \code{marker.QC.result} in
 #' 	attr(,"marker.qc")
@@ -320,6 +328,8 @@ run.marker.qc <- function(gty, max.H = Inf, max.N = Inf, min.hom = 0, hits = 0, 
 #'
 #' @param gty a \code{genotypes} object
 #' @param apply.to dimensions along which to apply filters (samples, sites or both)
+#' @param hits maximum number of filter tags to accept before dropping a site/sample
+#' @param ... ignored
 #' 
 #' @return a copy of the input with flagged markers and/or samples dropped
 #' 	
@@ -374,6 +384,7 @@ apply.filters <- function(gty, apply.to = c("both","samples","markers"), hits = 
 #' 
 #' @param gty a \code{genotypes} object
 #' @param hits integer; maximum number of filters which can be set before a marker or sample is flagged
+#' @param ... ignored
 #' 
 #' @return a list with two elements: \code{$sites}, logical vector of filter status for markers;
 #' 	and \code{$samples}, logical vector of filter status for samples
@@ -416,6 +427,12 @@ get.filters <- function(gty, ...) {
 	
 }
 
+#' Show tally of filters failed by sites, samples.
+#' 
+#' @param gty a \code{genotypes} object
+#' @param filter.codes a string of single-character filter codes to include in result
+#' @param ... ignored
+#' 
 #' @export
 summarize.filters <- function(gty, filter.codes = "NHIF", ...) {
 	

@@ -7,9 +7,9 @@
 drop.intensity(gty, ...)
 }
 \arguments{
-\item{...}{ignored}
+\item{gty}{a \code{genotypes} object}
 
-\item{a}{\code{genotypes} object}
+\item{...}{ignored}
 }
 \value{
 a copy of \code{gty} without intensity data (but with any QC summaries still present)

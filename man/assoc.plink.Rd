@@ -6,7 +6,7 @@
 \usage{
 assoc.plink(prefix, model = c("assoc", "linear", "logistic"),
   test = c("additive", "genotypic", "hethom", "dominant", "recessive"),
-  perms = TRUE, n.perms = 1e+05, geno.missing = 0, ind.missing = 0,
+  perms = TRUE, nperms = 1e+05, geno.missing = 0, ind.missing = 0,
   maf = 0, hwe = 1,
   flags = "--keep-allele-order --allow-no-sex --nonfounders", ...)
 }
@@ -20,6 +20,8 @@ case-control contingency table; \code{"linear"} for linear model on quantitative
 \item{test}{family of hypothesis test(s) to perform}
 
 \item{perms}{logical: establish significance thresholds using adaptive permutation, or skip it?}
+
+\item{nperms}{integer; maximum number of permutations}
 
 \item{geno.missing}{drop markers with call rate lower than this threshold}
 

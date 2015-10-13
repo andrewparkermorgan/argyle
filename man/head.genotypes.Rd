@@ -4,10 +4,10 @@
 \alias{head.genotypes}
 \title{Show the first few samples and markers for a \code{genotypes}}
 \usage{
-head.genotypes(gty, n = 10, nsamples = min(10, ncol(gty)), ...)
+head.genotypes(x, n = 10, nsamples = min(10, ncol(x)), ...)
 }
 \arguments{
-\item{gty}{an object of class \code{genotypes}}
+\item{x}{an object of class \code{genotypes}}
 
 \item{n}{number of markers to show}
 

@@ -28,6 +28,8 @@ is a matrix with same dimensions and same row/column names as \code{G}}
 \item{filter.samples}{character vector of filters attached to samples}
 
 \item{check}{logical; if \code{TRUE}, do sanity checks on input}
+
+\item{...}{ignored}
 }
 \value{
 a new \code{genotypes} object

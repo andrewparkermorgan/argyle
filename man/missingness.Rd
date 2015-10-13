@@ -10,6 +10,8 @@ missingness(gty, by = c("markers", "samples"), ...)
 \item{gty}{a \code{genotypes} object}
 
 \item{by}{margin over which to count missing calls}
+
+\item{...}{ignored}
 }
 \value{
 a named vector of missing-genotype *proportions*

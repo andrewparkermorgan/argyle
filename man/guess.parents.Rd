@@ -10,6 +10,8 @@ guess.parents(gty, parents, ...)
 \item{gty}{a \code{genotypes} object containing target individuals}
 
 \item{parents}{a \code{genotypes} object containing possible parents for the target individuals}
+
+\item{...}{ignored}
 }
 \value{
 the sample metedata from the input object, with \code{mom} and \code{dad} values replaced

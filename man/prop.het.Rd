@@ -10,6 +10,8 @@ prop.het(gty, na.rm = TRUE, ...)
 \item{gty}{a \code{genotypes} object}
 
 \item{na.rm}{logical; ignore missing genotypes when counting heterozygous sites?}
+
+\item{...}{ignored}
 }
 \value{
 a named vector with the proportion of sites of heterozygous for each sample

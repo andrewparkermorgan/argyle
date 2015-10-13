@@ -4,10 +4,10 @@
 \alias{subset.genotypes}
 \title{Subset a \code{genotypes} object by markers or samples}
 \usage{
-\method{subset}{genotypes}(gty, expr, by = c("markers", "samples"), ...)
+\method{subset}{genotypes}(x, expr, by = c("markers", "samples"), ...)
 }
 \arguments{
-\item{gty}{a \code{genotypes} object}
+\item{x}{a \code{genotypes} object}
 
 \item{expr}{logical expression indicating elements or rows to keep: missing values are taken as false
 (just like \code{subset.data.frame()})}
@@ -17,8 +17,8 @@
 \item{...}{ignored}
 }
 \value{
-a \code{genotypes} object similar to \code{gty}, but with only the selected rows (\code{by == "markers"})
-	or columns (\code{by == "samples"}).  Attributes of \code{gty} including intensity matrices, filters,
+a \code{genotypes} object similar to \code{x}, but with only the selected rows (\code{by == "markers"})
+	or columns (\code{by == "samples"}).  Attributes of \code{x} including intensity matrices, filters,
 	marker map and sample metadata are all adjusted accordingly.
 }
 \description{
@@ -28,6 +28,6 @@ Subset a \code{genotypes} object by markers or samples
 
 Since this function uses non-standard evaluation, be careful about expressions which include variables defined
 in both the global environment and in the scope of the call (eg. variables named same as columns of the marker
-map).  Results may not be what you expect.
+map).  In that case results may not be what you expect.
 }
 

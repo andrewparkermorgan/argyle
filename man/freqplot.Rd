@@ -13,7 +13,9 @@ freqplot(gty, max.H = -1, max.N = -1, min.maf = Inf, ...)
 
 \item{max.N}{show markers with missingness greater than this threshold}
 
-\item{max.H}{show markers with minor-allele frequency less than this threshold}
+\item{min.maf}{show markers with minor-allele frequency less than this threshold}
+
+\item{...}{ignored}
 }
 \value{
 a \code{ggplot} object with a Manhattan-style plot of the above values

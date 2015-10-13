@@ -10,6 +10,8 @@
 \item{gty}{a \code{genotypes} object with intensity data attached}
 
 \item{ref}{a matrix, vector or object coercible to such, containing sum-intensities from reference samples}
+
+\item{...}{ignored}
 }
 \value{
 a named vector of D_j, the Kolmogorov-Smirnov test statistic for each sample j

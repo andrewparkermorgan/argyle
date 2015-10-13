@@ -12,6 +12,8 @@ heterozygosity(gty, hwe = FALSE, na.rm = TRUE, ...)
 \item{hwe}{if \code{TRUE}, compute the MLE \code{hat{h}} assuming Hardy-Weinberg equilibrium}
 
 \item{na.rm}{logical; ignore missing genotypes?}
+
+\item{...}{ignored}
 }
 \value{
 a named vector with the heterozygosity of each marker

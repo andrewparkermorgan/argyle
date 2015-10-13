@@ -19,7 +19,9 @@ and those names should match those in the BeadStudio output.}
 \item{keep.intensity}{should hybridization intensities be kept in addition to genotype calls?}
 
 \item{colmap}{named character vector mapping column names in \code{*FinalReport} to required columns
-    for \code{argyle} (see Details)}
+for \code{argyle} (see Details)}
+
+\item{...}{ignored}
 }
 \value{
 A \code{genotypes} object with genotype calls, marker map, sample metadata and (as requested)

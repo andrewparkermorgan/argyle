@@ -113,14 +113,14 @@
 #' Performs principal components analysis (PCA) on either (numerically-coded) genotypes or
 #' on the underliny 2D hybridization-intensity matrices.
 #'
-#' @param gty an object of class \code{genotypes}
+#' @param x an object of class \code{genotypes}
 #' @param extras a second dataset of class \code{genotypes}, to be projected onto PCs computed
 #' 	from the first. NB: this function *does not* verify that the underlying features (ie. markers) match.
 #' @param what \code{"genotypes"} to do PCA on genotypes (coded 0/1/2); \code{"intensity"} to do PCA on
 #' 	underlying 2D intensities.  The latter triggers an error if intensity matrices are absent.
 #' @param K how many PCs to return.
 #' @param fast if \code{TRUE}, use \code{corpcor::fast.svd()} to speed up calculations
-#' @param \code{...} other parameters for call to \code{prcomp}, such as \code{center} and \code{scale}
+#' @param ... other parameters for call to \code{prcomp}, such as \code{center} and \code{scale}
 #' 	(both \code{TRUE} by default)
 #'
 #' @details Uses base-\code{R}'s \code{prcomp} under the hood (unless \code{fast = TRUE}). By default,
@@ -131,28 +131,28 @@
 #' 	to have any effect in practice.
 #'
 #' @return a dataframe with as many rows as samples, in which the first columns are sample IDs and any associated
-#' 	metadata (as returned by \code{samples(gty)}), followed by the first K PCs.  Scaled eigenvalues (ie. percent
+#' 	metadata (as returned by \code{samples(x)}), followed by the first K PCs.  Scaled eigenvalues (ie. percent
 #' 	of variance explained) are provided as \code{attr(,"explained")}.
 #'
 #' @seealso \code{pca.plink()} for using PLINK's (much faster and more powerful) implementation
 #'
 #' @export
-pca.genotypes <- function(gty, extras = NULL, what = c("genotypes","intensity"), K = 3, fast = FALSE, ...) {
+pca.genotypes <- function(x, extras = NULL, what = c("genotypes","intensity"), K = 3, fast = FALSE, ...) {
 	
-	if (!inherits(gty, "genotypes"))
+	if (!inherits(x, "genotypes"))
 		stop("Please supply an object of class 'genotypes.'")
 	
 	if (!is.numeric(K) || K < 1)
 		stop("You probably don't want to do PCA with <1 dimension.")
 	
 	## run the PCA
-	rez <- .do.pca.genotypes(gty, extras = extras, what = what, fast = fast, K = K, ...)
+	rez <- .do.pca.genotypes(x, extras = extras, what = what, fast = fast, K = K, ...)
 	
 	## add sample metatdata, if any
 	meta <- data.frame(iid = rownames(rez))
 	rownames(meta) <- rownames(rez)
-	if (.has.valid.ped(gty)) {
-		fam <- attr(gty, "ped")
+	if (.has.valid.ped(x)) {
+		fam <- attr(x, "ped")
 		if (!is.null(extras))
 			fam <- rbind(fam, attr(extras, "ped"))
 		meta <- merge(meta, fam, by = "iid")

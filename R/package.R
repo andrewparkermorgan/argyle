@@ -49,6 +49,7 @@ NULL
 #' @param filter.sites character vector of filters attached to markers
 #' @param filter.samples character vector of filters attached to samples
 #' @param check logical; if \code{TRUE}, do sanity checks on input
+#' @param ... ignored
 #'
 #' @return a new \code{genotypes} object
 #'

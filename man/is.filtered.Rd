@@ -10,6 +10,8 @@ is.filtered(gty, hits = 0, ...)
 \item{gty}{a \code{genotypes} object}
 
 \item{hits}{integer; maximum number of filters which can be set before a marker or sample is flagged}
+
+\item{...}{ignored}
 }
 \value{
 a list with two elements: \code{$sites}, logical vector of filter status for markers;

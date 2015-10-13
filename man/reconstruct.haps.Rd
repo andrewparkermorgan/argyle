@@ -14,6 +14,8 @@ reconstruct.haps(geno, parents, scale = 10, err = 0.001, ...)
 \item{scale}{scaling parameter for expected recombination fraciton (see Details)}
 
 \item{err}{genotyping error rate}
+
+\item{...}{ignored}
 }
 \value{
 a dataframe of haplotype segments

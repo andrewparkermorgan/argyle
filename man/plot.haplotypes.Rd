@@ -4,12 +4,14 @@
 \alias{plot.haplotypes}
 \title{Plot the results of haplotype reconstruction}
 \usage{
-plot.haplotypes(haps, space = 0.1, ...)
+plot.haplotypes(x, space = 0.1, ...)
 }
 \arguments{
-\item{haps}{a dataframe containing the results of \code{reconstruct.haps()}}
+\item{x}{a dataframe containing the results of \code{reconstruct.haps()}}
 
 \item{space}{numeric scalar; how much buffer to add between adjacent chromosomes}
+
+\item{...}{ignored}
 }
 \value{
 A \code{ggplot} object with haplotype mosaics arranged in a grid layout

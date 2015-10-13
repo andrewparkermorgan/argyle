@@ -8,6 +8,11 @@ sextable(gty, ...)
 }
 \arguments{
 \item{gty}{an object of class \code{genotypes}}
+
+\item{...}{ignored}
+}
+\value{
+table of sample counts by sex
 }
 \description{
 Counts the number of samples of each sex, converts numeric codes to human-friendly

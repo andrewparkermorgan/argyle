@@ -12,6 +12,8 @@ filter.plink(prefix, out = NULL, chr = NULL, from = NULL, to = NULL,
 \arguments{
 \item{prefix}{a pointer to a PLINK fileset (of class \code{plink})}
 
+\item{out}{filename prefix for filtered PLINK fileset; overrides \code{prefix}}
+
 \item{chr}{keep only markers on this chromosome}
 
 \item{from}{with \code{chr}, keep only markers with position greater than this}

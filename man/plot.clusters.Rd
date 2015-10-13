@@ -4,18 +4,20 @@
 \alias{plot.clusters}
 \title{Plot 2D hybridization intensities at a few markers}
 \usage{
-plot.clusters(gty, markers = NULL, theme.fn = ggplot2::theme_bw,
+plot.clusters(x, markers = NULL, theme.fn = ggplot2::theme_bw,
   force = FALSE, ...)
 }
 \arguments{
-\item{markers}{indexing vector for selecting markers from \code{gty}}
+\item{x}{a \code{genotypes} object}
+
+\item{markers}{indexing vector for selecting markers from \code{x}}
 
 \item{theme.fn}{a function specifying formatting options for the resulting \code{ggplot}}
 
 \item{force}{logical; if \code{TRUE}, issues a stern warning before trying to make a huge
-    plot which might hang the \code{R} session}
+plot which might hang the \code{R} session}
 
-\item{a}{\code{genotypes} object}
+\item{...}{ignored}
 }
 \value{
 2D intensity plots, one panel per marker (via \code{ggplot})

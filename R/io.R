@@ -11,6 +11,7 @@
 #' @param keep.intensity should hybridization intensities be kept in addition to genotype calls?
 #' @param colmap named character vector mapping column names in \code{*FinalReport} to required columns
 #' 	for \code{argyle} (see Details)
+#' @param ... ignored
 #'
 #' @return A \code{genotypes} object with genotype calls, marker map, sample metadata and (as requested)
 #' 	intensity data.
@@ -273,12 +274,12 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	## reshape to big matrix
 	fm <- paste("marker ~", sample.id.col)
 	gty.mat <- data.table::dcast.data.table(data, as.formula(fm), value.var = value.col)
-	setkey(gty.mat, marker)
+	data.table::setkey(gty.mat, marker)
 	
 	before <- unique(gty.mat$marker)
 	nsnps.before <- length(unique(gty.mat$marker))
 	.map <- data.table::data.table(snps[ ,c("chr","marker","cM","pos") ])
-	setkey(.map, marker)
+	data.table::setkey(.map, marker)
 
 	if (verbose)
 		message(paste("Attaching map: started with", nsnps.before, "markers"))
@@ -327,6 +328,7 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 #' @param where name of output file, including path (else it goes in working directory)
 #' @param recode if \code{TRUE}, genotype calls will be recoded 0/1/2 with respect to reference alleles
 #' 	before the genotypes matrix is saved
+#' @param ... ignored
 #' 
 #' @return Returns \code{TRUE} on completion.  The Rdata file at \code{where} contains the following
 #' 	objects:
@@ -379,7 +381,9 @@ export.doqtl <- function(gty, where = "doqtl.Rdata", recode = FALSE, ...) {
 #' Convert a \code{genotypes} object to an \code{R/qtl} object
 #' 
 #' @param gty a \code{genotypes} object
+#' @param type cross type for \code{R/qtl} (only \code{"bc"} [backcross] and \code{"f2"} [F2 intercross] currently supported)
 #' @param chroms vector of chromosome names to include in output (in order)
+#' @param ... ignored
 #' 
 #' @return an object of class \code{cross}, with the specified cross type
 #' 
@@ -394,12 +398,12 @@ export.doqtl <- function(gty, where = "doqtl.Rdata", recode = FALSE, ...) {
 #' @references
 #' \code{R/qtl}: \url{http://www.rqtl.org}
 #' 
-#' Broman KW, Wu H, Sen Ś, Churchill GA. (2003) R/qtl: QTL mapping in experimental crosses.
+#' Broman KW, Wu H, Sen S, Churchill GA. (2003) R/qtl: QTL mapping in experimental crosses.
 #' 	Bioinformatics 19:889-890. doi:10.1093/bioinformatics/btg112.
 #' 
 #' Broman KW, Sen S. (2009) A Guide to QTL Mapping with R/qtl. Springer, New York.
 #' 
-#' @seealso \code{\link{qtl::read.cross}}, \code{\link{as.genotypes.cross}} (for inverse operation)
+#' @seealso \code{\link[qtl]{read.cross}}, \code{\link{as.genotypes.cross}} (for inverse operation)
 #' 
 #' @export
 as.rqtl.genotypes <- function(gty, type = c("f2","bc"), chroms = paste0("chr", c(1:19,"X")), ...) {
@@ -466,11 +470,12 @@ as.rqtl.genotypes <- function(gty, type = c("f2","bc"), chroms = paste0("chr", c
 	
 	
 }
-as.rqtl <- function(x, ...) UseMethod("as.rqtl")
+as.rqtl <- function(gty, ...) UseMethod("as.rqtl")
 
 #' Convert an \code{R/qtl} object to a \code{genotypes} object
 #' 
 #' @param x a \code{qtl::cross} object
+#' @param ... ignored
 #' 
 #' @return an object of class \code{genotypes}
 #' 
@@ -489,12 +494,12 @@ as.rqtl <- function(x, ...) UseMethod("as.rqtl")
 #' @references
 #' \code{R/qtl}: \url{http://www.rqtl.org}
 #' 
-#' Broman KW, Wu H, Sen Ś, Churchill GA. (2003) R/qtl: QTL mapping in experimental crosses.
+#' Broman KW, Wu H, Sen S, Churchill GA. (2003) R/qtl: QTL mapping in experimental crosses.
 #' 	Bioinformatics 19:889-890. doi:10.1093/bioinformatics/btg112.
 #' 
 #' Broman KW, Sen S. (2009) A Guide to QTL Mapping with R/qtl. Springer, New York.
 #' 
-#' @seealso \code{\link{qtl::read.cross}}, \code{\link{as.rqtl.genotypes}} (for inverse operation)
+#' @seealso \code{\link[qtl]{read.cross}}, \code{\link{as.rqtl.genotypes}} (for inverse operation)
 #' 
 #' @export
 as.genotypes.cross <- function(x, ...) {
@@ -531,6 +536,7 @@ as.genotypes <- function(x, ...) UseMethod("as.genotypes")
 #' @param gty a \code{genotypes} object
 #' @param prefix filename prefix for output; result will be two files, \code{{prefix}.geno} and
 #' 	with genotypes and \code{{prefix}.map} with marker map.
+#' @param ... ignored
 #' 
 #' @details Write genotypes to disk in the Stanford HGDP format, which can be read by (among
 #' 	others) the PGDSpider format-conversion suite.

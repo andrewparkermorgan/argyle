@@ -10,6 +10,8 @@ intensityhist(gty, ref.line = NULL, ...)
 \item{gty}{a \code{genotypes} object}
 
 \item{ref.line}{numeric; reference value for mean array-wide intensity}
+
+\item{...}{ignored}
 }
 \value{
 histograms of array-wide sum-intensity, one panel per sample

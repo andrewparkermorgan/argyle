@@ -10,7 +10,9 @@ write.hgdp(gty, prefix, ...)
 \item{gty}{a \code{genotypes} object}
 
 \item{prefix}{filename prefix for output; result will be two files, \code{{prefix}.geno} and
-    with genotypes and \code{{prefix}.map} with marker map.}
+with genotypes and \code{{prefix}.map} with marker map.}
+
+\item{...}{ignored}
 }
 \description{
 Export genotypes in Stanford HGDP format

@@ -4,14 +4,16 @@
 \alias{quantile.normalize}
 \title{Perform quantile normalization of intensity data.}
 \usage{
-quantile.normalize(gty, weights = NULL, force = FALSE, ...)
+quantile.normalize(x, weights = NULL, force = FALSE, ...)
 }
 \arguments{
-\item{gty}{a \code{genotypes} object}
+\item{x}{a \code{genotypes} object}
 
 \item{weights}{a vector of column weights}
 
 \item{force}{re-run the normalization procedure even if \code{attr(,"normalized")} is set to \code{TRUE}}
+
+\item{...}{ignored}
 }
 \value{
 A copy of the input object, with raw intensities replaced by the normalized ones.

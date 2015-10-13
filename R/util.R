@@ -1,6 +1,7 @@
 ## util.R
 ## mostly internal utility functions
 
+
 ## copy matrix and keep row/column names, but drop other attributes (including class!)
 .copy.matrix.noattr <- function(x, ...) {
 	

@@ -20,7 +20,7 @@
 
 #' Predict sample sexes based on genotype and intensity data
 #' 
-#' @param gty a \code{genotypes} object
+#' @param object a \code{genotypes} object
 #' @param method how to go about making sex predictions (see Details)
 #' @param ... other parameters passed to underlying prediction functions
 #' 
@@ -37,30 +37,30 @@
 #' 	array for mouse.  Females have mostly missing calls, males have mostly non-missing calls, and no
 #' 	sample should have many heterozygous calls.
 #' 
-#' @export
-predict.sex <- function(gty, method = c("ycalls"), ...) {
+#' @export predict.sex
+predict.sex <- function(object, method = c("ycalls"), ...) {
 	
-	if (!(inherits(gty, "genotypes") && .has.valid.map(gty)))
+	if (!(inherits(object, "genotypes") && .has.valid.map(object)))
 		stop("Please supply an object of class 'genotypes' with valid marker map.")
 	
 	if (method == "ycalls") {
 		message("Predicting sex using count of good calls on chrY...")
-		sexes <- .predict.sex.ycalls(gty, ...)
-		prob <- setNames( rep(NA, ncol(gty)), colnames(gty) )
+		sexes <- .predict.sex.ycalls(object, ...)
+		prob <- setNames( rep(NA, ncol(object)), colnames(object) )
 	}
 	else {
 		stop("Other sexing methods not implemented yet.")
 	}
 	
-	if (.has.valid.ped(gty) && "sex" %in% colnames(attr(gty, "ped"))) {
-		nominal <- setNames( attr(gty, "ped")$sex, rownames(attr(gty, "ped")) )
+	if (.has.valid.ped(object) && "sex" %in% colnames(attr(object, "ped"))) {
+		nominal <- setNames( attr(object, "ped")$sex, rownames(attr(object, "ped")) )
 	}
 	else {
-		nominal <- setNames( rep(0, ncol(gty)), colnames(gty) )
+		nominal <- setNames( rep(0, ncol(object)), colnames(object) )
 	}
 	
-	rez <- data.frame(iid = colnames(gty), nominal = nominal[ colnames(gty) ],
-					  predicted = sexes[ colnames(gty) ], prob = prob[ colnames(gty) ])
+	rez <- data.frame(iid = colnames(object), nominal = nominal[ colnames(object) ],
+					  predicted = sexes[ colnames(object) ], prob = prob[ colnames(object) ])
 	return(rez)
 	
 }

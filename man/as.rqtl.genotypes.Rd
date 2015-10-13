@@ -10,7 +10,11 @@
 \arguments{
 \item{gty}{a \code{genotypes} object}
 
+\item{type}{cross type for \code{R/qtl} (only \code{"bc"} [backcross] and \code{"f2"} [F2 intercross] currently supported)}
+
 \item{chroms}{vector of chromosome names to include in output (in order)}
+
+\item{...}{ignored}
 }
 \value{
 an object of class \code{cross}, with the specified cross type
@@ -30,12 +34,12 @@ Karl Broman's \code{R/qtl} is a widely-used package for mapping quantiative trai
 \references{
 \code{R/qtl}: \url{http://www.rqtl.org}
 
-Broman KW, Wu H, Sen Ś, Churchill GA. (2003) R/qtl: QTL mapping in experimental crosses.
+Broman KW, Wu H, Sen S, Churchill GA. (2003) R/qtl: QTL mapping in experimental crosses.
 	Bioinformatics 19:889-890. doi:10.1093/bioinformatics/btg112.
 
 Broman KW, Sen S. (2009) A Guide to QTL Mapping with R/qtl. Springer, New York.
 }
 \seealso{
-\code{\link{qtl::read.cross}}, \code{\link{as.genotypes.cross}} (for inverse operation)
+\code{\link[qtl]{read.cross}}, \code{\link{as.genotypes.cross}} (for inverse operation)
 }
 

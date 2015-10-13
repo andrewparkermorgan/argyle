@@ -25,6 +25,10 @@ sample is flagged; OR a named list as above}
 sample is flagged; OR a named list as above}
 
 \item{apply}{logical; if \code{TRUE}, remove samples failing the filters, rather than flagging them}
+
+\item{hits}{samples failing more than this many filters are flagged}
+
+\item{...}{ignored}
 }
 \value{
 a copy of the input with sample filters set, and an object of class \code{QC.result} in

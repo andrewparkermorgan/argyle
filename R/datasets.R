@@ -2,7 +2,8 @@
 #'
 #' A \code{genotypes} object containing genotype calls and hybridization intensities for
 #' 116 control samples (67 male, 49 female) used to calibrate the GigaMUGA array.  To
-#' keep the object at reasonable size, only calls from chr10 are included (6811 markers).
+#' keep the object at reasonable size, only calls from chr17, chr18, chr19 and chrY
+#' are included (14319 markers).
 #'
 #' The samples span 8 inbred mouse strains (n = 58) denoted with 2-letter codes:
 #' \itemize{
@@ -18,11 +19,8 @@
 #' The remaining 58 samples are F1s between these 8 strains, also denoted with 2-letter codes
 #' corresponding to their two parental strains.
 #' 
-#' The dataset \code{inbreds} contains just the 58 inbred samples.
+#' @aliases ex
 #' 
-#' @aliases inbreds
-#' 
-#' @usage
-#' 	data(ex); data(inbreds)
 #' @source Morgan AP et al. (2015) The Mouse Universal Genotying Array: from substrains
-#' 	to subspecies. Submitted to G3.
+#' 	to subspecies. G3, in press.
+"ex"

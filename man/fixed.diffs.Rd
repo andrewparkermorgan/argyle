@@ -10,6 +10,8 @@ fixed.diffs(gty, cols = TRUE, ...)
 \item{gty}{a \code{genotypes} object}
 
 \item{cols}{indexing vector for selecting columns from \code{gty}}
+
+\item{...}{ignored}
 }
 \value{
 a named logical vector, of length equal to the number of rows in \code{gty},

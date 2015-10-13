@@ -11,6 +11,10 @@ apply.filters(gty, apply.to = c("both", "samples", "markers"), hits = 0,
 \item{gty}{a \code{genotypes} object}
 
 \item{apply.to}{dimensions along which to apply filters (samples, sites or both)}
+
+\item{hits}{maximum number of filter tags to accept before dropping a site/sample}
+
+\item{...}{ignored}
 }
 \value{
 a copy of the input with flagged markers and/or samples dropped

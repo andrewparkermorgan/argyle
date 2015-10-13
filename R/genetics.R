@@ -36,6 +36,7 @@
 #' @param by margin over which to calculate frequencies (usually \code{"markers"})
 #' @param na.rm skip over missing genotypes in frequency calculations
 #' @param counts logical; if \code{TRUE}, report allele counts instead of relative frequencies
+#' @param ... ignored
 #' 
 #' @return a named vector of allele frequencies
 #' 
@@ -69,6 +70,8 @@ freq <- function(gty, by = c("markers","samples"), na.rm = TRUE, counts = FALSE,
 #' Just an alias or \code{freq(x, "markers")}.  Sticklers for nomenclature will be aware that this
 #' function does not truly return the MAF unless the allele encoding is \code{"relative"}.
 #' 
+#' @param ... passed through to call to \code{freq()}
+#' 
 #' @seealso \code{\link{freq}}
 #'
 #' @export
@@ -78,6 +81,7 @@ maf <- function(...) freq(..., by = "markers")
 #'
 #' @param gty a \code{genotypes} object
 #' @param by margin over which to count missing calls
+#' @param ... ignored
 #'
 #' @return a named vector of missing-genotype *counts*
 #'
@@ -101,6 +105,7 @@ nmiss <- function(gty, by = c("markers","samples"), ...) {
 #' 
 #' @param gty a \code{genotypes} object
 #' @param by margin over which to count missing calls
+#' @param ... ignored
 #' 
 #' @return a named vector of missing-genotype *proportions*
 #' 
@@ -116,6 +121,7 @@ missingness <- function(gty, by = c("markers","samples"), ...) {
 #' 
 #' @param gty a \code{genotypes} object
 #' @param nas.allowed maximum proportion of missing genotypes to ignore 
+#' @param ... ignored
 #' 
 #' @return a named vector of consensus genotypes, with length equal to number of rows in \code{gty}
 #' 
@@ -157,6 +163,7 @@ is.segregating <- function(x, allow.het = TRUE, ...) {
 #' @param gty a \code{genotypes} object
 #' @param nas.allowed maximum proportion of missing genotypes to ignore
 #' @param allow.het logical; if \code{FALSE}, ignore samples with heterozygous genotype
+#' @param ... ignored
 #' 
 #' @return a named logical vector, of length equal to the number of rows in \code{gty},
 #' 	indicating whether a site is segregating
@@ -188,6 +195,7 @@ segregating <- function(gty, nas.allowed = 0.0, allow.het = TRUE, ...) {
 #' 
 #' @param gty a \code{genotypes} object
 #' @param cols indexing vector for selecting columns from \code{gty}
+#' @param ... ignored
 #' 
 #' @return a named logical vector, of length equal to the number of rows in \code{gty},
 #' 	indicating whether a site is a fixed difference between the two samples
@@ -261,11 +269,12 @@ informative <- function(gty, between, ...) {
 
 #' Predict genotype of an F1 individual given genotypes of its parents
 #' 
-#' @param gty a \code{genotypes} object
+#' @param object a \code{genotypes} object
 #' @param na.rm logical; should missing genotypes be ignored?
+#' @param ... ignored
 #' 
 #' @return a new \code{genotypes} object containing predicted genotypes for all possible F1s between
-#' 	the parents in \code{gty}
+#' 	the parents in \code{object}
 #' 	
 #' @details Each column in the input is assumed to be either a representative individual from an inbred
 #' 	line, or a consensus genotype across several such individuals.  No checks are performed on the homzygosity
@@ -283,24 +292,24 @@ informative <- function(gty, between, ...) {
 #' 	
 #' @seealso \code{\link{segregating}}, \code{\link{fixed.diffs}}
 #' 
-#' @export
-predict.f1 <- function(gty, na.rm = FALSE, ...) {
+#' @export predict.f1
+predict.f1 <- function(object, na.rm = FALSE, ...) {
 	
-	if (!inherits(gty, "genotypes"))
+	if (!inherits(object, "genotypes"))
 		stop("Please supply an object of class 'genotypes'.")
 	
-	pairs <- combn(ncol(gty), 2)
-	f1.names <- paste(colnames(gty)[ pairs[1,] ], colnames(gty)[ pairs[2,] ],
+	pairs <- combn(ncol(object), 2)
+	f1.names <- paste(colnames(object)[ pairs[1,] ], colnames(object)[ pairs[2,] ],
 					  sep = "::")
-	rez <- matrix(NA, ncol = ncol(pairs), nrow = nrow(gty),
-				  dimnames = list(rownames(gty), f1.names))
+	rez <- matrix(NA, ncol = ncol(pairs), nrow = nrow(object),
+				  dimnames = list(rownames(object), f1.names))
 	
-	map <- attr(gty, "map")
-	gty <- .copy.matrix.noattr(gty)
+	map <- attr(object, "map")
+	object <- .copy.matrix.noattr(object)
 	message(paste("Predicting F1 genotypes for", ncol(pairs), "pairs of parents..."))
 	for (i in seq_len(ncol(pairs))) {
-		f1 <- as.vector(rowMeans(gty[ ,pairs[,i] ], na.rm = na.rm))
-		het <- apply(gty, 1, function(x) any(x == 1, na.rm = na.rm))
+		f1 <- as.vector(rowMeans(object[ ,pairs[,i] ], na.rm = na.rm))
+		het <- apply(object, 1, function(x) any(x == 1, na.rm = na.rm))
 		f1[het] <- NA
 		rez[,i] <- f1
 	}
@@ -310,7 +319,6 @@ predict.f1 <- function(gty, na.rm = FALSE, ...) {
 	
 }
 
-#' @export
 pairwise.diffs <- function(gty, ...) {
 	
 	pairs <- combn(ncol(gty), 2)
@@ -336,6 +344,7 @@ pairwise.diffs <- function(gty, ...) {
 #' 
 #' @param gty a \code{genotypes} object
 #' @param na.rm logical; ignore missing genotypes when counting heterozygous sites?
+#' @param ... ignored
 #' 
 #' @return a named vector with the proportion of sites of heterozygous for each sample
 #' 
@@ -352,6 +361,7 @@ prop.het <- function(gty, na.rm = TRUE, ...) {
 #' @param gty a \code{genotypes} object
 #' @param hwe if \code{TRUE}, compute the MLE \code{hat{h}} assuming Hardy-Weinberg equilibrium
 #' @param na.rm logical; ignore missing genotypes?
+#' @param ... ignored
 #' 
 #' @return a named vector with the heterozygosity of each marker
 #'
@@ -390,6 +400,7 @@ ld <- function(gty, force = FALSE, ...) {
 #' @param gty a \code{genotypes} object containing exactly one target individual
 #' @param parents a \code{genotypes} object containing possible parents for the target individual
 #' @param verbose logical; if \code{TRUE}, send progress messages to terminal
+#' @param ... ignored
 #' 
 #' @return a dataframe of mother-father pairs and corresponding Mendel distances
 #' 
@@ -467,7 +478,6 @@ mendel.distance <- function(gty, parents, verbose = TRUE, ...) {
 	
 }
 
-#' @export
 ibs0 <- function(x,y) sum(abs(x-y) == 2, na.rm = TRUE)/sum(!is.na(x+y))
 
 ibs0.fancy <- function(x, y, ...) {
@@ -535,6 +545,7 @@ ibs0.fancy <- function(x, y, ...) {
 #' 
 #' @param gty a \code{genotypes} object containing target individuals
 #' @param parents a \code{genotypes} object containing possible parents for the target individuals
+#' @param ... ignored
 #' 
 #' @return the sample metedata from the input object, with \code{mom} and \code{dad} values replaced
 #' 	by the function's best guesses
@@ -567,6 +578,17 @@ guess.parents <- function(gty, parents, ...) {
 
 #' Calculate a simple genetic distance: proportion of alleles shared IBS
 #' 
+#' @param gty a \code{genotypes} object
+#' @param ... ignored
+#' 
+#' @return a \code{dist} object whose entires are the proportion of alleles shared
+#' 	identical-by-state between samples
+#' 	
+#' @details To get a plain distance matrix, do \code{as.matrix(dist(x))}.
+#' 
+#' @seealso \code{\link[stats]{dist}}
+#' 
+#' @aliases dist
 #' @export
 dist.genotypes <- function(gty, ...) {
 	
@@ -584,10 +606,8 @@ dist.genotypes <- function(gty, ...) {
 	
 }
 #' @export
-dist <- function(x, ...) UseMethod("dist")
+dist <- function(gty, ...) UseMethod("dist")
 
-#' Calculate Weir & Cockerham's unbiased estimator of Fst
-#' @export
 weir.fst <- function(gty, subpop = NULL, per.locus = FALSE, ...) {
 	
 	## Copyright Eva Chan 2008

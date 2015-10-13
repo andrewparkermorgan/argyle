@@ -10,6 +10,10 @@ summarize.calls(gty, by = c("samples", "markers"), counts = TRUE, ...)
 \item{gty}{a \code{genotypes} object with intensity data attached}
 
 \item{by}{get call rates by sample or by marker}
+
+\item{counts}{logical; if \code{TRUE}, return absolute counts, otherwise relative frequencies}
+
+\item{...}{ignored}
 }
 \value{
 a dataframe with counts of A (reference or major allele), B (alternate or minor allele),

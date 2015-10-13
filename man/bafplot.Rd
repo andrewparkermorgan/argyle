@@ -11,7 +11,11 @@ bafplot(gty, sm = TRUE, smooth = "cv", draw = TRUE, ...)
 
 \item{sm}{indexing vector which should extract exactly one sample from \code{gty}}
 
-\item{...}{additional parameters passed on to \code{supsmu()} to control smoothing}
+\item{smooth}{span for signal smoother, passed on to \code{supsmu()} to control smoothing}
+
+\item{draw}{logical; if \code{TRUE}, actually render the plot on a new \code{grid} canvas}
+
+\item{...}{ignored}
 }
 \value{
 a two-panel plot, BAF in upper panel and LRR in lower panel
@@ -24,6 +28,6 @@ For a detailed description of the BAF and LRR metrics, their calculation,
 	and literature references, see \code{?tQN}.
 }
 \seealso{
-\code{\link{tQN}}
+\code{\link{tQN}}, \code{\link{supsmu}}
 }
 

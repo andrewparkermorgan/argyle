@@ -17,6 +17,8 @@ ggmanhattan(df, chroms = NULL, scale = c("Mbp", "cM"), space = NULL,
 \item{space}{padding factor to add in between chromosomes}
 
 \item{cols}{vector of length 2, giving alternating colours for alternating chromosomes}
+
+\item{...}{ignored}
 }
 \value{
 a \code{ggplot2} object whose x-axis is defined by chromosome and position (with

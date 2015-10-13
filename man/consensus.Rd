@@ -10,6 +10,8 @@ consensus(gty, nas.allowed = 0, ...)
 \item{gty}{a \code{genotypes} object}
 
 \item{nas.allowed}{maximum proportion of missing genotypes to ignore}
+
+\item{...}{ignored}
 }
 \value{
 a named vector of consensus genotypes, with length equal to number of rows in \code{gty}

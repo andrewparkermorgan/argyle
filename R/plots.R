@@ -73,6 +73,7 @@ plot.QC.result <- function(qc, show = c("point","label"), theme.fn = ggplot2::th
 #' 
 #' @param gty a \code{genotypes} object with intensity data attached
 #' @param draw actually show the plot, in addition to returning it
+#' @param ... ignored
 #' 
 #' @return a \code{gtable} (ineriting from \code{grid::grob}) containg the composite QC plot (see Details)
 #' 
@@ -133,12 +134,13 @@ qcplot <- function(gty, draw = TRUE, ...) {
 
 #' Plot 2D hybridization intensities at a few markers
 #' 
-#' @param a \code{genotypes} object
-#' @param markers indexing vector for selecting markers from \code{gty}
+#' @param x a \code{genotypes} object
+#' @param markers indexing vector for selecting markers from \code{x}
 #' @param theme.fn a function specifying formatting options for the resulting \code{ggplot}
 #' @param force logical; if \code{TRUE}, issues a stern warning before trying to make a huge
 #' 	plot which might hang the \code{R} session
-#' 	
+#' @param ... ignored
+#' 
 #' @return 2D intensity plots, one panel per marker (via \code{ggplot})
 #' 
 #' @details Each point represents a genotype call for a single sample.  Points are coloured according
@@ -150,30 +152,30 @@ qcplot <- function(gty, draw = TRUE, ...) {
 #'
 #' @seealso \code{\link{dotplot.genotypes}} for compact plotting of genotype calls only
 #'
-#' @export
-plot.clusters <- function(gty, markers = NULL, theme.fn = ggplot2::theme_bw, force = FALSE, ...) {
+#' @export plot.clusters
+plot.clusters <- function(x, markers = NULL, theme.fn = ggplot2::theme_bw, force = FALSE, ...) {
 	
-	if (!(inherits(gty, "genotypes") && .has.valid.intensity(gty)))
+	if (!(inherits(x, "genotypes") && .has.valid.intensity(x)))
 		stop("Please supply an object of class 'genotypes'.")
 	
 	if (is.null(markers))
 		stop("No markers selected.")
 	
-	gty <- recode.genotypes(gty[ markers, ], "01")
+	x <- recode.genotypes(x[ markers, ], "01")
 	#print(rownames(gty))
 	
-	if (nrow(gty) > 10 && !force)
+	if (nrow(x) > 10 && !force)
 		stop("Resulting plot will have more than 10 panels. Use force = TRUE to proceed anyway.")
 	
-	df <- get.intensity(gty)
-	df <- merge(df, get.call(gty))
+	df <- get.intensity(x)
+	df <- merge(df, get.call(x))
 	df$call <- as.character(df$call)
 	df$call[ is.na(df$call) ] <- "N"
 	df$call <- factor(df$call, levels = c(0,1,2,"N"))
 	if (!nrow(df))
 		stop("No data.")
 	
-	df$filter <- is.filtered(gty)$samples[ as.character(df$iid) ]
+	df$filter <- is.filtered(x)$samples[ as.character(df$iid) ]
 	
 	ggplot2::ggplot(df) +
 		ggplot2::geom_point(ggplot2::aes(x = x, y = y, colour = call, shape = filter), fill = "white") +
@@ -190,6 +192,7 @@ plot.clusters <- function(gty, markers = NULL, theme.fn = ggplot2::theme_bw, for
 #' 
 #' @param gty a \code{genotypes} object
 #' @param d a distance matrix (of class \code{dist}), to avoid re-computing
+#' @param ... ignored
 #' 
 #' @return a (hierarchically-clustered) matrix representation of pairwise genetic distances between
 #' 	samples, normalized to [0,1].
@@ -198,6 +201,7 @@ plot.clusters <- function(gty, markers = NULL, theme.fn = ggplot2::theme_bw, for
 #' 	so there is advantage to pre-computing this matrix (using \code{argyle::dist()}) if it may
 #' 	be useful in other analyses.
 #' 
+#' @aliases heatmap
 #' @export
 heatmap.genotypes <- function(gty, d = NULL, ...) {
 	
@@ -231,12 +235,13 @@ heatmap.genotypes <- function(gty, d = NULL, ...) {
 	
 }
 #' @export
-heatmap <- function(x, ...) UseMethod("heatmap")
+heatmap <- function(gty, ...) UseMethod("heatmap")
 
 #' Plot histogram of (sum-)intensities by sample
 #' 
 #' @param gty a \code{genotypes} object
 #' @param ref.line numeric; reference value for mean array-wide intensity
+#' @param ... ignored
 #' 
 #' @return histograms of array-wide sum-intensity, one panel per sample
 #' 
@@ -255,7 +260,7 @@ intensityhist <- function(gty, ref.line = NULL, ...) {
 	
 	df <- get.intensity(gty, TRUE)
 	df$si <- with(df, sqrt(x^2 + y^2))
-	df.summ <- plyr::ddply(df, .(iid), plyr::summarize, med = median(si, na.rm = TRUE), mu = mean(si, na.rm = TRUE))
+	df.summ <- plyr::ddply(df, plyr::.(iid), plyr::summarize, med = median(si, na.rm = TRUE), mu = mean(si, na.rm = TRUE))
 	flt <- filters(gty)$samples == ""
 	df$filter <- df$iid %in% names(which(flt))
 	fill.cols <- c("#E41A1C","black") # ColorBrewer::Set1 red for flagged samples; black otherwise
@@ -269,7 +274,7 @@ intensityhist <- function(gty, ref.line = NULL, ...) {
 		ggplot2::xlab(expression(atop("", paste("sum-intensity = ", sqrt(x^2 + y^2)))))
 	
 	if (!is.null(ref.line) && is.numeric(ref.line))
-		p0 <- p0 + ggplot::geom_vline(xintercept = vline, lty = "dashed", col = "grey")
+		p0 <- p0 + ggplot2::geom_vline(xintercept = vline, lty = "dashed", col = "grey")
 	
 	return(p0)
 	
@@ -279,14 +284,16 @@ intensityhist <- function(gty, ref.line = NULL, ...) {
 #'
 #' @param gty a \code{genotypes} object with BAF and LRR pre-computed via \code{tQN()}
 #' @param sm indexing vector which should extract exactly one sample from \code{gty}
-#' @param ... additional parameters passed on to \code{supsmu()} to control smoothing
+#' @param smooth span for signal smoother, passed on to \code{supsmu()} to control smoothing
+#' @param draw logical; if \code{TRUE}, actually render the plot on a new \code{grid} canvas
+#' @param ... ignored
 #'
 #' @return a two-panel plot, BAF in upper panel and LRR in lower panel
 #' 
 #' @details For a detailed description of the BAF and LRR metrics, their calculation,
 #' 	and literature references, see \code{?tQN}.
 #' 
-#' @seealso \code{\link{tQN}}
+#' @seealso \code{\link{tQN}}, \code{\link{supsmu}}
 #'
 #' @export
 bafplot <- function(gty, sm = TRUE, smooth = "cv", draw = TRUE, ...) {
@@ -304,9 +311,9 @@ bafplot <- function(gty, sm = TRUE, smooth = "cv", draw = TRUE, ...) {
 	baf <- get.baf(gty, TRUE)
 	
 	## apply smoothing to BAF and LRR
-	baf <- plyr::ddply(baf, .(chr), function(d) {
-		d$BAF.smooth <- .smooth.me(d$pos, d$BAF, ...)
-		d$LRR.smooth <- .smooth.me(d$pos, d$LRR, ...)
+	baf <- plyr::ddply(baf, plyr::.(chr), function(d) {
+		d$BAF.smooth <- .smooth.me(d$pos, d$BAF, smooth, ...)
+		d$LRR.smooth <- .smooth.me(d$pos, d$LRR, smooth, ...)
 		return(d)
 	})
 	
@@ -365,13 +372,15 @@ bafplot <- function(gty, sm = TRUE, smooth = "cv", draw = TRUE, ...) {
 
 #' Show a visual representation of a slice of a genotype matrix
 #' 
-#' @param a \code{genotypes} object
+#' @param gty a \code{genotypes} object
 #' @param size numeric; size of points
 #' @param shape if \code{"point"}, each genotype call is represented by a circle; if \code{"tile"},
 #' 	the effect will be like a heatmap
 #' @param meta dataframe of additional sample metadata to be joined to the input before plotting
+#' @param color.by column in \code{meta} to use for color-coding points; otherwise use genotype calls
 #' @param force logical; if \code{TRUE}, issues a stern warning before trying to make a huge
 #' 	plot which might hang the \code{R} session
+#' @param ... ignored
 #' 	
 #' @return a grid of genotype calls, laid out horizontally in genomic coordinates
 #' 
@@ -386,6 +395,7 @@ bafplot <- function(gty, sm = TRUE, smooth = "cv", draw = TRUE, ...) {
 #'
 #' @seealso \code{\link{plot.clusters}} for intensity plots by marker
 #'
+#' @aliases dotplot
 #' @export
 dotplot.genotypes <- function(gty, size = 2, meta = NULL, shape = c("point","tile","nothing"), color.by = NULL, force = FALSE, ...) {
 	
@@ -475,7 +485,7 @@ dotplot.genotypes <- function(gty, size = 2, meta = NULL, shape = c("point","til
 	
 }
 #' @export
-dotplot <- function(x, ...) UseMethod("dotplot")
+dotplot <- function(gty, ...) UseMethod("dotplot")
 
 
 #' Create skeleton of a 'Manhattan plot' (concatenated chromosomes) with \code{ggplot2}
@@ -485,6 +495,7 @@ dotplot <- function(x, ...) UseMethod("dotplot")
 #' @param scale one of \code{"Mbp"} (millions of basepairs; default) or \code{"cM"} (centimorgans)
 #' @param space padding factor to add in between chromosomes
 #' @param cols vector of length 2, giving alternating colours for alternating chromosomes
+#' @param ... ignored
 #' 
 #' @return a \code{ggplot2} object whose x-axis is defined by chromosome and position (with
 #' 	chromosomes concatenated in karyotype order), to which data in \code{df} can be added as
@@ -559,20 +570,22 @@ concat.chroms <- function(df, chroms = NULL, space = 5, denom = 1e6, ...) {
 
 #' Auto-plotting of a PCA result
 #' 
-#' @param pc a \code{pca.result} object
+#' @param x a \code{pca.result} object
 #' @param K numeric vector of length 2 specifing which PCs to plot against each other; first is on x-axis and second on y-axis
 #' @param screeplot logical; if \code{TRUE}, show both the plot of two PCs against each other and the variances explained of
 #' 	all available PCs
 #' @param show length-1 character vector; show just points, or sample IDs.  Use \code{"nothing"} to have all the aesthetics
 #' 	and axes set, but not actually draw anything.
 #' @param theme.fn a \code{ggplot2}-compatible function to specify formatting
+#' @param ... ignored
 #' 
 #' @return if \code{screeplot = FALSE}, a \code{ggplot}; if \code{screeplot = TRUE}, a \code{gtable::gtable} object which can be
 #' 	modified or re-rendered with \code{grid::grid.draw()}.
 #' 
 #' @export
-plot.pca.result <- function(pc, K = c(1,2), screeplot = FALSE, show = c("points","labels","nothing"), theme.fn = ggplot2::theme_bw, ...) {
+plot.pca.result <- function(x, K = c(1,2), screeplot = FALSE, show = c("points","labels","nothing"), theme.fn = ggplot2::theme_bw, ...) {
 	
+	pc <- x
 	if (!inherits(pc, "pca.result"))
 		stop("Please supply an object of class 'pca.result'.")
 	
@@ -643,7 +656,8 @@ plot.pca.result <- function(pc, K = c(1,2), screeplot = FALSE, show = c("points"
 #' @param gty a \code{genotypes} object
 #' @param max.H show markers with heterozygosity greater than this threshold
 #' @param max.N show markers with missingness greater than this threshold
-#' @param max.H show markers with minor-allele frequency less than this threshold
+#' @param min.maf show markers with minor-allele frequency less than this threshold
+#' @param ... ignored
 #' 
 #' @return a \code{ggplot} object with a Manhattan-style plot of the above values
 #' 
@@ -684,8 +698,9 @@ freqplot <- function(gty, max.H = -1, max.N = -1, min.maf = Inf, ...) {
 
 #' Plot the results of haplotype reconstruction
 #' 
-#' @param haps a dataframe containing the results of \code{reconstruct.haps()}
+#' @param x a dataframe containing the results of \code{reconstruct.haps()}
 #' @param space numeric scalar; how much buffer to add between adjacent chromosomes
+#' @param ... ignored
 #' 
 #' @return A \code{ggplot} object with haplotype mosaics arranged in a grid layout
 #' 
@@ -693,9 +708,10 @@ freqplot <- function(gty, max.H = -1, max.N = -1, min.maf = Inf, ...) {
 #' \code{start}, \code{end}, \code{hap1} and \code{hap2}.  Since the result is a \code{ggplot},
 #' it can be futher decorated/modified at will.
 #' 
-#' @export
-plot.haplotypes <- function(haps, space = 0.1, ...) {
+#' @export plot.haplotypes
+plot.haplotypes <- function(x, space = 0.1, ...) {
 	
+	haps <- x
 	haps <- droplevels(haps)
 	if (!is.factor(haps$chr))
 		haps$chr <- factor(haps$chr)

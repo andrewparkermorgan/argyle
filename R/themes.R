@@ -22,6 +22,18 @@ trans_genome <- function(scale = 1e6, ...) {
 			  inverse = function(X) X * scale)
 }
 
+#' Custom x-axis scale for genome coordinates.
+#' 
+#' @param scale scale factor, in base pairs
+#' @param unit abbreviation for units corresponding to scale factor (see Details)
+#' @param ... additional arguments to \code{ggplot2::scale_x_continuous()}
+#' 
+#' @return a \code{ggplot2} scale function
+#' 
+#' @details For example, if \code{scale = 1000}, we might set \code{unit = "kbp"}.
+#' 
+#' @seealso \code{\link[ggplot2]{scale_x_continuous}}
+#' 
 #' @export
 scale_x_genome <- function(scale = 1e6, unit = NULL, ...) {
 	
@@ -48,6 +60,14 @@ neglog_trans <- function (base = exp(1))
 			  domain = c(1e-100, Inf))
 }
 
+#' Custom y-axis scale for -log10(p-values)
+#' 
+#' @param ... additional arguments to \code{ggplot2::scale_y_continuous()}
+#' 
+#' @return a \code{ggplot2} scale function
+#' 
+#' @seealso \code{\link[ggplot2]{scale_x_continuous}}
+#' 
 #' @export
 scale_y_logp <- function(...) {
 	
@@ -56,6 +76,16 @@ scale_y_logp <- function(...) {
 }
 
 ## themes
+
+#' A very minimal graphics theme
+#' 
+#' @param base_size baseline font size in points
+#' @param base_family baseline font family
+#' 
+#' @return a \code{ggplot2} theme function
+#' 
+#' @seealso \code{\link[ggplot2]{theme}}
+#' 
 #' @export
 theme_nothing <- function(base_size = 12, base_family = "Helvetica")
 {
@@ -69,6 +99,13 @@ theme_nothing <- function(base_size = 12, base_family = "Helvetica")
 		))
 }
 
+#' A genome-browser like graphics theme
+#' 
+#' @param base_size baseline font size in points
+#' @param base_family baseline font family
+#' 
+#' @return a \code{ggplot2} theme function
+#' 
 #' @export
 theme_gbrowse <- function(base_size = 12, base_family = "Helvetica") {
 	ggplot2::`%+replace%`(
@@ -84,6 +121,15 @@ theme_gbrowse <- function(base_size = 12, base_family = "Helvetica") {
 		))
 }
 
+#' A graphics theme with only an x-axis
+#' 
+#' @param base_size baseline font size in points
+#' @param base_family baseline font family
+#' 
+#' @return a \code{ggplot2} theme function
+#' 
+#' @seealso \code{\link[ggplot2]{theme}}
+#' 
 #' @export
 theme_axesonly <- function(base_size = 12, base_family = "Helvetica") {
 	ggplot2::`%+replace%`(
@@ -99,6 +145,14 @@ theme_axesonly <- function(base_size = 12, base_family = "Helvetica") {
 		))
 }
 
+#' A graphics theme suitable for heatmaps
+#' 
+#' @param ... ignored
+#' 
+#' @return a \code{ggplot2} theme function
+#' 
+#' @seealso \code{\link[ggplot2]{theme}}
+#' 
 #' @export
 theme_heatmap <- function(...) {
 	
@@ -111,6 +165,12 @@ theme_heatmap <- function(...) {
 		
 }
 
+#' A red-to-orange color scale for heatmaps
+#' 
+#' @param ... additional arguments passed to \code{ggplot2::scale_fill_gradientn()}
+#' 
+#' @return a \code{ggplot2} scale function
+#' 
 #' @export
 scale_fill_heatmap <- function(...) {
 		
@@ -119,6 +179,14 @@ scale_fill_heatmap <- function(...) {
 	
 }
 
+#' Make a blank grob for plotting
+#' 
+#' @param ... ignored
+#' 
+#' @return a \code{grid::grob} object
+#' 
+#' @seealso \code{\link[grid]{grid.rect}}
+#' 
 #' @export
 blank.grob <- function(...) {
 	grid::grid.rect(gp = grid::gpar(col = NA))

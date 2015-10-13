@@ -10,6 +10,8 @@
 \item{x}{an object of class \code{genotypes}}
 
 \item{expr}{name of the attribute to extract}
+
+\item{...}{ignored}
 }
 \description{
 Access attributes of a \code{genotypes} object as if they were a list

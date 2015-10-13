@@ -12,7 +12,9 @@ export.doqtl(gty, where = "doqtl.Rdata", recode = FALSE, ...)
 \item{where}{name of output file, including path (else it goes in working directory)}
 
 \item{recode}{if \code{TRUE}, genotype calls will be recoded 0/1/2 with respect to reference alleles
-    before the genotypes matrix is saved}
+before the genotypes matrix is saved}
+
+\item{...}{ignored}
 }
 \value{
 Returns \code{TRUE} on completion.  The Rdata file at \code{where} contains the following

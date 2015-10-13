@@ -4,11 +4,11 @@
 \alias{pca.genotypes}
 \title{Perform PCA on a \code{genotypes} object}
 \usage{
-\method{pca}{genotypes}(gty, extras = NULL, what = c("genotypes",
+\method{pca}{genotypes}(x, extras = NULL, what = c("genotypes",
   "intensity"), K = 3, fast = FALSE, ...)
 }
 \arguments{
-\item{gty}{an object of class \code{genotypes}}
+\item{x}{an object of class \code{genotypes}}
 
 \item{extras}{a second dataset of class \code{genotypes}, to be projected onto PCs computed
 from the first. NB: this function *does not* verify that the underlying features (ie. markers) match.}
@@ -20,12 +20,12 @@ underlying 2D intensities.  The latter triggers an error if intensity matrices a
 
 \item{fast}{if \code{TRUE}, use \code{corpcor::fast.svd()} to speed up calculations}
 
-\item{\code{...}}{other parameters for call to \code{prcomp}, such as \code{center} and \code{scale}
+\item{...}{other parameters for call to \code{prcomp}, such as \code{center} and \code{scale}
     (both \code{TRUE} by default)}
 }
 \value{
 a dataframe with as many rows as samples, in which the first columns are sample IDs and any associated
-	metadata (as returned by \code{samples(gty)}), followed by the first K PCs.  Scaled eigenvalues (ie. percent
+	metadata (as returned by \code{samples(x)}), followed by the first K PCs.  Scaled eigenvalues (ie. percent
 	of variance explained) are provided as \code{attr(,"explained")}.
 }
 \description{
