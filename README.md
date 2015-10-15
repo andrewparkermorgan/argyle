@@ -18,7 +18,9 @@ The following are required for some functions but one could get by without them:
 * `Matrix`: sparse matrices for LD calculations
 
 ## Installation
-Installation of the package directly from Github requires `devtools`.
+A source version of the package (`*.tar.gz`) and binaries for Mac (`*.tgz`) and Windows (`*.zip`) are available from this repository.  Before installing, all dependencies will need to be in place.  Building from soure requires a reasonably modern `C++` compiler.
+
+Better yet, install the package directly from Github with `devtools`.
 ```
 library(devtools)
 
