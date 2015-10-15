@@ -2,6 +2,8 @@
 **An R package for GenotYpes from ILlumina Et al.**
 Utilities for import, QC and (some) analysis of genotyping and hybridization-intensity data from Illumina Infinium arrays using `R`.
 
+> Morgan AP (2015) `argyle`: an R package for analysis of Illumina genotyping arrays. *G3*, submitted.
+
 ## Dependencies
 Effort has been made to keep to a minimum the number of package dependencies, subject to the constraint that I don't want to re-implement from scratch what others have done better.
 
