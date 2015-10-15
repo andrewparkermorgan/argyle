@@ -116,6 +116,7 @@ oneway.plot <- function(df, space = 1, ...) {
 ## do layout for a ggplot version of base-R mosaicplot()
 .mosaic.layout <- function(tbl, ...) {
 	
+	tbl[ is.na(tbl) ] <- 0
 	rows <- rowSums(tbl, na.rm = TRUE)
 	cols <- colSums(tbl, na.rm = TRUE)
 	
@@ -203,7 +204,7 @@ twoway.plot <- function(df, space = 1, ...) {
 	mosaic <- .mosaic.layout(tbl)
 	
 	df$pheno <- as.numeric(df$pheno)
-	tbl2 <- reshape2::melt(tapply(df$pheno, list(df[,3], df[,4]), mean, na.rm = TRUE))
+	tbl2 <- reshape2::melt(tapply(df$pheno, list(df[,3], df[,4]), mean, na.rm = FALSE))
 	mosaic <- merge(mosaic[,-3], tbl2)
 	
 	ggplot2::ggplot(mosaic) +
@@ -211,7 +212,7 @@ twoway.plot <- function(df, space = 1, ...) {
 						   colour = "white", size = space) +
 		ggplot2::scale_y_continuous(breaks = y.breaks, labels = rownames(tbl)) +
 		ggplot2::scale_x_continuous(breaks = x.breaks, labels = colnames(tbl)) +
-		ggplot2::guides(fill = ggplot2::guide_legend(override.aes = list(colour = NULL))) +
+		ggplot2::guides(fill = ggplot2::guide_legend("pheno mean", override.aes = list(colour = NULL))) +
 		ggplot2::xlab(paste0("\n", markers[2])) +
 		ggplot2::ylab(paste0(markers[1], "\n")) +
 		theme_axesonly()

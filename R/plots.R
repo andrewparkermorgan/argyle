@@ -274,7 +274,7 @@ intensityhist <- function(gty, ref.line = NULL, ...) {
 		ggplot2::xlab(expression(atop("", paste("sum-intensity = ", sqrt(x^2 + y^2)))))
 	
 	if (!is.null(ref.line) && is.numeric(ref.line))
-		p0 <- p0 + ggplot2::geom_vline(xintercept = vline, lty = "dashed", col = "grey")
+		p0 <- p0 + ggplot2::geom_vline(xintercept = ref.line, lty = "dashed", col = "grey")
 	
 	return(p0)
 	
