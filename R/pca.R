@@ -15,7 +15,7 @@
 	what <- match.arg(what)
 	.make.pca.input <- function(g, check.variance = TRUE) {
 		if (what == "genotypes") {
-			if (!is.numeric(gty)) {
+			if (!is.numeric(g)) {
 				g <- recode.genotypes(g, "01")
 			}
 			X <- t(.copy.matrix.noattr(g))
@@ -28,11 +28,11 @@
 				})
 			}
 		}
-		else if (.has.valid.intensity(gty)) {
-			x <- with(attr(gty, "intensity"), .copy.matrix.noattr(x))
-			y <- with(attr(gty, "intensity"), .copy.matrix.noattr(y))
+		else if (.has.valid.intensity(g)) {
+			x <- with(attr(g, "intensity"), .copy.matrix.noattr(x))
+			y <- with(attr(g, "intensity"), .copy.matrix.noattr(y))
 			rownames(x) <- paste0(rownames(x), "_x")
-			rownames(y) <- paste0(rownames(x), "_y")
+			rownames(y) <- paste0(rownames(y), "_y")
 			x[ is.na(x) ] <- 0
 			y[ is.na(y) ] <- 0
 			X <- t(rbind(x,y))	
@@ -72,7 +72,8 @@
 	proj <- predict(pc)
 	if (!is.null(extras)) {
 		message("Projecting extra samples onto existing PCs...")
-		predicted <- predict(pc, newdata = topredict)
+		predicted <- scale(topredict, pc$center, pc$scale) %*% pc$rotation
+		#predicted <- predict(pc, newdata = topredict)
 		proj <- rbind(proj, predicted)
 	}
 	

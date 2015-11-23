@@ -58,7 +58,7 @@
 #' 	Inspiration from Dan Gatti's DOQTL package: <https://github.com/dmgatti/DOQTL/blob/master/R/extract.raw.data.R>
 #'
 #' @export
-read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, colmap = NULL, ...) {
+read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, colmap = NULL, checksum = TRUE, ...) {
 
 	## stop here if marker map is not well-formed
 	if (!.is.valid.map(snps)) {
@@ -107,7 +107,9 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	}
 	
 	## make a checksum, then record file source and timestamp (which would mess up checksum comparisons)
-	attr(calls, "md5") <- digest::digest(calls, algo = "md5")
+	if (checksum)
+		attr(calls, "md5") <- digest::digest(calls, algo = "md5")
+	
 	attr(calls, "source") <- normalizePath(file.path(in.path))
 	attr(calls, "timestamp") <- Sys.time()
 	
@@ -405,7 +407,7 @@ export.doqtl <- function(gty, where = "doqtl.Rdata", recode = FALSE, ...) {
 #' 
 #' @seealso \code{\link[qtl]{read.cross}}, \code{\link{as.genotypes.cross}} (for inverse operation)
 #' 
-#' @export
+#' @export as.rqtl
 as.rqtl.genotypes <- function(gty, type = c("f2","bc"), chroms = paste0("chr", c(1:19,"X")), ...) {
 	
 	if (!(inherits(gty, "genotypes") && .has.valid.map(gty) && .has.valid.ped(gty)))
