@@ -918,7 +918,7 @@ ld.plink <- function(prefix, dprime = FALSE, index.snp = NULL, markers = NULL, c
 		cmd <- paste0(cmd, " --ld-snp-list ", mkfile)
 	}
 	if (!is.null(chr))
-		cmd <- paste0(cmd, " --chr ", gsub("^chr","", as.character(chr)))
+		cmd <- paste0(cmd, " --chr ", paste(gsub("^chr","", as.character(chr))))
 	if (!is.null(from))
 		cmd <- paste0(cmd, " --from-bp ", formatC(from, format = "d"))
 	if (!is.null(to))
@@ -990,7 +990,7 @@ filter.plink <- function(prefix, out = NULL, chr = NULL, from = NULL, to = NULL,
 			stop("Filtering of individuals by attributes was requested but attribute file couldn't be found.")
 	}
 	if (!is.null(chr))
-		cmd <- paste0(cmd, " --chr ", gsub("^chr","", as.character(chr)))
+		cmd <- paste0(cmd, " --chr ", paste(gsub("^chr","", as.character(chr))))
 	if (!is.null(from))
 		cmd <- paste0(cmd, " --from-bp ", formatC(from, format = "d"))
 	if (!is.null(to))

@@ -1,6 +1,30 @@
 ## pca.R
 ## functions for performing PCA on genotypes and hybridization intensities
 
+## impute allele freq in place of missing values
+.fudge.missing.genotypes <- function(g, check.variance = TRUE, eps = 1e-6, ...) {
+	
+	X <- t(.copy.matrix.noattr(g))
+	## replace missing values with column mean
+	if (any(is.na(colMeans(X)))) {
+		message("\treplacing missing values with minor-allele frequency...")
+		X <- apply(X, 2, function(x) {
+			x[ is.na(x) ] <- mean(x, na.rm = TRUE)
+			return(x)
+		})
+	}
+	
+	## remove zero-variance columns
+	if (check.variance) {
+		const <- abs(colVars(X) - 0) <= eps
+		const[ is.na(const) ] <- TRUE
+		X <- X[ ,!const ]
+	}
+	
+	return(X)
+	
+}
+
 ## internal function for actually doing PCA
 .do.pca.genotypes <- function(gty, extras = NULL, what = c("genotypes","intensity"),
 							  fast = FALSE, scale = TRUE, center = TRUE, eps = 1e-6, K = 1:3, ...) {
@@ -13,7 +37,7 @@
 				   "they should also be suppled as class 'genotypes'."))
 	
 	what <- match.arg(what)
-	.make.pca.input <- function(g, check.variance = TRUE) {
+	.make.pca.input <- function(g) {
 		if (what == "genotypes") {
 			if (!is.numeric(g)) {
 				g <- recode.genotypes(g, "01")
@@ -39,28 +63,34 @@
 		}
 		else {
 			stop("Need valid intensity matrices in order to do PCA on intensity.")
-		}
-		
-		## remove zero-variance columns, if scaling requested
-		if (scale && check.variance) {
-			const <- abs(colVars(X) - 0) <= eps
-			const[ is.na(const) ] <- TRUE
-			X <- X[ ,!const ]
-		}
+		}	
 		return(X)
+	}
+	
+	## remove zero-variance columns, if scaling requested
+	.check.variance <- function(x) {
+		const <- abs(colVars(x) - 0) <= eps
+		const[ is.na(const) ] <- TRUE
+		return(!const)
 	}
 
 	## finally do PCA
 	message("Preparing input matrices...")
-	features <- .make.pca.input(gty)
+	
 	if (!is.null(extras)) {
-		topredict <- .make.pca.input(extras, check.variance = FALSE)
-		keep <- intersect(colnames(topredict), colnames(features))
+		suppressMessages(both <- merge(gty, extras))
+		both <- .make.pca.input(both)
+		keep <- .check.variance(both[ colnames(gty), ]) & .check.variance(both[ colnames(extras), ])
+		features <- both[ colnames(gty),keep ]
+		topredict <- both[ colnames(extras),keep ]
+	}
+	else {
+		features <- .make.pca.input(gty)
+		keep <- .check.variance(features)
 		features <- features[ ,keep ]
-		topredict <- topredict[ ,keep ]
 	}
 		
-	message(paste("Computing principal components of", what, "matrix..."))
+	message(paste("Computing principal components of", what, "matrix (", paste(dim(features), collapse = " x ") ,")..."))
 	if (fast) {
 		message("\t(using corpcor::fast.svd() ...)")
 		pc <- .fast.pca(features, K = K, .center = center, .scale = scale)	
@@ -78,6 +108,7 @@
 	}
 	
 	## add %variance explained
+	attr(proj, "effective.dim") <- dim(features)
 	attr(proj, "pca") <- pc
 	attr(proj, "explained") <- pc$sdev^2/sum(pc$sdev^2)
 	
@@ -166,6 +197,8 @@ pca.genotypes <- function(x, extras = NULL, what = c("genotypes","intensity"), K
 	## copy over the %variance explained
 	class(rez.df) <- c("pca.result", class(rez.df))
 	attr(rez.df, "explained") <- attr(rez, "explained")[1:K]
+	if ("effective.dim" %in% names(attributes(rez)))
+		attr(rez.df, "effective.dim") <- attr(rez, "effective.dim")
 	
 	return(rez.df)
 	

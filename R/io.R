@@ -587,3 +587,31 @@ write.hgdp <- function(gty, prefix, ...) {
 	invisible(TRUE)
 	
 }
+
+#' Convert genotypes to a dataframe
+#' 
+#' @param gty a \code{genotypes} object
+#' @param ... ignored
+#' 
+#' @return a \code{data.frame} with marker information in the leftmost columns, followed by a
+#' 	matrix of genotypes with samples in columns
+#' 	
+#' @details In general the dataframe will be a less-efficient way to store genotypes, but is a
+#' 	useful intermediate for writing genotypes to disk in a human-readable format.
+#' 
+#' @export as.data.frame
+as.data.frame.genotypes <- function(gty, ...) {
+
+	if (!(inherits(gty, "genotypes") && .has.valid.map(gty)))
+		stop("Please supply an object of class 'genotypes' which includes a valid marker map.")
+		
+	map <- attr(gty, "map")[ ,c("chr","pos","cM","marker","A1","A2") ]
+	geno <- .copy.matrix.noattr(gty)
+	
+	df <- as.data.frame(geno)
+	colnames(df) <- colnames(geno)
+	df <- cbind(map, df)
+	return(df)
+
+}
+as.data.frame <- function(x, ...) UseMethod("as.data.frame")

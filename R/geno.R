@@ -743,8 +743,8 @@ merge.genotypes <- function(x, y, join = c("inner","left"), check.alleles = FALS
 		rez <- cbind( unclass(x)[ new.o, ],
 					  unclass(y)[ new.o, ] )
 		if (.has.valid.intensity(x) && .has.valid.intensity(y)) {
-			attr(rez, "intensity") <- list( x = cbind(attr(x, "intensity")$x[ new.o, drop = FALSE ], attr(y, "intensity")$x[ new.o, drop = FALSE ]),
-											y = cbind(attr(x, "intensity")$y[ new.o, drop = FALSE ], attr(y, "intensity")$y[ new.o, drop = FALSE ]) )
+			attr(rez, "intensity") <- list( x = cbind(attr(x, "intensity")$x[ new.o,, drop = FALSE ], attr(y, "intensity")$x[ new.o,, drop = FALSE ]),
+											y = cbind(attr(x, "intensity")$y[ new.o,, drop = FALSE ], attr(y, "intensity")$y[ new.o,, drop = FALSE ]) )
 			attr(rez, "normalized") <- .null.false(attr(x, "normalized")) && .null.false(attr(x, "normalized"))
 		}
 		if (.has.valid.baflrr(x) && .has.valid.baflrr(y)) {
@@ -1541,5 +1541,69 @@ clean.names <- function(x, space = "", ...) {
 	x <- make.unique(x)
 	x <- gsub(" ", space, x)
 	return(x)
+	
+}
+
+
+#' Fix alleles in marker map using those in observed genotypes
+#' 
+#' @param gty a \code{genotypes} object
+#'
+#' @return A new \code{genotypes} object with corrected alleles, whose marker map has two
+#' 	additional columns: \code{swapped} indicates if alleles were swapped, and \code{unresolved}
+#' 	indicates that observed and expected alleles don't match, but can't be reconciled with
+#' 	a simple strand swap.
+#' 	
+#' @details Because this method relies on information in observed genotypes, it is advisable
+#' 	to use it only with "many" samples, where "many" is enough to capture all alleles of interest.
+#'  
+#' @export
+fix.strand.swaps <- function(gty, ...) {
+	
+	if (!inherits(gty, "genotypes") || !.has.valid.map(gty))
+		stop("Please supply a genotypes object with map as an attribute.")
+	
+	if (attr(gty, "alleles") != "native")
+		stop("Genotypes should be in 'native' character encoding.")
+	
+	revcomp = c("A" = "T", "C" = "G", "G" = "C", "T" = "A")
+	
+	geno <- unclass(gty)
+	map <- attr(gty, "map")
+	
+	message("Checking for strand swaps...")
+	failures <- rep(FALSE, nrow(map))
+	swaps <- rep(FALSE, nrow(map))
+	for (i in seq_len(nrow(geno))) {
+		
+		obs <- setdiff(unique(geno[ i, ]), c("N","H"))
+		a1 <- map$A1[i]
+		a2 <- map$A2[i]
+		expect <- c(a1,a2)
+		expect.comp <- revcomp[expect]
+		if (!all(obs %in% expect)) {
+			if (all(obs %in% expect.comp)) {
+				map$A1[i] <- expect.comp[1]
+				map$A2[i] <- expect.comp[2]
+				swaps[i] <- TRUE
+			}
+			else {
+				failures[i] <- TRUE
+			}
+		}
+		else {
+			failures[i] <- FALSE
+		}
+		
+	}
+	
+	message("Detected ", sum(swaps)," strand swaps.")
+	message("Couldn't resolve ", sum(failures)," conflicts.")
+	
+	map$swapped <- swaps
+	map$uresolved <- failures
+	
+	attr(gty, "map") <- map
+	return(gty)
 	
 }

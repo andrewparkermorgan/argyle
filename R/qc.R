@@ -15,8 +15,17 @@ column.quantiles <- function(x, q = seq(0,1,0.1), ..., .progress = "none") {
 	
 }
 
-## helper function to compute sum-intensity
-## NB: no sanity checks here!!
+#' Calculate sum-intensity
+#' 
+#' @param gty an \code{genotypes} object
+#' @param ... ignored
+#' 
+#' @details Sum intensity is calculated as D = sqrt(x^2 + y^2).  NB: This function performs no sanity checks
+#'  and will break in the case that intensity data does not exist in the expected size and shape.
+#' 
+#' @return a matrix (markers x samples) of sum-intensities
+#' 
+#' @export
 .si <- function(gty, ...) {
 	with(attr(gty, "intensity"), sqrt(x^2 + y^2))
 }
@@ -161,6 +170,7 @@ intensity.vs.ref <- function(gty, ref, ...) {
 #' 	sample is flagged; OR a named list as above
 #' @param hits samples failing more than this many filters are flagged
 #' @param apply logical; if \code{TRUE}, remove samples failing the filters, rather than flagging them
+#' @param overwrite logical; if \code{TRUE} (the default), replace exisitng filters with the results of this QC check
 #' @param ... ignored
 #' 
 #' @return a copy of the input with sample filters set, and an object of class \code{QC.result} in
@@ -175,12 +185,15 @@ intensity.vs.ref <- function(gty, ref, ...) {
 #' @export
 run.sample.qc <- function(gty, ref.intensity = NULL,
 						  max.H = Inf, max.N = Inf, max.D = Inf, min.D = Inf, 
-						  apply = FALSE, hits = 0, ...) {
+						  apply = FALSE, hits = 0, overwrite = TRUE, ...) {
 	
 	if (!inherits(gty, "genotypes"))
 		stop("Please supply an object of class 'genotypes'.")
 	
-	fl <- get.filters(gty)
+	if (!overwrite)
+		fl <- get.filters(gty)
+	else
+		fl <- list(sites = .init.filters(rownames(gty)), samples = .init.filters(colnames(gty)))
 	
 	if (length(fl$sites) != nrow(gty))
 		warning("Site filters don't match dimensions of genotype matrix.")
@@ -246,6 +259,7 @@ run.sample.qc <- function(gty, ref.intensity = NULL,
 #' @param min.hom threshold for count of homozygous calls, at or below which a site is flagged
 #' @param hits markers failing more than this many filters are flagged
 #' @param apply logical; if \code{TRUE}, remove markers failing the filters, rather than flagging them
+#' @param overwrite logical; if \code{TRUE} (the default), replace exisitng filters with the results of this QC check
 #' @param ... ignored
 #' 
 #' @return a copy of the input with sample filters set, and an object of class \code{marker.QC.result} in
@@ -257,12 +271,15 @@ run.sample.qc <- function(gty, ref.intensity = NULL,
 #' @seealso \code{\link{summarize.calls}}, \code{\link{run.sample.qc}}, \code{\link{apply.filters}}
 #' 
 #' @export
-run.marker.qc <- function(gty, max.H = Inf, max.N = Inf, min.hom = 0, hits = 0, apply = FALSE, ...) {
+run.marker.qc <- function(gty, max.H = Inf, max.N = Inf, min.hom = 0, hits = 0, apply = FALSE, overwrite = TRUE, ...) {
 	
 	if (!inherits(gty, "genotypes"))
 		stop("Please supply an object of class 'genotypes'.")
 	
-	fl <- get.filters(gty)
+	if (!overwrite)
+		fl <- get.filters(gty)
+	else
+		fl <- list(sites = .init.filters(rownames(gty)), samples = .init.filters(colnames(gty)))
 	
 	if (length(fl$sites) != nrow(gty))
 		warning("Site filters don't match dimensions of genotype matrix.")

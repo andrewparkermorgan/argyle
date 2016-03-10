@@ -48,7 +48,7 @@ plot.QC.result <- function(qc, show = c("point","label"), theme.fn = ggplot2::th
 		#ggplot2::geom_bar(ggplot2::aes(x = iid, y = value, pch = call, colour = filter), fill = "white") +
 		ggplot2::geom_bar(ggplot2::aes(x = iid, y = value, fill = call), position = "stack", stat = "identity") +
 		ggplot2::geom_point(data = subset(calls.m, filter),
-							ggplot2::aes(x = iid, y = filter.y), size = 3, pch = 21,
+							ggplot2::aes(x = iid, y = filter.y), size = 3, shape = 21,
 							fill = "white", colour = "black") +
 		#ggplot2::scale_shape_manual(values = c(H=21, N=19)) +
 		#ggplot2::scale_colour_manual(values = c("black", scales::muted("red")), na.value = "grey") +
@@ -451,20 +451,24 @@ dotplot.genotypes <- function(gty, size = 2, meta = NULL, shape = c("point","til
 	## check that dimensions still match
 	stopifnot(nrow(df) == prod(dim(gty)))
 	
-	shape <- match.arg(shape)
-	if (shape == "tile")
-		geom.fn <- ggplot2::geom_tile
-	else if (shape == "point")
-		geom.fn <- ggplot2::geom_point
-	else
-		geom.fn <- ggplot2::geom_blank
-	
 	if (!is.factor(df$fid))
 		df$fid <- factor(df$fid)
 	df$iid <- reorder(df$iid, as.numeric(df$fid), mean)
 	
-	p <- ggplot2::ggplot(subset(df, !is.na(ibs))) +
-		geom.fn(ggplot2::aes(x = i, y = iid, fill = fill.by), pch = 21, size = size) +
+	## base plot
+	p <- ggplot2::ggplot(subset(df, !is.na(ibs)))
+		
+	## add genotypes, according to requested style
+	shape <- match.arg(shape)
+	if (shape == "tile")
+		p <- p + ggplot2::geom_tile(ggplot2::aes(x = i, y = iid, fill = fill.by))
+	else if (shape == "point")
+		p <- p + ggplot2::geom_point(ggplot2::aes(x = i, y = iid, fill = fill.by), shape = 21, size = size)
+	else
+		p <- ggplot2::geom_blank(ggplot2::aes(x = i, y = iid, fill = fill.by))
+	
+	## add axes, annotations etc
+	p <- p + 
 		ggplot2::geom_segment(data = map,
 							  ggplot2::aes(x = i, xend = relpos, y = ruler.top, yend = 0), colour = "grey70") +
 		ggplot2::geom_hline(yintercept = 0) +

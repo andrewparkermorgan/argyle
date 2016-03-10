@@ -5,11 +5,27 @@ Version: 0.1
 Date: 2015-10-13
 Author: Andrew P Morgan
 Maintainer: Andrew P Morgan  <andrew.parker.morgan@gmail.com>
-Description: Some useful stuff for handling genotypes (and underlying hybridization intensity data) from Illumina Infinium arrays.
-Depends: R (>= 2.14)
-Imports: ggplot2, scales, data.table (>= 1.9.4), digest, plyr, preprocessCore, reshape2, Matrix
-Suggests: corpcor, grid, gridExtra, gtable, RColorBrewer,
+Description: Some useful stuff for handling genotypes (and underlying
+    hybridization intensity data) from Illumina Infinium arrays.
+Depends:
+    R (>= 2.14)
+Imports:
+    ggplot2,
+    scales,
+    data.table (>= 1.9.4),
+    digest,
+    plyr,
+    preprocessCore,
+    reshape2,
+    Matrix
+Suggests:
+    corpcor,
+    grid,
+    gridExtra,
+    gtable,
+    RColorBrewer,
     knitr
 License: CC BY-NC-SA 4.0
 VignetteBuilder: knitr
 LinkingTo: Rcpp
+RoxygenNote: 5.0.0
