@@ -1,7 +1,7 @@
 Package: argyle
 Type: Package
 Title: Basic interface and QC for genotypes from Illumina Infinium arrays
-Version: 0.1
+Version: 0.1.1
 Date: 2015-10-13
 Author: Andrew P Morgan
 Maintainer: Andrew P Morgan  <andrew.parker.morgan@gmail.com>

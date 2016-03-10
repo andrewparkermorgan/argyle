@@ -11,6 +11,8 @@
 #' @param keep.intensity should hybridization intensities be kept in addition to genotype calls?
 #' @param colmap named character vector mapping column names in \code{*FinalReport} to required columns
 #' 	for \code{argyle} (see Details)
+#' @param verify logical; if \code{TRUE}, check that \code{FinalReport} file is of expected size
+#' @param checksum logical; if \code{TRUE}, generate an md5 checksum for the result
 #' @param ... ignored
 #'
 #' @return A \code{genotypes} object with genotype calls, marker map, sample metadata and (as requested)
@@ -58,7 +60,7 @@
 #' 	Inspiration from Dan Gatti's DOQTL package: <https://github.com/dmgatti/DOQTL/blob/master/R/extract.raw.data.R>
 #'
 #' @export
-read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, colmap = NULL, checksum = TRUE, ...) {
+read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, colmap = NULL, verify = TRUE, checksum = TRUE, ...) {
 
 	## stop here if marker map is not well-formed
 	if (!.is.valid.map(snps)) {
@@ -69,7 +71,7 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	}
 	
 	## read files from Illumina BeadStudio
-	data <- .read.illumina.raw(prefix, in.path, colmap)
+	data <- .read.illumina.raw(prefix, in.path, colmap, check.dims = verify)
 	rownames(data$samples) <- gsub(" ","", rownames(data$samples))
 	
 	## convert to matrices using data.table's optimized code
@@ -124,7 +126,7 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 }
 
 ## process files from BeadStudio into a dataframe (of samples) and data.table (of calls/intensities)
-.read.illumina.raw <- function(prefix, in.path = ".", colmap = NULL, ...) {
+.read.illumina.raw <- function(prefix, in.path = ".", colmap = NULL, check.dims = FALSE, ...) {
 	
 	if (length(paste(prefix, in.path)) > 1)
 		stop("Only read one batch at a time.  To handle multiple batches, wrap with an lapply().")
@@ -152,6 +154,7 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	## handle case of duplicated IDs
 	renamer <- make.unique(as.character(samples.df$Name))
 	rownames(samples.df) <- renamer
+	nsamp <- length(renamer)
 	
 	## Find a file with "FinalReport" in the filename.
 	rawfile <- dir(path = in.path, pattern = "FinalReport", full.names = TRUE)
@@ -204,7 +207,7 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	
 	## slurp file into a data.table, skipping the 9 header lines
 	message(paste("Reading genotypes and intensities for", nsnps, "markers x",
-				  length(renamer), "samples from <", infile, "> ..."))
+				  nsamp, "samples from <", infile, "> ..."))
 	data <- data.table::fread(piper, skip = 9, showProgress = interactive(), stringsAsFactors = FALSE, sep = "\t")
 	
 	## Construct the column-naming map
@@ -236,6 +239,16 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	
 	## assign new column names using column map
 	data.table::setnames(data, names(colmap), colmap)
+	
+	## check that data is of expected size
+	if (check.dims) {
+		if (nrow(data) != (nsnps*nsamp))
+			stop(paste0("Row count of genotype data (", nrow(data), ") doesn't match what was expected (", nsnps, " x ", nsamp, " = ", nsnps*nsamp, ").",
+						" FinalReport file might be corrupt."))
+	}
+	else {
+		# live dangerously
+	}
 	
 	## rename samples by index
 	nsamples <- length(samples)
