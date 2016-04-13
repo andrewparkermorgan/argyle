@@ -4,6 +4,7 @@
 #' Read a PLINK binary fileset into a \code{genotypes} object
 #' 
 #' @param prefix path to a PLINK fileset, excluding \code{*.bed} suffix
+#' @param intensity attempt to read intensity matrices (\code{*.bii}), if present
 #' @param ... ignored
 #' 
 #' @return a \code{genotypes} object, with alleles in the "01" encoding (see \code{\link{recode.genotypes}})
@@ -11,6 +12,9 @@
 #' @details Reads a PLINK binary fileset using pure \code{R}.  The fileset should be generated in 
 #' 	the "variant-major" format (the default in all recent versions of PLINK.) Missing genotypes are
 #' 	represented as \code{NA}s.
+#' 	
+#' 	If intensities are present, they are expected to be encoded as described in the help page for
+#' 	\code{\link{write.plink()}}.
 #' 	
 #' @seealso \code{\link{write.plink}}
 #' 
@@ -21,7 +25,7 @@
 #' 	linkage analysis. Am J Hum Genet 81(3): 559-575. doi:10.1086/519795.
 #' 
 #' @export read.plink
-read.plink <- function(prefix, ...) {
+read.plink <- function(prefix, intensity = FALSE, ...) {
 	
 	## construct filenames; check that all are present and accounted for
 	prefix <- gsub("\\.bed$", "", prefix)
@@ -74,8 +78,27 @@ read.plink <- function(prefix, ...) {
 	rownames(gty) <- as.character(bim$marker)
 	colnames(gty) <- as.character(fam$iid)
 	
+	## read intensities, if requested
+	ilist <- NULL
+	if (intensity) {
+		bii <- paste0(prefix, ".bii")
+		if (file.exists(bii)) {
+			message(paste0("Reading binary intensity matrices from: <", bii,">"))
+			bii <- file(bii, "rb")
+			X <- readBin(bii, integer(), prod(dim(gty)), size = 2, signed = FALSE, endian = "little")
+			Y <- readBin(bii, integer(), prod(dim(gty)), size = 2, signed = FALSE, endian = "little")
+			close(bii)
+			X <- matrix(X/10e3, nrow = nrow(gty), ncol = ncol(gty),
+						dimnames = dimnames(gty))
+			Y <- matrix(Y/10e3, nrow = nrow(gty), ncol = ncol(gty),
+						dimnames = dimnames(gty))
+			ilist <- list(x = X, y = Y)
+		}
+	}
+	
 	## make it a 'genotypes' object
-	gty <- genotypes(gty, map = bim, ped = fam, alleles = "01")	
+	gty <- genotypes(gty, map = bim, ped = fam, alleles = "01",
+					 intensity = ilist)
 	return(gty)
 	
 }
@@ -86,6 +109,7 @@ read.plink <- function(prefix, ...) {
 #' @param prefix path to the PLINK fileset to generate, excluding \code{*.bed} suffix
 #' @param map a valid marker map; overrides existing map
 #' @param fam sample metadata to override any existing metadata
+#' @param intensity whether to write intensity matrices, if present (to \code{*.bii} file)
 #' @param ... ignored
 #' 
 #' @return \code{TRUE} on completion
@@ -99,6 +123,13 @@ read.plink <- function(prefix, ...) {
 #' 	in order to avoid ambiguity around the correspondence between alleles and numeric genotypes.  But
 #' 	numeric genotypes can be converted back to character via \code{recode.genotypes(,"native")}.
 #' 	
+#' 	If intensity data is saved, it is written to a binary file with suffix \code{*.bii} in little-endian
+#' 	encoding.  First the X-intensity and then the Y-intensity matrix are convered to a single vector in
+#' 	column-major fashion, and the result is written to disk.  Intensities are pre-multiplied by 10,000 and
+#' 	truncated to integers of size 2 bytes (max 2^16-1) to save space; this means values will be clipped to
+#' 	6.5535 or less. In practice, for Illumina arrays, this makes essentially no difference at all for
+#' 	downstream analysis.
+#' 	
 #' @seealso \code{\link{read.plink}}
 #' 
 #' @references
@@ -108,7 +139,7 @@ read.plink <- function(prefix, ...) {
 #' 	linkage analysis. Am J Hum Genet 81(3): 559-575. doi:10.1086/519795.
 #' 
 #' @export write.plink
-write.plink <- function(gty, prefix, map = NULL, fam = NULL, ...) {
+write.plink <- function(gty, prefix, map = NULL, fam = NULL, intensity = FALSE, ...) {
 	
 	if (!inherits(gty, "genotypes"))
 		warning("Input has not been blessed as genotype data; proceeding with skepticism.")
@@ -195,6 +226,21 @@ write.plink <- function(gty, prefix, map = NULL, fam = NULL, ...) {
 			setTxtProgressBar(pb, i)
 	}
 	close(bed)
+	
+	## write intensity matrices if needed
+	if (intensity && .has.valid.intensity(gty)) {
+		message(paste0("\tsaving intensities to binary format..."))
+		# convert intensities to integer values (may lose precision)
+		X <- as.integer(pmin(10e3*attr(gty , "intensity")$x, 2^16-1))
+		Y <- as.integer(pmin(10e3*attr(gty , "intensity")$y, 2^16-1))
+		# open file
+		bii <- file(paste0(prefix, ".bii"), "wb")
+		# write values, always little-endian
+		writeBin(X, bii, size = 2, endian = "little")
+		writeBin(Y, bii, size = 2, endian = "little")
+		# close file
+		close(bii)
+	}
 	
 	return(TRUE)
 	

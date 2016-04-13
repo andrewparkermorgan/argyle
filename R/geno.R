@@ -640,7 +640,7 @@ rbind.genotypes <- function(a, b, ...) {
 	
 	cols.a <- colnames(a)
 	cols.b <- colnames(b)
-	if (length(setdiff(a,b)) || length(setdiff(b,a)))
+	if (length(setdiff(cols.a,cols.b)) || length(setdiff(cols.b,cols.a)))
 		stop("Number and names of samples don't match.  Try merging genotypes instead of rbind-ing.")
 	
 	message(paste0("Adding ",nrow(b)," markers to the existing ",nrow(a),"."))

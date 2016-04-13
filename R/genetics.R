@@ -704,3 +704,77 @@ weir.fst <- function(gty, subpop = NULL, per.locus = FALSE, ...) {
 		return(theta_hat_w)
 	
 }
+
+
+#' Thin markers to a specified density on the genetic map
+#'
+#' @param gty a \code{genotypes} object
+#' @param spacing numeric; target distance between retained markers, in cM
+#' @param ... ignored
+#' 
+#' @return a new \code{genotypes} object with fewer markers
+#' 
+#' @aliases thin
+#' @export
+thin.genotypes <- function(gty, spacing = 5.0, ...) {
+	
+	## start borrowing from ggplot2
+	find.zero <- function (x_range, width, boundary) {
+		shift <- floor((x_range[1] - boundary)/width)
+		boundary + shift * width
+	}
+	fixed.bins <- function (x, width, center = NULL, boundary = NULL, closed = c("right","left")) {
+		x <- as.numeric(x)
+		width <- as.numeric(width)
+		closed <- match.arg(closed)
+		x_range <- range(x, na.rm = TRUE, finite = TRUE)
+		if (length(x_range) == 0) {
+			return(x)
+		}
+		if (!is.null(boundary) && !is.null(center)) {
+			stop("Only one of 'boundary' and 'center' may be specified.")
+		}
+		if (is.null(boundary)) {
+			if (is.null(center)) {
+				boundary <- width/2
+			}
+			else {
+				boundary <- center - width/2
+			}
+		}
+		boundary <- as.numeric(boundary)
+		min_x <- find.zero(x_range, width, boundary)
+		max_x <- max(x, na.rm = TRUE) + (1 - 1e-08) * width
+		breaks <- seq(min_x, max_x, width)
+		cut(x, breaks, include.lowest = TRUE, right = (closed == "right"))
+	}
+	## end borrowing
+	
+	if (!inherits(gty, "genotypes"))
+		stop("Please supply an object of class 'genotypes'.")
+	
+	if (!.has.valid.map(gty))
+		stop("Input object must have a valid genetic map.")
+	
+	# subsample by chromosome
+	message("Starting with ", nrow(gty), " markers...")
+	suppressMessages({
+		thinned <- genoapply(subset(gty, !is.na(cM)), 1, .(chr), function(d) {
+			binned <- fixed.bins(markers(d)$cM, spacing)
+			.keep1 <- function(z) z[1]
+			keep <- sapply(split(seq_len(nrow(d)), binned), .keep1)
+			keep <- union(keep, c(1,nrow(d)))
+			d[ sort(keep), ]
+		})
+		thinned <- Reduce(rbind, thinned)
+	})
+	
+	dropped <- setdiff(attr(gty, "map")$chr, attr(thinned, "map")$chr)
+	
+	message("Thinned to ", nrow(thinned), " markers.")
+	if (length(dropped))
+		message("Dropped these chromosomes without genetic positions: ", paste(dropped, collapse = ", "))
+	return(thinned)
+	
+}
+thin <- function(gty, ...) UseMethod("thin")

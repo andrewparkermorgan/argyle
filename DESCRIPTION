@@ -28,4 +28,4 @@ Suggests:
 License: CC BY-NC-SA 4.0
 VignetteBuilder: knitr
 LinkingTo: Rcpp
-RoxygenNote: 5.0.0
+RoxygenNote: 5.0.1
