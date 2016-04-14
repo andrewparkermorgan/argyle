@@ -4,12 +4,23 @@
 \alias{read.plink}
 \title{Read a PLINK binary fileset into a \code{genotypes} object}
 \usage{
-read.plink(prefix, intensity = FALSE, ...)
+read.plink(prefix, intensity = FALSE, chr = NULL, from = NULL,
+  to = NULL, markers = NULL, keep = NULL, ...)
 }
 \arguments{
 \item{prefix}{path to a PLINK fileset, excluding \code{*.bed} suffix}
 
 \item{intensity}{attempt to read intensity matrices (\code{*.bii}), if present}
+
+\item{chr}{chromosome(s) to keep}
+
+\item{from}{keep markers at physical position greater than or equal to this}
+
+\item{to}{keep markers at physical position less than or equal to this}
+
+\item{markers}{keep *markers* with these names}
+
+\item{keep}{keep *samples* with these names}
 
 \item{...}{ignored}
 }
@@ -23,6 +34,16 @@ Read a PLINK binary fileset into a \code{genotypes} object
 Reads a PLINK binary fileset using pure \code{R}.  The fileset should be generated in 
 	the "variant-major" format (the default in all recent versions of PLINK.) Missing genotypes are
 	represented as \code{NA}s.
+	
+	If any of \code{chr,from,to,markers,keep} are specified, the file will be read in random-access mode. Positional
+	filters are applied only if one or more chromosomes are specified.  Marker-name filters are applied after
+	chromosome/position filters; it rarely makes sense to specify both a set of names and a set of positions.
+	Chromosome names must match exactly those used in the marker map (\code{*.bim} file), and sample names must match
+	exactly those used in the sample metadata file (\code{*.fam} file).
+	
+	Random-access mode is not guaranteed to be more efficient than reading the whole dataset into the \code{R}
+	session and then subsetting it.  Efficiency gains will depend on how much of the data happends to be found in
+	contiguous blocks, and also on hardware (eg. SSD versus standard hard disk).
 	
 	If intensities are present, they are expected to be encoded as described in the help page for
 	\code{\link{write.plink()}}.

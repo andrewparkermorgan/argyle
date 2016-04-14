@@ -4,6 +4,11 @@
 #' Read a PLINK binary fileset into a \code{genotypes} object
 #' 
 #' @param prefix path to a PLINK fileset, excluding \code{*.bed} suffix
+#' @param chr chromosome(s) to keep
+#' @param from keep markers at physical position greater than or equal to this
+#' @param to keep markers at physical position less than or equal to this
+#' @param markers keep *markers* with these names
+#' @param keep keep *samples* with these names
 #' @param intensity attempt to read intensity matrices (\code{*.bii}), if present
 #' @param ... ignored
 #' 
@@ -12,6 +17,16 @@
 #' @details Reads a PLINK binary fileset using pure \code{R}.  The fileset should be generated in 
 #' 	the "variant-major" format (the default in all recent versions of PLINK.) Missing genotypes are
 #' 	represented as \code{NA}s.
+#' 	
+#' 	If any of \code{chr,from,to,markers,keep} are specified, the file will be read in random-access mode. Positional
+#' 	filters are applied only if one or more chromosomes are specified.  Marker-name filters are applied after
+#' 	chromosome/position filters; it rarely makes sense to specify both a set of names and a set of positions.
+#' 	Chromosome names must match exactly those used in the marker map (\code{*.bim} file), and sample names must match
+#' 	exactly those used in the sample metadata file (\code{*.fam} file).
+#' 	
+#' 	Random-access mode is not guaranteed to be more efficient than reading the whole dataset into the \code{R}
+#' 	session and then subsetting it.  Efficiency gains will depend on how much of the data happends to be found in
+#' 	contiguous blocks, and also on hardware (eg. SSD versus standard hard disk).
 #' 	
 #' 	If intensities are present, they are expected to be encoded as described in the help page for
 #' 	\code{\link{write.plink()}}.
@@ -25,7 +40,7 @@
 #' 	linkage analysis. Am J Hum Genet 81(3): 559-575. doi:10.1086/519795.
 #' 
 #' @export read.plink
-read.plink <- function(prefix, intensity = FALSE, ...) {
+read.plink <- function(prefix, intensity = FALSE, chr = NULL, from = NULL, to = NULL, markers = NULL, keep = NULL, ...) {
 	
 	## construct filenames; check that all are present and accounted for
 	prefix <- gsub("\\.bed$", "", prefix)
@@ -40,10 +55,45 @@ read.plink <- function(prefix, intensity = FALSE, ...) {
 	message(paste0("Reading marker info from: <", bim,">"))
 	message(paste0("Reading binary genotypes from: <", bed,">"))
 	
-	## read map and family file to calculate number of markers and samples
+	## read map and family file
 	bim <- read.map(bim)
 	fam <- read.fam(fam)
 	
+	## check if we're doing random access
+	kr <- rep(TRUE, nrow(bim))
+	ki <- rep(TRUE, nrow(fam))
+	# first: subset by variants
+	if (!is.null(chr)) {
+		chr <- as.character(chr)
+		kr <- kr & (bim$chr %in% chr)
+		if (!is.null(from))
+			kr <- kr & (bim$pos >= from)
+		if (!is.null(to))
+			kr <- kr & (bim$pos <= to)
+	}
+	if (!is.null(markers)) {
+		markers <- na.omit(as.character(markers))
+		kr <- kr & (bim$marker %in% markers)
+	}
+	kr[ is.na(kr) ] <- FALSE
+	
+	# next: subset by samples
+	if (!is.null(keep)) {
+		keep <- as.character(keep)
+		ki <- ki & (fam$iid %in% keep)
+	}
+	ki[ is.na(ki) ] <- FALSE
+	
+	## are we keeping all samples and variants?
+	subsetting <- !all(ki,kr)
+	kr <- which(kr)
+	ki <- which(ki)
+	nr.keep <- length(kr)
+	ni.keep <- length(ki)
+	
+	message(paste0("\texpecting a matrix of size ", nr.keep," markers x ", ni.keep, " samples..."))
+	
+	## calculate number of markers and samples
 	nr <- nrow(bim)
 	ni <- nrow(fam)
 	## block size in bytes: (number of individuals)/4, to nearest byte
@@ -55,49 +105,108 @@ read.plink <- function(prefix, intensity = FALSE, ...) {
 	if (!all(magic[1] == "6c", magic[2] == "1b", magic[3] == "01"))
 		stop("Wrong magic number for bed file; should be -- 0x6c 0x1b 0x01 --.")
 	
-	## now actually read genotypes block by block
-	intr <- interactive()
-	if (intr)
-		pb <- txtProgressBar(min = 0, max = nr, style = 3)
-	gty <- matrix(NA, nrow = ni, ncol = nr)
-	for (i in 1:nr) {
-		geno.raw <- as.logical(rawToBits(readBin(bed, "raw", bsz)))
-		j <- seq(1,length(geno.raw),2)
-		## express genotypes as minor allele dosage (0,1,2)
-		geno <- geno.raw[ j ] + geno.raw[ j+1 ]
-		## recall that 0/1 is het, but 1/0 is missing
-		geno[ geno.raw[ j ] == 1 & geno.raw[ j+1 ] == 0 ] <- NA
-		gty[ ,i ] <- geno[1:ni]
+	if (!subsetting) {
+		## read *all* genotypes block by block
+		intr <- interactive()
 		if (intr)
-			setTxtProgressBar(pb, i)
+			pb <- txtProgressBar(min = 0, max = nr, style = 3)
+		gty <- matrix(NA, nrow = ni, ncol = nr)
+		for (i in 1:nr) {
+			geno.raw <- as.logical(rawToBits(readBin(bed, "raw", bsz)))
+			j <- seq(1,length(geno.raw),2)
+			## express genotypes as minor allele dosage (0,1,2)
+			geno <- geno.raw[ j ] + geno.raw[ j+1 ]
+			## recall that 0/1 is het, but 1/0 is missing
+			geno[ geno.raw[ j ] == 1 & geno.raw[ j+1 ] == 0 ] <- NA
+			gty[ ,i ] <- geno[1:ni]
+			if (intr)
+				setTxtProgressBar(pb, i)
+		}
 	}
+	else {
+		## we must do random-access; prepare genotypes object
+		gty <- matrix(NA, nrow = ni.keep, ncol = nr.keep)
+		
+		## loop on variants
+		intr <- interactive()
+		if (intr)
+			pb <- txtProgressBar(min = 0, max = nr.keep, style = 3)
+		for (i in seq_along(kr)) {
+			
+			# calculate offset for this variant; go there
+			v <- kr[i]-1
+			offset <- v*bsz+3
+			seek(bed, offset, "start")
+			
+			# read the genotypes
+			geno.raw <- as.logical(rawToBits(readBin(bed, "raw", bsz)))
+			j <- seq(1,length(geno.raw),2)
+			## express genotypes as minor allele dosage (0,1,2)
+			geno <- geno.raw[ j ] + geno.raw[ j+1 ]
+			## recall that 0/1 is het, but 1/0 is missing
+			geno[ geno.raw[ j ] == 1 & geno.raw[ j+1 ] == 0 ] <- NA
+			# get rid of samples we don't want; this is a hack
+			gty[ ,i ] <- (geno[1:ni])[ ki ]
+			if (intr)
+				setTxtProgressBar(pb, i)
+		}
+		
+	}
+	
 	close(bed)
 	
 	## add rownames (markers) and colnames (samples)
 	gty <- t(gty)
-	rownames(gty) <- as.character(bim$marker)
-	colnames(gty) <- as.character(fam$iid)
+	rownames(gty) <- as.character(bim$marker)[kr]
+	colnames(gty) <- as.character(fam$iid)[ki]
 	
 	## read intensities, if requested
+	## unlike genotypes, these are in sample-major order
 	ilist <- NULL
 	if (intensity) {
 		bii <- paste0(prefix, ".bii")
 		if (file.exists(bii)) {
 			message(paste0("Reading binary intensity matrices from: <", bii,">"))
 			bii <- file(bii, "rb")
-			X <- readBin(bii, integer(), prod(dim(gty)), size = 2, signed = FALSE, endian = "little")
-			Y <- readBin(bii, integer(), prod(dim(gty)), size = 2, signed = FALSE, endian = "little")
+			
+			## set up containers for results
+			x <- matrix(NA, nrow = nr.keep, ncol = ni.keep,
+						dimnames = dimnames(gty))
+			y <- x
+			
+			## set offset for second part of intensity data
+			ystart <- nr*ni*2
+			
+			## loop on samples to keep
+			intr <- interactive()
+			if (intr)
+				pb <- txtProgressBar(min = 0, max = ni.keep, style = 3)
+			for (i in seq_along(ki)) {
+				# calculate offset for this sample
+				s <- ki[i]-1
+				offset.x <- s*nr*2
+				offset.y <- ystart + s*nr*2
+				
+				# read intensity data
+				seek(bed, offset.x, "start")
+				X <- readBin(bii, integer(), 2*nr, size = 2, signed = FALSE, endian = "little")
+				seek(bed, offset.y, "start")
+				Y <- readBin(bii, integer(), 2*nr, size = 2, signed = FALSE, endian = "little")
+				x[ ,i ] <- X[kr]/10e3
+				y[ ,i ] <- Y[kr]/10e3
+				
+				if (intr)
+					setTxtProgressBar(pb, i)
+				
+			}
+			
 			close(bii)
-			X <- matrix(X/10e3, nrow = nrow(gty), ncol = ncol(gty),
-						dimnames = dimnames(gty))
-			Y <- matrix(Y/10e3, nrow = nrow(gty), ncol = ncol(gty),
-						dimnames = dimnames(gty))
-			ilist <- list(x = X, y = Y)
+			ilist <- list(x = x, y = y)
 		}
 	}
 	
 	## make it a 'genotypes' object
-	gty <- genotypes(gty, map = bim, ped = fam, alleles = "01",
+	gty <- genotypes(gty, map = bim[kr,], ped = fam[ki,], alleles = "01",
 					 intensity = ilist)
 	return(gty)
 	
