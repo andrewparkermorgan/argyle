@@ -23,17 +23,19 @@
 `[.genotypes` <- function(x, i, j, ..., drop = FALSE) {
 	
 	if (missing(i))
-		i <- TRUE
+		i <- rep(TRUE, nrow(x))
 	if (missing(j))
-		j <- TRUE
+		j <- rep(TRUE, ncol(x))
 	
 	r <- NextMethod("[", drop = drop)
 	## handle "array indexing"
-	if (is.matrix(i)) {
-		ii <- i
-		i <- ii[,1, drop = TRUE]
-		j <- ii[,2, drop = TRUE]
-	}
+	#if (is.matrix(i)) {
+	#	ii <- i
+	#	i <- ii[,1, drop = TRUE]
+	#	j <- ii[,2, drop = TRUE]
+	#}
+	i <- rownames(r)
+	j <- colnames(r)
 	if (!is.null(attr(x, "map"))) {
 		attr(r, "map") <- attr(x, "map")[ i,,drop = FALSE ]
 	}
@@ -44,6 +46,8 @@
 	if (.has.valid.intensity(x)) {
 		x.new <- attr(x, "intensity")$x[ i,j, drop = FALSE ]
 		y.new <- attr(x, "intensity")$y[ i,j, drop = FALSE ]
+		if (any(rownames(x.new) != rownames(r)))
+			stop("Rownames of genotypes and intensity matrices don't match.")
 		attr(r, "intensity") <- list(x = x.new, y = y.new)
 		if (!is.null(attr(x, "normalized")))
 			attr(r, "normalized") <- attr(x, "normalized")
@@ -583,13 +587,20 @@ ychrom <- function(gty, ...) {
 #' 	Any sample or site filters are dropped in the result.
 #' 
 #' @export
-cbind.genotypes <- function(a, b, ...) {
+cbind.genotypes <- function(a, b = NULL, ...) {
+	
+	if (is.null(b))
+		return(a)
 	
 	if (!inherits(b, "genotypes"))
 		stop("Only willing to bind two objects of class 'genotypes.'")
 	
 	if (nrow(a) != nrow(b) | any(rownames(a) != rownames(b)))
 		stop("Number and names of markers don't match.  Try merging genotypes instead of cbind-ing.")
+	
+	dups <- intersect(colnames(a), colnames(b))
+	if (length(dups))
+		stop( paste("Duplicate sample names encountered; make them unique before cbind-ing:", paste0(dups, collapse = ",")) )
 	
 	if (any(is.null(attr(a,"alleles")), is.null(attr(b,"alleles"))))
 		stop("Ambiguous allele encoding in one or both of the objects to be merged.")
@@ -632,6 +643,10 @@ rbind.genotypes <- function(a, b, ...) {
 	
 	if (!inherits(b, "genotypes"))
 		stop("Only willing to bind two objects of class 'genotypes.'")
+	
+	dups <- intersect(rownames(a), rownames(b))
+	if (length(dups))
+		stop( paste("Duplicate marker names encountered; make them unique before rbind-ing:", paste0(dups, collapse = ",")) )
 	
 	if (any(is.null(attr(a,"alleles")), is.null(attr(b,"alleles"))))
 		stop("Ambiguous allele encoding in one or both of the objects to be merged.")
