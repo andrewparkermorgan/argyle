@@ -252,7 +252,9 @@ read.beadstudio <- function(prefix, snps, in.path = ".", keep.intensity = TRUE, 
 	
 	## rename samples by index
 	nsamples <- length(samples)
-	data.table::set(data, i = NULL, "iid", rep(renamer, 1, each = nsnps))
+	newids <- rep(renamer, 1, each = nsnps)
+	#print(tail(cbind(data, newid = newids)))
+	data.table::set(data, i = NULL, "iid", newids)
 	
 	## convert 2-column allele calls to single column; mark hets, missing, etc.
 	data.table::set(data, i = NULL, "call", paste0(data$call1, data$call2))

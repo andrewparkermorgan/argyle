@@ -1167,6 +1167,7 @@ genoapply <- function(gty, margin = c(1,2), expr = 1, fn = NULL, strip = FALSE, 
 	
 	#e <- eval(expr)
 	e <- expr
+	nn <- as.quoted(e)
 	if (margin == 2) {
 		if (!is.null(attr(gty, "ped")))
 			r <- lapply(e, eval, envir = attr(gty, "ped"), enclos = parent.frame())
@@ -1185,6 +1186,8 @@ genoapply <- function(gty, margin = c(1,2), expr = 1, fn = NULL, strip = FALSE, 
 		gty <- bless(.copy.matrix.noattr(gty))
 	
 	r <- lapply(r, factor)
+	splitter <- data.frame(expand.grid(lapply(r, levels)))
+	colnames(splitter) <- names(nn)
 	if (margin == 2) {
 		vals <- split(seq_len(ncol(gty)), r)
 		rez <- lapply(vals, function(v) {
@@ -1201,7 +1204,8 @@ genoapply <- function(gty, margin = c(1,2), expr = 1, fn = NULL, strip = FALSE, 
 	}
 	
 	names(rez) <- names(vals)
-	nulls <- lapply(rez, is.null)
+	nulls <- sapply(rez, is.null)
+	attr(rez, "split_labels") <- splitter
 	return(rez)
 	
 }

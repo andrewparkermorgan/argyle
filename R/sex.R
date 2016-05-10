@@ -64,3 +64,20 @@ predict.sex <- function(object, method = c("ycalls"), ...) {
 	return(rez)
 	
 }
+
+sexysum <- function(gty, ...) {
+	
+	if (!inherits(gty, "genotypes"))
+		stop("Please supply an object of class 'genotypes'.")
+	
+	gty <- subset(gty, chr == "chrX" | chr == "chrY")
+	bychr <- genoapply(gty, 1, .(chr), summarize.calls)
+	calls <- plyr::ldply(bychr)
+	sexing <- plyr::ddply(calls, plyr::.(iid), plyr::summarise,
+						  Ygood = A[ chr == "chrY" ]+B[ chr == "chrY" ],
+						  Xhet = H[ chr == "chrX" ])
+	sexing <- merge(sexing, attr(gty, "ped"))
+	rownames(sexing) <- as.character(sexing$iid)
+	return(sexing)
+	
+}

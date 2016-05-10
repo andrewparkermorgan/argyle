@@ -41,7 +41,7 @@ quantile.normalize <- function(x, weights = NULL, force = FALSE, ...) {
 	}	
 	
 	if (!is.null(weights) && length(weights) != ncol(x))
-		stop("Dimensiosn of weight vector and intensity matrices don't match.")
+		stop("Dimensions of weight vector and intensity matrices don't match.")
 	
 	message(paste("Performing robust quantile normalization with", ifelse(is.null(weights), "no weights","weights"), "..."))
 	x.norm <- preprocessCore::normalize.quantiles.robust( attr(x, "intensity")$x, weights = weights)

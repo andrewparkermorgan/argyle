@@ -296,10 +296,13 @@ intensityhist <- function(gty, ref.line = NULL, ...) {
 #' @seealso \code{\link{tQN}}, \code{\link{supsmu}}
 #'
 #' @export
-bafplot <- function(gty, sm = TRUE, smooth = "cv", draw = TRUE, ...) {
+bafplot <- function(gty, sm = NULL, smooth = "cv", draw = TRUE, ...) {
 	
 	if (!(inherits(gty, "genotypes") && .has.valid.baflrr(gty)))
 		stop("Please supply an object of class 'genotypes' with valid BAF and LRR pre-computed.")
+	
+	if (is.null(sm))
+		stop("Must specify a sample to plot.")
 	
 	gty <- gty[,sm]
 	if (ncol(gty) != 1)
