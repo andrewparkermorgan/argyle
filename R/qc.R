@@ -141,7 +141,7 @@ summarize.calls <- function(gty, by = c("samples","markers"), counts = TRUE, ...
 #'
 #' @seealso \code{\link{summarize.intensity}}, \code{\link{summarize.calls}}, \code{\link{run.sample.qc}}
 #' 	 	
-#' @export
+#' @export intensity.vs.ref
 intensity.vs.ref <- function(gty, ref, ...) {
 	
 	if (!inherits(gty, "genotypes") && .has.valid.intensity(gty))

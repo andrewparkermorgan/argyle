@@ -4,7 +4,7 @@
 \alias{cbind.genotypes}
 \title{Concatenate two \code{genotypes} objects 'horizontally'}
 \usage{
-cbind.genotypes(a, b, ...)
+cbind.genotypes(a, b = NULL, ...)
 }
 \arguments{
 \item{a}{an object of class \code{genotypes}}

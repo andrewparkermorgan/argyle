@@ -144,7 +144,8 @@ sex.genotypes <- function(gty) {
 	class(rez) <- c("sexes", class(rez))
 	return(rez)
 }
-sex <- function(gty) UseMethod("sex")
+#' @export
+sex <- function(gty, ...) UseMethod("sex")
 
 #' Print summary table of sample sexes
 #' 
@@ -609,18 +610,18 @@ cbind.genotypes <- function(a, b = NULL, ...) {
 	
 	message(paste0("Adding ",ncol(b)," individuals to the existing ",ncol(a),"."))
 	
-	rez <- cbind(unclass(a), unclass(b))
+	rez <- base::cbind(unclass(a), unclass(b))
 	class(rez) <- c("genotypes", class(rez))
 	if (!is.null(attr(a, "map")))
 		attr(rez, "map") <- attr(a, "map")
 	if (!is.null(attr(a, "ped")))
-		attr(rez, "ped") <- rbind( attr(a, "ped"), attr(b, "ped") )
+		attr(rez, "ped") <- base::rbind( attr(a, "ped"), attr(b, "ped") )
 	attr(rez, "alleles") <- attr(a, "alleles")
 	
 	if (.has.valid.intensity(a) && .has.valid.intensity(b)) {
 		message("Updating intensity matrices...")
-		x <- cbind( attr(a, "intensity")$x, attr(b, "intensity")$x )
-		y <- cbind( attr(a, "intensity")$y, attr(b, "intensity")$y )
+		x <- base::cbind( attr(a, "intensity")$x, attr(b, "intensity")$x )
+		y <- base::cbind( attr(a, "intensity")$y, attr(b, "intensity")$y )
 		attr(rez, "intensity") <- list(x = x, y = y)
 	}
 	
@@ -660,18 +661,18 @@ rbind.genotypes <- function(a, b, ...) {
 	
 	message(paste0("Adding ",nrow(b)," markers to the existing ",nrow(a),"."))
 	
-	rez <- rbind(unclass(a)[ ,cols.a ], unclass(b)[ ,cols.a ])
+	rez <- base::rbind(unclass(a)[ ,cols.a ], unclass(b)[ ,cols.a ])
 	class(rez) <- c("genotypes", class(rez))
 	if (!is.null(attr(a, "ped")))
 		attr(rez, "ped") <- attr(a, "ped")
 	if (!is.null(attr(a, "map")) & !is.null(attr(b, "map")))
-		attr(rez, "map") <- rbind( attr(a, "map"), attr(b, "map") )
+		attr(rez, "map") <- base::rbind( attr(a, "map"), attr(b, "map") )
 	attr(rez, "alleles") <- attr(a, "alleles")
 	
 	if (.has.valid.intensity(a) && .has.valid.intensity(b)) {
 		message("Updating intensity matrices...")
-		x <- rbind( attr(a, "intensity")$x, attr(b, "intensity")$x )
-		y <- rbind( attr(a, "intensity")$y, attr(b, "intensity")$y )
+		x <- base::rbind( attr(a, "intensity")$x, attr(b, "intensity")$x )
+		y <- base::rbind( attr(a, "intensity")$y, attr(b, "intensity")$y )
 		attr(rez, "intensity") <- list(x = x, y = y)
 	}
 	
@@ -755,17 +756,17 @@ merge.genotypes <- function(x, y, join = c("inner","left"), check.alleles = FALS
 		}
 		
 		## keep intersection of marker sets
-		rez <- cbind( unclass(x)[ new.o, ],
-					  unclass(y)[ new.o, ] )
+		rez <- base::cbind( unclass(x)[ new.o, ],
+							unclass(y)[ new.o, ] )
 		if (.has.valid.intensity(x) && .has.valid.intensity(y)) {
 			attr(rez, "intensity") <- list( x = cbind(attr(x, "intensity")$x[ new.o,, drop = FALSE ], attr(y, "intensity")$x[ new.o,, drop = FALSE ]),
 											y = cbind(attr(x, "intensity")$y[ new.o,, drop = FALSE ], attr(y, "intensity")$y[ new.o,, drop = FALSE ]) )
 			attr(rez, "normalized") <- .null.false(attr(x, "normalized")) && .null.false(attr(x, "normalized"))
 		}
 		if (.has.valid.baflrr(x) && .has.valid.baflrr(y)) {
-			attr(rez, "baf") <- cbind( attr(x, "baf")[ new.o, drop = FALSE ],
+			attr(rez, "baf") <- base::cbind( attr(x, "baf")[ new.o, drop = FALSE ],
 									   attr(y, "baf")[ new.o, drop = FALSE ] )
-			attr(rez, "lrr") <- cbind( attr(x, "lrr")[ new.o, drop = FALSE ],
+			attr(rez, "lrr") <- base::cbind( attr(x, "lrr")[ new.o, drop = FALSE ],
 									   attr(y, "lrr")[ new.o, drop = FALSE ] )
 		}
 	}

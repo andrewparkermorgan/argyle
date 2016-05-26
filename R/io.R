@@ -423,7 +423,7 @@ export.doqtl <- function(gty, where = "doqtl.Rdata", recode = FALSE, ...) {
 #' @seealso \code{\link[qtl]{read.cross}}, \code{\link{as.genotypes.cross}} (for inverse operation)
 #' 
 #' @export as.rqtl
-as.rqtl.genotypes <- function(gty, type = c("f2","bc"), chroms = paste0("chr", c(1:19,"X")), ...) {
+as.rqtl <- function(gty, type = c("f2","bc"), chroms = paste0("chr", c(1:19,"X")), ...) {
 	
 	if (!(inherits(gty, "genotypes") && .has.valid.map(gty) && .has.valid.ped(gty)))
 		stop("Please supply an object of class 'genotypes' with valid marker map and sample metadata.")
@@ -487,7 +487,6 @@ as.rqtl.genotypes <- function(gty, type = c("f2","bc"), chroms = paste0("chr", c
 	
 	
 }
-as.rqtl <- function(gty, ...) UseMethod("as.rqtl")
 
 #' Convert an \code{R/qtl} object to a \code{genotypes} object
 #' 
@@ -518,8 +517,8 @@ as.rqtl <- function(gty, ...) UseMethod("as.rqtl")
 #' 
 #' @seealso \code{\link[qtl]{read.cross}}, \code{\link{as.rqtl.genotypes}} (for inverse operation)
 #' 
-#' @export
-as.genotypes.cross <- function(x, ...) {
+#' @export as.genotypes
+as.genotypes <- function(x, ...) {
 	
 	if (!inherits(x, "cross") && any(inherits(x, "f2"), inherits(x, "bc")))
 		stop("Please supply an object of class 'cross' (from KW Broman's R/qtl package).")
@@ -546,7 +545,6 @@ as.genotypes.cross <- function(x, ...) {
 	return(rez)
 	
 }
-as.genotypes <- function(x, ...) UseMethod("as.genotypes")
 
 #' Export genotypes in Stanford HGDP format
 #' 
@@ -562,7 +560,7 @@ as.genotypes <- function(x, ...) UseMethod("as.genotypes")
 #' Lischer HEL and Excoffier L (2012) PGDSpider: An automated data conversion tool for connecting
 #' 	population genetics and genomics programs. Bioinformatics 28: 298-299.
 #' 
-#' @export
+#' @export write.hgdp
 write.hgdp <- function(gty, prefix, ...) {
 	
 	if (!(inherits(gty, "genotypes") && .has.valid.map(gty)))
@@ -614,7 +612,7 @@ write.hgdp <- function(gty, prefix, ...) {
 #' @details In general the dataframe will be a less-efficient way to store genotypes, but is a
 #' 	useful intermediate for writing genotypes to disk in a human-readable format.
 #' 
-#' @export as.data.frame
+#' @export
 as.data.frame.genotypes <- function(gty, ...) {
 
 	if (!(inherits(gty, "genotypes") && .has.valid.map(gty)))
@@ -629,4 +627,4 @@ as.data.frame.genotypes <- function(gty, ...) {
 	return(df)
 
 }
-as.data.frame <- function(x, ...) UseMethod("as.data.frame")
+#as.data.frame <- function(x, ...) UseMethod("as.data.frame")

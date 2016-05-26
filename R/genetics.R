@@ -472,9 +472,14 @@ mendel.distance <- function(gty, parents, verbose = TRUE, ...) {
 		dd <- (A/(A+X))*dd + (X/(A+X))*apply(xchrom(dads), 2, ibs0, chrx)
 	}
 	
-	#scores <- (dm[ pairs[,1] ] + dd[ pairs[,2] ])/2
-	return( rbind(data.frame(iid = colnames(gty), parent = colnames(moms), sex = 2, score = dm[ colnames(moms) ]),
-				  data.frame(iid = colnames(gty), parent = colnames(dads), sex = 1, score = dd[ colnames(dads) ])) )
+	rez <- data.frame()
+	if (ncol(moms))
+		rez <- rbind(rez, data.frame(iid = colnames(gty), parent = colnames(moms), sex = 2, score = dm[ colnames(moms) ]))
+	
+	if (ncol(dads))
+		rez <- rbind(rez, data.frame(iid = colnames(gty), parent = colnames(dads), sex = 2, score = dd[ colnames(dads) ]))
+		
+	return(rez)
 	
 }
 
@@ -588,7 +593,6 @@ guess.parents <- function(gty, parents, ...) {
 #' 
 #' @seealso \code{\link[stats]{dist}}
 #' 
-#' @aliases dist
 #' @export
 dist.genotypes <- function(gty, ...) {
 	
@@ -606,7 +610,7 @@ dist.genotypes <- function(gty, ...) {
 	
 }
 #' @export
-dist <- function(gty, ...) UseMethod("dist")
+dist <- function(x, ...) UseMethod("dist")
 
 weir.fst <- function(gty, subpop = NULL, per.locus = FALSE, ...) {
 	
