@@ -17,13 +17,17 @@
 
 ## fast computation of variance column-wise, without looping and using fast internals
 ## thanks to TS Lumley
-colVars <- function(x, na.rm = TRUE, ...) {
+colVars <- function(x, na.rm = TRUE, warn.missing = FALSE, ...) {
 	
 	if (!is.matrix(x))
 		stop("Input not a matrix.")
 	
 	n <- nrow(x)
-	return( n/(n-1) * (colMeans(x*x, na.rm = na.rm)-colMeans(x, na.rm = na.rm)^2) )
+	sigmasq <- ( n/(n-1) * (colMeans(x*x, na.rm = na.rm)-colMeans(x, na.rm = na.rm)^2) )
+	if (warn.missing && is.na(sigmasq))
+		return(0)
+	else
+		return(sigmasq)
 	
 }
 

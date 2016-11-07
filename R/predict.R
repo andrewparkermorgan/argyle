@@ -10,7 +10,7 @@
 #' 	informative dimensions of the input data, given the labelled training samples, and then
 #' 	project the test samples onto that dimension.
 #' 
-predict.haplogroup <- function(gty, train, what = c("intensity","genotypes"), ...) {
+predict.haplogroup <- function(gty, train, method = c("lda","kmeans"), what = c("intensity","genotypes"), noise = 0.1, ...) {
 	
 	if (!inherits(gty, "genotypes"))
 		stop("Please supply an object of class 'genotypes'.")
@@ -21,6 +21,14 @@ predict.haplogroup <- function(gty, train, what = c("intensity","genotypes"), ..
 	if (attr(train, "alleles") != "01" || attr(gty, "alleles") != "01")
 		stop("Both training and testing sets should have encoding '01'.")
 	
+	## for filling in missing genotypes
+	.impute.missing <- function(f) {
+		f[ is.na(f) ] <- mean(f, na.rm = TRUE)
+		if (all(is.na(f)))
+			f[ is.na(f) ] <- 0
+		return(f)
+	}
+	
 	## keep only the markers in both training and testing set
 	mk <- intersect(rownames(train), rownames(gty))
 	gty <- gty[ mk, ]
@@ -30,28 +38,35 @@ predict.haplogroup <- function(gty, train, what = c("intensity","genotypes"), ..
 	message("Unknown set is ", ncol(gty), " samples x ", nrow(gty), " markers.")
 	
 	what <- match.arg(what)
-	if (what == "intensity") {
+	method <- match.arg(method)
+	if (method == "lda") {
 		
 		## step 1: do LDA on training samples
 		
-		## extract x- and y-intensity into matrix
-		genomat <- cbind( t(.copy.matrix.noattr(intensity(train)$x)),
-						  t(.copy.matrix.noattr(intensity(train)$y)) )
-						  #t(.copy.matrix.noattr(train)) )
-		
-		## mask missing values to zero (only happens if post-tQN)
-		genomat[ is.na(genomat) ] <- 0
-		#genomat <- genomat + rnorm(length(genomat), 0, 1e-3)
-		
+		if (what == "intensity") {
+			## extract x- and y-intensity into matrix
+			genomat <- cbind( t(.copy.matrix.noattr(intensity(train)$x)),
+							  t(.copy.matrix.noattr(intensity(train)$y)) )
+			## mask missing values to zero (only happens if post-tQN)
+			genomat[ is.na(genomat) ] <- 0
+		}
+		else if (what == "genotypes") {
+			## extract genotype matrix
+			genomat <- t(.copy.matrix.noattr(train))
+			genomat <- apply(genomat, 2, .impute.missing)
+			## add some fuzz to allow LDA to work
+			genomat <- genomat + rnorm(length(genomat), 0, noise)
+		}
+	
 		## remove low-variance columns, by group
 		group.labels <- factor(attr(train, "ped")$fid)
 		bygroup <- lapply(split(seq_len(ncol(train)), group.labels),
-						  function(i) genomat[i,])
-		invar <- Reduce("|", lapply(bygroup, function(g) colVars(g) < 1e-4))
+						  function(i) genomat[i,,drop = FALSE])
+		invar <- Reduce("|", lapply(bygroup, colVars, warn.missing = TRUE))
+		invar <- (invar < 1e-4)
 		genomat <- genomat[ ,!invar ]
 		
 		## run LDA to train the classifier
-		
 		message("Training LDA classifier ... ")
 		message("\tretained ", sum(!invar), " feature(s)")
 		message("\ton ", length(unique(group.labels)), " group(s)")
@@ -60,17 +75,21 @@ predict.haplogroup <- function(gty, train, what = c("intensity","genotypes"), ..
 							 tol = 1e-6)
 		})
 		
-		
 		## step 2: apply classifier to test samples
 		message("Applying classifier to unknown samples ...")
 		
-		## now make input object with test samples
-		testmat <- cbind( t(.copy.matrix.noattr(intensity(gty)$x)),
-						  t(.copy.matrix.noattr(intensity(gty)$y)) )
-						  #t(.copy.matrix.noattr(gty)) )
-		testmat[ is.na(testmat) ] <- 0
-
+		if (what == "intensity") {
+			testmat <- cbind( t(.copy.matrix.noattr(intensity(gty)$x)),
+							  t(.copy.matrix.noattr(intensity(gty)$y)) )
+			testmat[ is.na(testmat) ] <- 0
+		}
+		else if (what == "genotypes") {
+			testmat <- t(.copy.matrix.noattr(gty))
+			testmat <- apply(testmat, 2, .impute.missing)
+			testmat <- testmat + rnorm(length(testmat), 0, noise)
+		}
 		testmat <- testmat[ ,!invar ]
+		
 		rez <- MASS:::predict.lda(mod, testmat)
 		
 		pidx <- cbind(seq_along(rez$class), as.numeric(rez$class))
@@ -81,8 +100,74 @@ predict.haplogroup <- function(gty, train, what = c("intensity","genotypes"), ..
 		return(rez.df)
 		
 	}
-	else {
-		stop("Not implemented.")
+	else if (method == "kmeans") {
+		
+		stop("Not implemented yet.")
+		
+		## step 1: do K-means on training samples
+		genomat <- t(.copy.matrix.noattr(train))
+		genomat <- apply(genomat, 2, .impute.missing)
+		group.labels <- factor(attr(train, "ped")$fid)
+		cl <- kmeans(genomat, nlevels(group.labels))
+		
+		## assign a group label to cluster centroids
+		clbygrp <- table(cl$cluster, group.labels)
+		print(clbygrp)
+		renamer <- apply(clbygrp, 1, function(f) names(which.max(f)))
+		print(renamer)
+		
+		testmat <- t(.copy.matrix.noattr(gty))
+		testmat <- apply(testmat, 2, .impute.missing)
+		
+		
+		invar <- rep(FALSE, ncol(genomat))
 	}
 	
+
+}
+
+recluster <- function(train, test = NULL, ...) {
+	
+	new1 <- matrix(NA, nrow = nrow(train), ncol = ncol(train),
+				   dimnames = dimnames(train))
+	if (!is.null(test)) {
+		new2 <- matrix(NA, nrow = nrow(test), ncol = ncol(test),
+					   dimnames = dimnames(test))
+	}
+	
+	for (ii in seq_len(nrow(train))) {
+		cl <- .recluster.marker( attr(train, "intensity")$x[ii,], attr(train, "intensity")$y[ii,], ... )
+		new1[ii,] <- cl$cluster
+		if (!is.null(test)) {
+			xy <- cbind( as.vector(attr(test, "intensity")$x[ii,]),
+						 as.vector(attr(test, "intensity")$y[ii,]) )
+			pred <- apply(xy, 1, .closest, cl = cl)
+			new2[ii,] <- pred
+		}
+	}
+	rez <- list(train = genotypes(new1, map = markers(train), ped = samples(train), alleles = "01",
+								  intensity = intensity(train), check = TRUE),
+				test = NULL)
+	
+	if (!is.null(test)) {
+		rez$test <- genotypes(new2, map = markers(test), ped = samples(test), alleles = "01",
+							  intensity = intensity(test), check = TRUE)
+	}
+	
+	return(rez)
+	
+}
+
+.recluster.marker <- function(x, y, k = 2) {
+	
+	X <- cbind(as.vector(x), as.vector(y))
+	X[ is.na(X) ] <- 0
+	rez <- kmeans(X, k)
+	return(rez)
+	
+}
+
+.closest <- function(x, cl) {
+	d <- apply(cl$centers, 1, function(y) sqrt(sum((x-y)^2)))
+	return(which.min(d)[1])
 }

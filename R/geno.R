@@ -684,8 +684,6 @@ rbind.genotypes <- function(a, b, ...) {
 #' 
 #' @param x a \code{genotypes} object
 #' @param y another \code{genotypes} object
-#' @param join what sort of join to perform: at present, only \code{"inner"} (intersection of \code{x}'s and \code{y}'s
-#' 	marker sets) is supported
 #' @param check.alleles logical; if \code{TRUE}, attempt to verify compatibility of marker maps and fix allele or strand swaps
 #' @param verbose logical; if \code{TRUE}, show lots of detail about the merge process, especially allele/strand swaps
 #' @param ... ignored
@@ -706,7 +704,7 @@ rbind.genotypes <- function(a, b, ...) {
 #' Sample filters currently are *dropped* by the merge operation.
 #' 
 #' @export
-merge.genotypes <- function(x, y, join = c("inner","left"), check.alleles = FALSE, verbose = TRUE, ...) {
+merge.genotypes <- function(x, y, check.alleles = FALSE, verbose = TRUE, ...) {
 	
 	if (!inherits(y, "genotypes"))
 		stop("Only willing to merge two objects of class 'genotypes.'")
@@ -731,49 +729,43 @@ merge.genotypes <- function(x, y, join = c("inner","left"), check.alleles = FALS
 	
 	message(paste0("Set A has ", nrow(x), " markers x ", ncol(x), " samples."))
 	message(paste0("Set B has ", nrow(y), " markers x ", ncol(y), " samples."))
-	
-	join <- match.arg(join)
-	new.o <- keep[ order(o[keep]) ]
-	
-	if (join == "inner") {
 		
-		## check for strand/allele swaps
-		if (check.alleles) {
-			
-			if (!(attr(x, "alleles") == "01" && attr(y, "alleles") == "01"))
-				stop("In order to perform allele check efficiently, both input datasets should be in",
-					 "the '01' numeric encoding.")
-				
-			x <- x[ new.o, ]
-			y <- y[ new.o, ]
-			
-			message("Checking for allele and strand swaps...")
-			unswapped <- .fix.allele.swaps(y, x, verbose = verbose)
-			message("Done fixing swaps.")
-			x <- unswapped[[2]]
-			y <- unswapped[[1]]
-			
-		}
+	## check for strand/allele swaps
+	if (check.alleles) {
 		
-		## keep intersection of marker sets
-		rez <- base::cbind( unclass(x)[ new.o, ],
-							unclass(y)[ new.o, ] )
-		if (.has.valid.intensity(x) && .has.valid.intensity(y)) {
-			attr(rez, "intensity") <- list( x = cbind(attr(x, "intensity")$x[ new.o,, drop = FALSE ], attr(y, "intensity")$x[ new.o,, drop = FALSE ]),
-											y = cbind(attr(x, "intensity")$y[ new.o,, drop = FALSE ], attr(y, "intensity")$y[ new.o,, drop = FALSE ]) )
-			attr(rez, "normalized") <- .null.false(attr(x, "normalized")) && .null.false(attr(x, "normalized"))
-		}
-		if (.has.valid.baflrr(x) && .has.valid.baflrr(y)) {
-			attr(rez, "baf") <- base::cbind( attr(x, "baf")[ new.o, drop = FALSE ],
-									   attr(y, "baf")[ new.o, drop = FALSE ] )
-			attr(rez, "lrr") <- base::cbind( attr(x, "lrr")[ new.o, drop = FALSE ],
-									   attr(y, "lrr")[ new.o, drop = FALSE ] )
-		}
+		if (!(attr(x, "alleles") == "01" && attr(y, "alleles") == "01"))
+			stop("In order to perform allele check efficiently, both input datasets should be in",
+				 "the '01' numeric encoding.")
+		
+		new.o <- keep[ order(o[keep]) ]	
+		x <- x[ new.o, ]
+		y <- y[ new.o, ]
+		
+		message("Checking for allele and strand swaps...")
+		unswapped <- .fix.allele.swaps(y, x, verbose = verbose)
+		message("Done fixing swaps.")
+		x <- unswapped[[2]]
+		y <- unswapped[[1]]
+		todrop <- unswapped[[3]]
+		
+	} else {
+		todrop <- rep(FALSE, length(keep))
 	}
-	else
-		stop("Not yet implemented: merges other than 'inner join'.")
 	
-	message(paste0("Merged set has ", nrow(rez), " markers x ", ncol(rez), " samples."))
+	## keep intersection of marker sets
+	rez <- base::cbind( unclass(x)[ new.o, ],
+						unclass(y)[ new.o, ] )
+	if (.has.valid.intensity(x) && .has.valid.intensity(y)) {
+		attr(rez, "intensity") <- list( x = cbind(attr(x, "intensity")$x[ new.o,, drop = FALSE ], attr(y, "intensity")$x[ new.o,, drop = FALSE ]),
+										y = cbind(attr(x, "intensity")$y[ new.o,, drop = FALSE ], attr(y, "intensity")$y[ new.o,, drop = FALSE ]) )
+		attr(rez, "normalized") <- .null.false(attr(x, "normalized")) && .null.false(attr(x, "normalized"))
+	}
+	if (.has.valid.baflrr(x) && .has.valid.baflrr(y)) {
+		attr(rez, "baf") <- base::cbind( attr(x, "baf")[ new.o, drop = FALSE ],
+										 attr(y, "baf")[ new.o, drop = FALSE ] )
+		attr(rez, "lrr") <- base::cbind( attr(x, "lrr")[ new.o, drop = FALSE ],
+										 attr(y, "lrr")[ new.o, drop = FALSE ] )
+	}
 	
 	## add class info
 	class(rez) <- c("genotypes", class(rez))
@@ -784,7 +776,7 @@ merge.genotypes <- function(x, y, join = c("inner","left"), check.alleles = FALS
 	if (!is.null(attr(x, "map")))
 		attr(rez, "map") <- attr(x, "map")[ new.o, ]
 	if (!is.null(attr(x, "ped")) & !is.null(attr(y, "ped")))
-		attr(rez, "ped") <- rbind(attr(x, "ped"), attr(y, "ped"))
+		attr(rez, "ped") <- rbind(attr(x, "ped"), attr(y, "ped"), stringsAsFactors = FALSE)
 	
 	## merge filters
 	if (!any(is.null(attr(y, "filter.sites")), is.null(attr(x, "filter.sites")))) {
@@ -800,6 +792,10 @@ merge.genotypes <- function(x, y, join = c("inner","left"), check.alleles = FALS
 		attr(rez, "filter.samples") <- c( attr(x, "filter.samples"), attr(y, "filter.samples") )[ colnames(rez) ]
 	}
 	
+	rez <- rez[ !todrop, ]
+	if (check.alleles)
+		attr(rez, "swaps") <- unswapped[[4]]
+	message(paste0("Merged set has ", nrow(rez), " markers x ", ncol(rez), " samples."))
 	return(rez)
 	
 }
@@ -808,7 +804,7 @@ merge.genotypes <- function(x, y, join = c("inner","left"), check.alleles = FALS
 .fix.allele.swaps <- function(a, b, verbose = FALSE, ...) {
 	
 	rc <- function(x) {
-		bases <- c(A="T",C="G",T="A",G="C")
+		bases <- c("A"="T","C"="G","T"="A","G"="C")
 		if (is.na(bases[x]))
 			return("N")
 		else
@@ -823,7 +819,10 @@ merge.genotypes <- function(x, y, join = c("inner","left"), check.alleles = FALS
 	ii <- which(aa1 != ba1 | aa2 != ba2)
 	message("\tinvestigating ", length(ii), " potential swaps...")
 	
-	for (i in ii) {
+	swaps <- rep(NA, length(ii))
+	names(swaps) <- attr(a, "map")$marker[ii]
+	for (j in seq_along(ii)) {
+		i <- ii[j]
 		#cat(rownames(a)[i], "\n")
 		if (aa1[i] == ba1[i]) {
 			if(aa2[i] == ba2[i]) {
@@ -841,6 +840,7 @@ merge.genotypes <- function(x, y, join = c("inner","left"), check.alleles = FALS
 					message("\tswapping strand at marker ", rownames(a)[i])
 				aa1[i] <- rc(aa1[i])
 				aa2[i] <- rc(aa2[i])
+				swaps[j] <- "strand"
 			}
 			else {
 				aa2[i] <- NA
@@ -851,10 +851,11 @@ merge.genotypes <- function(x, y, join = c("inner","left"), check.alleles = FALS
 				## different allele order; same strand
 				if (verbose)
 					message("\tswapping order at marker ", rownames(a)[i])
-				tmp <- aa1[i]
-				aa1[i] <- aa2[i]
-				aa2[i] <- tmp
-				a[ i, ] <- abs(2 - a[ i, ]) # swap calls
+				tmp <- ba1[i]
+				ba1[i] <- ba2[i]
+				ba2[i] <- tmp
+				b[ i, ] <- abs(2 - b[ i, ]) # swap calls
+				swaps[j] <- "order"
 			}
 			else {
 				aa2[i] <- NA
@@ -865,10 +866,11 @@ merge.genotypes <- function(x, y, join = c("inner","left"), check.alleles = FALS
 				## different allele order; opposite strand
 				if (verbose)
 					message("\tswapping strand and order at marker ", rownames(a)[i])
-				tmp <- rc(aa1[i])
-				aa1[i] <- rc(aa2[i])
-				aa2[i] <- tmp
-				a[ i, ] <- abs(2 - a[ i, ]) # swap calls
+				tmp <- rc(ba1[i])
+				ba1[i] <- rc(ba2[i])
+				ba2[i] <- tmp
+				b[ i, ] <- abs(2 - b[ i, ]) # swap calls
+				swaps[j] <- "both"
 			}
 			else {
 				aa2[i] <- NA
@@ -879,12 +881,13 @@ merge.genotypes <- function(x, y, join = c("inner","left"), check.alleles = FALS
 		}
 	}
 
+	todrop <- (is.na(aa1) | is.na(aa2) | is.na(ba1) | is.na(ba2))
 	attr(a, "map")$A1 <- aa1
 	attr(a, "map")$A2 <- aa2
 	attr(b, "map")$A1 <- ba1
 	attr(b, "map")$A2 <- ba2
 	
-	return(list(a, b))
+	return(list(a, b, todrop, swaps))
 	
 }
 

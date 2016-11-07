@@ -139,6 +139,7 @@ qcplot <- function(gty, draw = TRUE, ...) {
 #' @param theme.fn a function specifying formatting options for the resulting \code{ggplot}
 #' @param force logical; if \code{TRUE}, issues a stern warning before trying to make a huge
 #' 	plot which might hang the \code{R} session
+#' @param hilite name of one or more samples to highlight on the plot
 #' @param ... ignored
 #' 
 #' @return 2D intensity plots, one panel per marker (via \code{ggplot})
@@ -153,7 +154,7 @@ qcplot <- function(gty, draw = TRUE, ...) {
 #' @seealso \code{\link{dotplot.genotypes}} for compact plotting of genotype calls only
 #'
 #' @export plot.clusters
-plot.clusters <- function(x, markers = NULL, theme.fn = ggplot2::theme_bw, force = FALSE, ...) {
+plot.clusters <- function(x, markers = NULL, theme.fn = ggplot2::theme_bw, force = FALSE, hilite = NULL, ...) {
 	
 	if (!(inherits(x, "genotypes") && .has.valid.intensity(x)))
 		stop("Please supply an object of class 'genotypes'.")
@@ -177,7 +178,7 @@ plot.clusters <- function(x, markers = NULL, theme.fn = ggplot2::theme_bw, force
 	
 	df$filter <- is.filtered(x)$samples[ as.character(df$iid) ]
 	
-	ggplot2::ggplot(df) +
+	p <- ggplot2::ggplot(df) +
 		ggplot2::geom_point(ggplot2::aes(x = x, y = y, colour = call, shape = filter), fill = "white") +
 		ggplot2::scale_shape_manual(values = c(19, 21)) +
 		ggplot2::scale_colour_manual(values = c(RColorBrewer::brewer.pal(3, "Set1"), "grey")) +
@@ -185,6 +186,15 @@ plot.clusters <- function(x, markers = NULL, theme.fn = ggplot2::theme_bw, force
 		ggplot2::facet_wrap(~ marker) +
 		ggplot2::coord_equal() +
 		theme.fn()
+	
+	if (!is.null(hilite)) {
+		hilite <- intersect(hilite, colnames(x))
+		if (length(hilite)) {
+			p <- p + ggplot2::geom_point(data = subset(df, iid %in% hilite), ggplot2::aes(x = x, y = y), shape = 22, fill = "white")
+		}
+	}
+	
+	return(p)
 	
 }
 
@@ -494,6 +504,32 @@ dotplot.genotypes <- function(gty, size = 2, meta = NULL, shape = c("point","til
 #' @export
 dotplot <- function(gty, ...) UseMethod("dotplot")
 
+
+gridplot <- function(gty, labels = FALSE, ...) {
+	
+	X <- .copy.matrix.noattr(gty)
+	df <- reshape2::melt(X)
+	colnames(df) <- c("marker","iid","call")
+	if (is.numeric(X))
+		df$call <- factor(df$call, levels = c(0,1,2))
+	else
+		df$call <- factor(df$call, levels = c("A","C","G","T","H","N"))
+	df <- merge(df, markers(gty), all.x = TRUE)
+	df <- merge(df, samples(gty), all.x = TRUE)
+	
+	if (labels)
+		ylab.fn <- ggplot2::element_text(size = 7)
+	else
+		ylab.fn <- ggplot2::element_blank()
+	
+	ggplot2::ggplot(df) +
+		ggplot2::geom_tile(ggplot2::aes(x = marker, y = iid, fill = call)) +
+		ggplot2::scale_fill_brewer(palette = "Set1") +
+		ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1, size = 7),
+					   axis.text.y = ylab.fn,
+					   axis.ticks.y = ggplot2::element_blank())
+	
+}
 
 #' Create skeleton of a 'Manhattan plot' (concatenated chromosomes) with \code{ggplot2}
 #' 

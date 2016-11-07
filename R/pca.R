@@ -26,7 +26,7 @@
 }
 
 ## internal function for actually doing PCA
-.do.pca.genotypes <- function(gty, extras = NULL, what = c("genotypes","intensity"),
+.do.pca.genotypes <- function(gty, extras = NULL, what = c("genotypes","intensity","norm"),
 							  fast = FALSE, scale = TRUE, center = TRUE, eps = 1e-6, K = 1:3, ...) {
 	
 	if (!inherits(gty, "genotypes"))
@@ -52,18 +52,35 @@
 				})
 			}
 		}
-		else if (.has.valid.intensity(g)) {
-			x <- with(attr(g, "intensity"), .copy.matrix.noattr(x))
-			y <- with(attr(g, "intensity"), .copy.matrix.noattr(y))
-			rownames(x) <- paste0(rownames(x), "_x")
-			rownames(y) <- paste0(rownames(y), "_y")
-			x[ is.na(x) ] <- 0
-			y[ is.na(y) ] <- 0
-			X <- t(rbind(x,y))	
+		else if (what == "intensity") {
+			if (.has.valid.intensity(g)) {
+				x <- with(attr(g, "intensity"), .copy.matrix.noattr(x))
+				y <- with(attr(g, "intensity"), .copy.matrix.noattr(y))
+				rownames(x) <- paste0(rownames(x), "_x")
+				rownames(y) <- paste0(rownames(y), "_y")
+				x[ is.na(x) ] <- 0
+				y[ is.na(y) ] <- 0
+				X <- t(rbind(x,y))	
+			}
+			else {
+				stop("Need valid intensity matrices in order to do PCA on intensity.")
+			}
 		}
-		else {
-			stop("Need valid intensity matrices in order to do PCA on intensity.")
-		}	
+		else if (what == "norm") {
+			if (.has.valid.baflrr(g)) {
+				x <- attr(g, "baf")
+				#y <- attr(g, "lrr")
+				rownames(x) <- paste0(rownames(x), "_x")
+				#rownames(y) <- paste0(rownames(y), "_y")
+				x[ is.na(x) ] <- 0
+				#y[ is.na(y) ] <- 0
+				#X <- t(rbind(x,y))	
+				X <- t(x)
+			}
+			else {
+				stop("Need valid BAF and LRR matrices in order to do PCA on normalized intensity.")
+			}
+		}
 		return(X)
 	}
 	
@@ -169,7 +186,7 @@
 #' @seealso \code{pca.plink()} for using PLINK's (much faster and more powerful) implementation
 #'
 #' @export
-pca.genotypes <- function(x, extras = NULL, what = c("genotypes","intensity"), K = 3, fast = FALSE, ...) {
+pca.genotypes <- function(x, extras = NULL, what = c("genotypes","intensity","norm"), K = 3, fast = FALSE, ...) {
 	
 	if (!inherits(x, "genotypes"))
 		stop("Please supply an object of class 'genotypes.'")

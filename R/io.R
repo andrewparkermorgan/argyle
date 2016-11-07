@@ -479,7 +479,7 @@ as.rqtl <- function(gty, type = c("f2","bc"), chroms = paste0("chr", c(1:19,"X")
 	pheno$sex <- newsex
 	
 	rez$pheno <- pheno[ ,c("pheno","sex",setdiff(colnames(pheno), c("pheno","sex"))) ]
-	class(rez) <- c("f2","cross")
+	class(rez) <- c(type,"cross")
 	attr(rez, "alleles") <- c("A","B")
 	
 	message("Done.")

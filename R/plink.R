@@ -283,21 +283,22 @@ write.plink <- function(gty, prefix, map = NULL, fam = NULL, intensity = FALSE, 
 	o <- with(map, order(chr, pos, cM))
 	map <- map[o,]
 	gty <- gty[o,]
+	justcalls <- .copy.matrix.noattr(gty)
 	
-	if (nrow(gty) != nrow(map))
-		stop(paste0("Dimensions of genotype matrix (", nrow(gty) ,") and marker map (", nrow(map) ,") don't match."))
-	if (ncol(gty) != nrow(fam))
-		stop(paste0("Dimensions of genotype matrix (", ncol(gty) ,") and family file (", nrow(fam) ,") don't match."))
+	if (nrow(justcalls) != nrow(map))
+		stop(paste0("Dimensions of genotype matrix (", nrow(justcalls) ,") and marker map (", nrow(map) ,") don't match."))
+	if (ncol(justcalls) != nrow(fam))
+		stop(paste0("Dimensions of genotype matrix (", ncol(justcalls) ,") and family file (", nrow(fam) ,") don't match."))
 	
 	message("Creating plink fileset <", prefix ,".*>...")
-	message(paste0("\twriting family file (", ncol(gty)," individuals) ..."))
+	message(paste0("\twriting family file (", ncol(justcalls)," individuals) ..."))
 	write.plink.file(fam, paste0(prefix, ".fam"))
-	message(paste0("\twriting marker map (", nrow(gty)," markers) ..."))
+	message(paste0("\twriting marker map (", nrow(justcalls)," markers) ..."))
 	write.plink.file(map, paste0(prefix, ".bim"))
 	
 	message(paste0("\tpreparing to convert genotypes to binary format..."))
-	nr <- nrow(gty)
-	ni <- ncol(gty)
+	nr <- nrow(justcalls)
+	ni <- ncol(justcalls)
 	## block size in bytes: (number of individuals)/4, to nearest byte
 	bsz <- ceiling(ni/4)
 	
@@ -310,9 +311,9 @@ write.plink <- function(gty, prefix, map = NULL, fam = NULL, intensity = FALSE, 
 	
 	intr <- interactive()
 	if (intr)
-		pb <- txtProgressBar(min = 0, max = nrow(gty), style = 3)
-	for (i in seq_len(nrow(gty))) {
-		row <- gty[ i, ]
+		pb <- txtProgressBar(min = 0, max = nrow(justcalls), style = 3)
+	for (i in seq_len(nrow(justcalls))) {
+		row <- justcalls[ i, ]
 		row[ is.na(row) ] <- "N"
 		a1 <- row == map[i,5]
 		a2 <- row == map[i,6]
@@ -351,7 +352,7 @@ write.plink <- function(gty, prefix, map = NULL, fam = NULL, intensity = FALSE, 
 		close(bii)
 	}
 	
-	return(TRUE)
+	invisible(TRUE)
 	
 }
 
