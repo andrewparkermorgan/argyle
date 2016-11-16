@@ -140,23 +140,26 @@ sexysum <- function(gty, clean = TRUE, ...) {
 	
 	## strip all but sex chroms
 	gty <- subset(gty, grepl("X", chr) | grepl("Y", chr))
+	if (!is.numeric(gty))
+		gty <- recode(gty, "01")
+	
+	xchr <- subset(gty, grepl("X", chr))
+	ys <- with(markers(gty), grepl("Y", chr))
+	if (clean)
+		ys <- ys & with(markers(gty), grepl("^JAX", marker))
+	ychr <- subset(gty, ys)
 	
 	## count calls on sex chroms
-	bychr <- genoapply(gty, 1, .(chr), summarize.calls)
-	calls <- plyr::ldply(bychr)
-	sexing <- plyr::ddply(calls, plyr::.(iid), plyr::summarise,
-						  Ygood = A[ grep("X", chr)[1] ]+B[ grep("Y", chr)[1] ],
-						  Xhet = H[ grep("X", chr)[1] ])
-	sexing <- merge(sexing, attr(gty, "ped"))
-	rownames(sexing) <- as.character(sexing$iid)
+	Xhet <- colSums(xchr == 1, na.rm = TRUE)
+	Ygood <- colSums(ychr == 0 | ychr == 2, na.rm = TRUE)
+	sexing <- data.frame(iid = colnames(gty), Ygood = Ygood, Xhet = Xhet,
+						 row.names = colnames(gty), stringsAsFactors = FALSE)
 	
 	## get sum-intensities, if available
 	if (.has.valid.intensity(gty)) {
-		ys <- with(markers(gty), grepl("Y", chr))
-		if (clean)
-			ys <- ys & with(markers(gty), grepl("^JAX", marker))
-		siy <- colMeans( .si(subset(gty, ys)), na.rm = TRUE )
-		six <- colMeans( .si(subset(gty, grepl("X", chr))), na.rm = TRUE )
+		
+		siy <- colMeans( .si(ychr), na.rm = TRUE )
+		six <- colMeans( .si(xchr), na.rm = TRUE )
 		sexing$ix <- six[ rownames(sexing) ]
 		sexing$iy <- siy[ rownames(sexing) ]
 	}
