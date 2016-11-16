@@ -8,7 +8,7 @@ Maintainer: Andrew P Morgan  <andrew.parker.morgan@gmail.com>
 Description: Some useful stuff for handling genotypes (and underlying
     hybridization intensity data) from Illumina Infinium arrays.
 Depends:
-    R (>= 2.14)
+    R (>= 3.0)
 Imports:
     ggplot2,
     scales,
@@ -22,11 +22,12 @@ Imports:
     preprocessCore,
     reshape2,
     Matrix,
-    stringi
+    stringi,
+    mvtnorm
 Suggests:
     corpcor,
     knitr
 License: CC BY-NC-SA 4.0
 VignetteBuilder: knitr
 LinkingTo: Rcpp
-RoxygenNote: 5.0.1
+RoxygenNote: 5.0.0

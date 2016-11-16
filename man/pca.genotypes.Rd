@@ -4,8 +4,8 @@
 \alias{pca.genotypes}
 \title{Perform PCA on a \code{genotypes} object}
 \usage{
-\method{pca}{genotypes}(x, extras = NULL, what = c("genotypes",
-  "intensity"), K = 3, fast = FALSE, ...)
+\method{pca}{genotypes}(x, extras = NULL, what = c("genotypes", "intensity",
+  "norm"), K = 3, fast = FALSE, ...)
 }
 \arguments{
 \item{x}{an object of class \code{genotypes}}

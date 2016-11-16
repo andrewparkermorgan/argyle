@@ -4,8 +4,8 @@
 \alias{predict.haplogroup}
 \title{Predict haplogroup (eg chrY or chrM), given labelled controls}
 \usage{
-\method{predict}{haplogroup}(gty, train, what = c("intensity", "genotypes"),
-  ...)
+\method{predict}{haplogroup}(gty, train, method = c("lda", "kmeans"),
+  what = c("intensity", "genotypes"), noise = 0.1, ...)
 }
 \arguments{
 \item{gty}{a \code{genotypes} object with just the markers of interest}

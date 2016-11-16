@@ -18,10 +18,56 @@
 	
 }
 
+.predict.sex.xy <- function(gty, platform = "giga", clean = TRUE, ...) {
+	
+	## this ugly thing is the cluster model for GigaMUGA
+	models <- structure(list(giga = structure(list(
+		mu = structure(
+			c(1.00179688827984, 0.579627096415587, 0.816608462699492, 1.00517965688652),
+			.Dim = c(2L, 2L), .Dimnames = list(c("x", "y"), c("female", "male"))),
+		sigma = structure(list(female = structure(c(0.000777449983304451, 0.000646632991729865, 0.000646632991729865, 0.00911353377861309),
+												  .Dim = c(2L, 2L), .Dimnames = list(c("x", "y"), c("x", "y"))),
+							   male = structure(c(0.000343819755693033, 0.00036077907454159, 0.00036077907454159, 0.0107555733491657),
+							   				 .Dim = c(2L, 2L), .Dimnames = list(c("x", "y"), c("x","y")))), .Names = c("female", "male"))),
+		.Names = c("mu", "sigma"))), .Names = "giga")
+	
+	
+	.plat <- match.arg(platform)
+	if (!(.plat %in% names(models)))
+		stop("Unsupported platform.")
+	
+	## extract intensities for each sex chrom
+	ychr <- subset(gty, grepl("Y", chr))
+	if (clean)
+		ychr <- subset(ychr, grepl("^JAX", marker))
+	
+	xchr <- subset(gty, grepl("X", chr))
+	
+	## matrix of samples x (X,Y)
+	xy <- cbind( x = colMeans(.si(xchr), na.rm = TRUE),
+				 y = colMeans(.si(ychr), na.rm = TRUE) )
+	rownames(xy) <- colnames(gty)
+	
+	## evaluate probs
+	themodel <- models[[.plat]]
+	pmale <- mvtnorm::dmvnorm(xy, mean = themodel$mu[ ,"male" ], sigma = themodel$sigma$male, log = TRUE)
+	pfemale <- mvtnorm::dmvnorm(xy, mean = themodel$mu[ ,"female" ], sigma = themodel$sigma$female, log = TRUE)
+	
+	score <- pmale-pfemale
+	names(score) <- colnames(gty)
+	sexes <- ifelse(score > 0, 1, 2)
+	names(sexes) <- colnames(gty)
+	
+	return(list(sex = sexes, score = score))
+	
+}
+
 #' Predict sample sexes based on genotype and intensity data
 #' 
 #' @param object a \code{genotypes} object
 #' @param method how to go about making sex predictions (see Details)
+#' @param clean logical; for *MUGA arrays, use only known-good Y chromosome markers
+#' @param platform character; name of a specific array platform (used only for \code{"xy"} method)
 #' @param ... other parameters passed to underlying prediction functions
 #' 
 #' @return a dataframe with 4 columns: individual ID, nominal sex (0 if unknown), predicted sex
@@ -36,9 +82,13 @@
 #' 	at Y-linked markers, and applies a threshold to both.  The defaults are calibrated to the GigaMUGA
 #' 	array for mouse.  Females have mostly missing calls, males have mostly non-missing calls, and no
 #' 	sample should have many heterozygous calls.
+#' 	
+#' 	Method \code{"xy"} calculates the sum-intensity on each sex chromsome and evaluates them against
+#' 	a pre-constructed set of clusters in 2d space corresponding to each sex.  Only available for the
+#' 	GigaMUGA array for mouse, at present.
 #' 
 #' @export predict.sex
-predict.sex <- function(object, method = c("ycalls"), ...) {
+predict.sex <- function(object, method = c("ycalls","xy"), clean = TRUE, platform = "giga", ...) {
 	
 	if (!(inherits(object, "genotypes") && .has.valid.map(object)))
 		stop("Please supply an object of class 'genotypes' with valid marker map.")
@@ -47,6 +97,11 @@ predict.sex <- function(object, method = c("ycalls"), ...) {
 		message("Predicting sex using count of good calls on chrY...")
 		sexes <- .predict.sex.ycalls(object, ...)
 		prob <- setNames( rep(NA, ncol(object)), colnames(object) )
+	}
+	else if (method == "xy") {
+		assigner <- .predict.sex.xy(object, clean = clean, platform = platform, ...)
+		sexes <- assigner$sex
+		prob <- assigner$score
 	}
 	else {
 		stop("Other sexing methods not implemented yet.")

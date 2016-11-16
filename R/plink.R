@@ -393,7 +393,8 @@ make.fam <- function(ids, fid = NULL, mom = 0, dad = 0, sex = 0, pheno = -9, ...
 		warning("IDs are not unique; plink might complain.")
 	
 	fam <- data.frame(fid = fid, iid = ids,
-					  mom = mom, dad = dad, sex = resex, pheno = pheno)
+					  mom = mom, dad = dad, sex = resex, pheno = pheno,
+					  stringsAsFactors = FALSE)
 	rownames(fam) <- as.character(fam$iid)
 	return(fam)
 	
@@ -493,7 +494,7 @@ read.fam <- function(f, pheno.missing = c(0,-9), ...) {
 				stop("Oops -- can't find a plink family file by that name.")
 		}
 	}
-	fam <- read.table(ff, header = FALSE, comment.char = "")
+	fam <- read.table(ff, header = FALSE, comment.char = "", stringsAsFactors = FALSE)
 	colnames(fam) <- c("fid","iid","mom","dad","sex","pheno")
 	rownames(fam) <- as.character(fam$iid)
 	fam$iid <- as.character(fam$iid)
@@ -517,7 +518,7 @@ read.map <- function(f, ...) {
 				stop("Oops -- can't find a plink bim/map file by that name.")
 		}
 	}
-	fam <- read.table(ff, header = FALSE)
+	fam <- read.table(ff, header = FALSE, stringsAsFactors = FALSE)
 	colnames(fam) <- c("chr","marker","cM","pos","A1","A2")
 	fam$chr <- unplink.chroms(fam$chr)
 	fam$cM[ fam$cM == 0 ] <- NA
@@ -708,22 +709,24 @@ assoc.plink <- function(prefix, model = c("assoc","linear","logistic"),
 		expect <- c(expect, paste0(expect[[1]], ".perm"))
 	success <- .plink.command(prefix, cmd, expect, ...)
 	if (is.character(success)) {
-		.df <- read.table(paste0(success, suffix), header = TRUE)
+		.df <- read.table(paste0(success, suffix), header = TRUE, stringsAsFactors = FALSE)
 		if (model == "assoc") {
 			df <- with(.df, data.frame(chr = CHR, pos = BP, marker = SNP, A1 = A1,
-									   p.value = P, OR = OR))
+									   p.value = P, OR = OR, stringsAsFactors = FALSE))
 		}
 		else if (model == "logistic") {
 			df <- with(.df, data.frame(chr = CHR, pos = BP, marker = SNP, A1 = A1,
-									   p.value = P, OR = OR, n = NMISS, test = TEST))
+									   p.value = P, OR = OR, n = NMISS, test = TEST,
+									   stringsAsFactors = FALSE))
 		}
 		else if (model == "linear") {
 			df <- with(.df, data.frame(chr = CHR, pos = BP, marker = SNP, A1 = A1,
-									   p.value = P, beta = BETA, score = STAT, n = NMISS, test = TEST))
+									   p.value = P, beta = BETA, score = STAT, n = NMISS, test = TEST,
+									   stringsAsFactors = FALSE))
 		}
 		df$chr <- unplink.chroms(df$chr)
 		if (perms) {
-			pdf <- read.table(paste0(success, paste0(suffix, ".perm")), header = TRUE)
+			pdf <- read.table(paste0(success, paste0(suffix, ".perm")), header = TRUE, stringsAsFactors = FALSE)
 			rownames(pdf) <- as.character(pdf$SNP)
 			df$p.value.perm <- NA
 			df$p.value.perm <- pdf[ as.character(df$marker),"EMP1" ]
@@ -792,12 +795,12 @@ tdt.plink <- function(prefix, perms = FALSE, geno.missing = 0, ind.missing = 0, 
 		expect <- c(expect, paste0(expect[[1]], ".perm"))
 	success <- .plink.command(prefix, cmd, expect, ...)
 	if (is.character(success)) {
-		.df <- read.table(paste0(success, ".tdt"), header = TRUE)
+		.df <- read.table(paste0(success, ".tdt"), header = TRUE, stringsAsFactors = FALSE)
 		df <- with(.df, data.frame(chr = CHR, pos = BP, marker = SNP, A1 = A1,
 									   p.value = P_COM, OR = OR))
 		df$chr <- unplink.chroms(df$chr)
 		if (perms) {
-			pdf <- read.table(paste0(success, paste0("tdt", ".perm")), header = TRUE)
+			pdf <- read.table(paste0(success, paste0("tdt", ".perm")), header = TRUE, stringsAsFactors = FALSE)
 			rownames(pdf) <- as.character(pdf$SNP)
 			df$p.value.perm <- NA
 			df$p.value.perm <- pdf[ as.character(df$marker),"EMP1" ]
@@ -881,7 +884,7 @@ kinship.plink <- function(prefix, method = "--distance square 1-ibs", flags = ""
 	if (is.character(success)) {
 		kin.file <- paste0(success, ".", suffix)
 		kin.ids <- paste0(success, ".", suffix, ".id")
-		K <- as.matrix(read.table(kin.file))
+		K <- as.matrix(read.table(kin.file, stringsAsFactors = FALSE))
 		colnames(K) <- rownames(K) <- read.table(kin.ids, stringsAsFactors = FALSE)[,2]
 		return(K)
 	}
@@ -959,7 +962,7 @@ weir.fst.plink <- function(prefix, by = NULL, per.locus = FALSE, chr = NULL, fla
 			fst[ pairs[1,i], pairs[2,i] ] <- as.numeric(unlist(strsplit(rez[ length(rez) ], ":"))[2])
 			fst[ pairs[2,i], pairs[1,i] ] <- fst[ pairs[1,i], pairs[2,i] ]
 			if (per.locus) {
-				rez <- read.table(paste0(file.path(attr(prefix, "working"), basename(prefix)), ".fst"), header = TRUE)
+				rez <- read.table(paste0(file.path(attr(prefix, "working"), basename(prefix)), ".fst"), header = TRUE, stringsAsFactors = FALSE)
 				colnames(rez) <- c("chr","marker","pos","n","fst")
 				rez$pop1 <- factor(pairs[1,i], levels = cl)
 				rez$pop2 <- factor(pairs[2,i], levels = cl)
@@ -976,7 +979,7 @@ weir.fst.plink <- function(prefix, by = NULL, per.locus = FALSE, chr = NULL, fla
 	cmd <- paste("--het")
 	success <- .plink.command(prefix, cmd, list("het"), ...)
 	if (is.character(success)) {
-		rez <- read.table(paste0(success, ".het"), header = TRUE)
+		rez <- read.table(paste0(success, ".het"), header = TRUE, stringsAsFactors = FALSE)
 		colnames(rez) <- c("fid","iid","hom.o","hom.e","nmar","fhat")
 	}
 	else
@@ -1011,8 +1014,8 @@ qc.plink <- function(prefix, flags = "--nonfounders", ...) {
 	if (!success)
 		stop("Attempt to compute heterozygosity failed.")
 	
-	nmiss <- read.table(missfile, header = TRUE)
-	nhom <- read.table(hetfile, header = TRUE)
+	nmiss <- read.table(missfile, header = TRUE, stringsAsFactors = FALSE)
+	nhom <- read.table(hetfile, header = TRUE, stringsAsFactors = FALSE)
 	nmiss <- cbind(nmiss, nhom[ ,-(1:2) ])
 	nmiss$H <- with(nmiss, (N_GENO - O.HOM. - N_MISS + 1))
 	nmiss$N <- nmiss$N_MISS
@@ -1086,7 +1089,7 @@ ld.plink <- function(prefix, dprime = FALSE, index.snp = NULL, markers = NULL, c
 	success <- .plink.command(prefix, cmd, list("ld"), ...)
 	if (is.character(success)) {
 		ld.file <- paste0(success, ".ld")
-		ld <- data.table::data.table(read.table(ld.file, header = TRUE, strip.white = TRUE))
+		ld <- data.table::data.table(read.table(ld.file, header = TRUE, strip.white = TRUE, stringsAsFactors = FALSE))
 		return(ld)
 	}
 	else {
@@ -1245,9 +1248,9 @@ mds.plink <- function(prefix, flags = "--autosome", K = 3, ...) {
 	success <- .plink.command(prefix, cmd, list("mds","mds.eigvals"), ...)
 	if (is.character(success)) {
 		mds.file <- paste0(success, ".mds")
-		mds <- read.table(mds.file, header = TRUE, strip.white = TRUE)
+		mds <- read.table(mds.file, header = TRUE, strip.white = TRUE, stringsAsFactors = FALSE)
 		colnames(mds) <- c("fid","iid","cluster",paste0("MDS", seq_len(K)))
-		eigs <- read.table(paste0(success, ".mds.eigvals"), header = FALSE)[,1]
+		eigs <- read.table(paste0(success, ".mds.eigvals"), header = FALSE, stringsAsFactors = FALSE)[,1]
 		attr(mds, "eigvals") <- eigs/sum(eigs)
 		return(mds)
 	}
@@ -1318,9 +1321,9 @@ pca.plink <- function(x, flags = "--autosome", K = 20, by = c("indiv","var"), ..
 	success <- .plink.command(x, cmd, expect, ...)
 	if (is.character(success)) {
 		pcs.file <- paste0(success, ".", expect[[1]])
-		pcs <- read.table(pcs.file, header = FALSE, strip.white = TRUE)
+		pcs <- read.table(pcs.file, header = FALSE, strip.white = TRUE, stringsAsFactors = FALSE)
 		colnames(pcs) <- cols[1:ncol(pcs)]
-		eigs <- read.table(paste0(success, ".", expect[[2]]), header = FALSE)[,1]
+		eigs <- read.table(paste0(success, ".", expect[[2]]), header = FALSE, stringsAsFactors = FALSE)[,1]
 		attr(pcs, "eigvals") <- eigs/sum(eigs)
 		attr(pcs, "explained") <- attr(pcs, "eigvals")
 		class(pcs) <- c("pca.result", class(pcs))

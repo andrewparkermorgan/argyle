@@ -5,7 +5,7 @@
 \title{Plot 2D hybridization intensities at a few markers}
 \usage{
 \method{plot}{clusters}(x, markers = NULL, theme.fn = ggplot2::theme_bw,
-  force = FALSE, ...)
+  force = FALSE, hilite = NULL, ...)
 }
 \arguments{
 \item{x}{a \code{genotypes} object}
@@ -16,6 +16,8 @@
 
 \item{force}{logical; if \code{TRUE}, issues a stern warning before trying to make a huge
 plot which might hang the \code{R} session}
+
+\item{hilite}{name of one or more samples to highlight on the plot}
 
 \item{...}{ignored}
 }

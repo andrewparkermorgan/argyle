@@ -4,12 +4,17 @@
 \alias{predict.sex}
 \title{Predict sample sexes based on genotype and intensity data}
 \usage{
-\method{predict}{sex}(object, method = c("ycalls"), ...)
+\method{predict}{sex}(object, method = c("ycalls", "xy"), clean = TRUE,
+  platform = "giga", ...)
 }
 \arguments{
 \item{object}{a \code{genotypes} object}
 
 \item{method}{how to go about making sex predictions (see Details)}
+
+\item{clean}{logical; for *MUGA arrays, use only known-good Y chromosome markers}
+
+\item{platform}{character; name of a specific array platform (used only for \code{"xy"} method)}
 
 \item{...}{other parameters passed to underlying prediction functions}
 }
@@ -30,5 +35,9 @@ Implements several (soon) methods for predicting the sex of a sample given genot
 	at Y-linked markers, and applies a threshold to both.  The defaults are calibrated to the GigaMUGA
 	array for mouse.  Females have mostly missing calls, males have mostly non-missing calls, and no
 	sample should have many heterozygous calls.
+	
+	Method \code{"xy"} calculates the sum-intensity on each sex chromsome and evaluates them against
+	a pre-constructed set of clusters in 2d space corresponding to each sex.  Only available for the
+	GigaMUGA array for mouse, at present.
 }
 
