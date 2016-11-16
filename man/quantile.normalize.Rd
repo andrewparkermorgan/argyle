@@ -4,7 +4,7 @@
 \alias{quantile.normalize}
 \title{Perform quantile normalization of intensity data.}
 \usage{
-\method{quantile}{normalize}(x, weights = NULL, force = FALSE, ...)
+quantile.normalize(x, weights = NULL, force = FALSE, ...)
 }
 \arguments{
 \item{x}{a \code{genotypes} object}

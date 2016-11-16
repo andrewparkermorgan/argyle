@@ -120,19 +120,47 @@ predict.sex <- function(object, method = c("ycalls","xy"), clean = TRUE, platfor
 	
 }
 
-sexysum <- function(gty, ...) {
+#' Summary stats for the sex chromosomes
+#' 
+#' @param gty a \code{genotypes} object
+#' @param clean logical; for *MUGA arrays, use only known-good Y chromosome markers
+#' @param ... ignored
+#' 
+#' @return A dataframe of all pre-existing sample metadata with additional columns \code{Ygood} (count of good calls on the
+#' 	Y chromosome), \code{Xhet} (count of heterozygous calls on the X chromosome), \code{ix} (mean intensity of X markers) and
+#' 	\code{iy} (mean intensity of Y markers).  If no intensity data is availalble, the latter two columns are not included.
+#' 	
+#' @details If genotypes are not present for *both* sex chromosomes, the results are unpredictable.
+#' 
+#' @export
+sexysum <- function(gty, clean = TRUE, ...) {
 	
 	if (!inherits(gty, "genotypes"))
 		stop("Please supply an object of class 'genotypes'.")
 	
-	gty <- subset(gty, chr == "chrX" | chr == "chrY")
+	## strip all but sex chroms
+	gty <- subset(gty, grepl("X", chr) | grepl("Y", chr))
+	
+	## count calls on sex chroms
 	bychr <- genoapply(gty, 1, .(chr), summarize.calls)
 	calls <- plyr::ldply(bychr)
 	sexing <- plyr::ddply(calls, plyr::.(iid), plyr::summarise,
-						  Ygood = A[ chr == "chrY" ]+B[ chr == "chrY" ],
-						  Xhet = H[ chr == "chrX" ])
+						  Ygood = A[ grep("X", chr)[1] ]+B[ grep("Y", chr)[1] ],
+						  Xhet = H[ grep("X", chr)[1] ])
 	sexing <- merge(sexing, attr(gty, "ped"))
 	rownames(sexing) <- as.character(sexing$iid)
+	
+	## get sum-intensities, if available
+	if (.has.valid.intensity(gty)) {
+		ys <- with(markers(gty), grepl("Y", chr))
+		if (clean)
+			ys <- ys & with(markers(gty), grepl("^JAX", marker))
+		siy <- colMeans( .si(subset(gty, ys)), na.rm = TRUE )
+		six <- colMeans( .si(subset(gty, grepl("X", chr))), na.rm = TRUE )
+		sexing$ix <- six[ rownames(sexing) ]
+		sexing$iy <- siy[ rownames(sexing) ]
+	}
+	
 	return(sexing)
 	
 }
