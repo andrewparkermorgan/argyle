@@ -569,7 +569,7 @@ ggmanhattan <- function(df, chroms = NULL, scale = c("Mbp", "cM"), space = NULL,
 		ggplot2::guides(colour = FALSE) +
 		ggplot2::theme_bw() + ggplot2::theme(axis.title.x = ggplot2::element_blank(),
 						   panel.grid.minor = ggplot2::element_line(colour = "grey90"),
-						   panel.grid.minor = ggplot2::element_blank())
+						   panel.grid.major = ggplot2::element_blank())
 	return(rez)
 	
 }

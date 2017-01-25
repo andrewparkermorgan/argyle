@@ -4,7 +4,8 @@
 \alias{write.plink}
 \title{Write a \code{genotypes} object as a PLINK binary fileset}
 \usage{
-write.plink(gty, prefix, map = NULL, fam = NULL, intensity = FALSE, ...)
+write.plink(gty, prefix, map = NULL, fam = NULL, intensity = FALSE,
+  keep.chrnames = FALSE, ...)
 }
 \arguments{
 \item{gty}{an \code{genotypes} object}
@@ -16,6 +17,8 @@ write.plink(gty, prefix, map = NULL, fam = NULL, intensity = FALSE, ...)
 \item{fam}{sample metadata to override any existing metadata}
 
 \item{intensity}{whether to write intensity matrices, if present (to \code{*.bii} file)}
+
+\item{keep.chrnames}{whether to keep chromosome names as-is, or allow them to be converted to PLINK's style}
 
 \item{...}{ignored}
 }

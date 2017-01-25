@@ -10,6 +10,7 @@
 #' @param markers keep *markers* with these names
 #' @param keep keep *samples* with these names
 #' @param intensity attempt to read intensity matrices (\code{*.bii}), if present
+#' @param keep.chrnames whether to keep chromosome names as-is, or allow them to be converted to PLINK's style
 #' @param ... ignored
 #' 
 #' @return a \code{genotypes} object, with alleles in the "01" encoding (see \code{\link{recode.genotypes}})
@@ -40,7 +41,7 @@
 #' 	linkage analysis. Am J Hum Genet 81(3): 559-575. doi:10.1086/519795.
 #' 
 #' @export read.plink
-read.plink <- function(prefix, intensity = FALSE, chr = NULL, from = NULL, to = NULL, markers = NULL, keep = NULL, ...) {
+read.plink <- function(prefix, intensity = FALSE, chr = NULL, from = NULL, to = NULL, markers = NULL, keep = NULL, keep.chrnames = FALSE, ...) {
 	
 	## construct filenames; check that all are present and accounted for
 	prefix <- gsub("\\.bed$", "", prefix)
@@ -56,7 +57,7 @@ read.plink <- function(prefix, intensity = FALSE, chr = NULL, from = NULL, to = 
 	message(paste0("Reading binary genotypes from: <", bed,">"))
 	
 	## read map and family file
-	bim <- read.map(bim)
+	bim <- read.map(bim, keep.chrnames)
 	fam <- read.fam(fam)
 	
 	## check if we're doing random access
@@ -219,6 +220,7 @@ read.plink <- function(prefix, intensity = FALSE, chr = NULL, from = NULL, to = 
 #' @param map a valid marker map; overrides existing map
 #' @param fam sample metadata to override any existing metadata
 #' @param intensity whether to write intensity matrices, if present (to \code{*.bii} file)
+#' @param keep.chrnames whether to keep chromosome names as-is, or allow them to be converted to PLINK's style
 #' @param ... ignored
 #' 
 #' @return \code{TRUE} on completion
@@ -248,7 +250,7 @@ read.plink <- function(prefix, intensity = FALSE, chr = NULL, from = NULL, to = 
 #' 	linkage analysis. Am J Hum Genet 81(3): 559-575. doi:10.1086/519795.
 #' 
 #' @export write.plink
-write.plink <- function(gty, prefix, map = NULL, fam = NULL, intensity = FALSE, ...) {
+write.plink <- function(gty, prefix, map = NULL, fam = NULL, intensity = FALSE, keep.chrnames = FALSE, ...) {
 	
 	if (!inherits(gty, "genotypes"))
 		warning("Input has not been blessed as genotype data; proceeding with skepticism.")
@@ -276,7 +278,8 @@ write.plink <- function(gty, prefix, map = NULL, fam = NULL, intensity = FALSE, 
 		stop("Must supply a family file (columns: fid, iid, mom, dad, sex, pheno).")
 	fam <- fam[ ,c(fam.cols, setdiff(colnames(fam), fam.cols)) ]
 	
-	map[,1] <- convert.names(map[,1], to = "plink")
+	if (!keep.chrnames)
+		map[,1] <- convert.names(map[,1], to = "plink")
 	map[is.na(map[,3]),3] <- 0
 	map[is.na(map[,4]),4] <- 0
 	
@@ -507,7 +510,7 @@ read.fam <- function(f, pheno.missing = c(0,-9), ...) {
 }
 
 ## read plink bim/map file
-read.map <- function(f, ...) {
+read.map <- function(f, keep.chrnames = FALSE, ...) {
 	
 	ff <- f
 	if (!file.exists(ff)) {
@@ -520,7 +523,8 @@ read.map <- function(f, ...) {
 	}
 	fam <- read.table(ff, header = FALSE, stringsAsFactors = FALSE)
 	colnames(fam) <- c("chr","marker","cM","pos","A1","A2")
-	fam$chr <- unplink.chroms(fam$chr)
+	if (!keep.chrnames)
+		fam$chr <- unplink.chroms(fam$chr)
 	fam$cM[ fam$cM == 0 ] <- NA
 	rownames(fam) <- as.character(fam$marker)
 	

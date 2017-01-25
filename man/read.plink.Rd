@@ -5,7 +5,7 @@
 \title{Read a PLINK binary fileset into a \code{genotypes} object}
 \usage{
 read.plink(prefix, intensity = FALSE, chr = NULL, from = NULL,
-  to = NULL, markers = NULL, keep = NULL, ...)
+  to = NULL, markers = NULL, keep = NULL, keep.chrnames = FALSE, ...)
 }
 \arguments{
 \item{prefix}{path to a PLINK fileset, excluding \code{*.bed} suffix}
@@ -21,6 +21,8 @@ read.plink(prefix, intensity = FALSE, chr = NULL, from = NULL,
 \item{markers}{keep *markers* with these names}
 
 \item{keep}{keep *samples* with these names}
+
+\item{keep.chrnames}{whether to keep chromosome names as-is, or allow them to be converted to PLINK's style}
 
 \item{...}{ignored}
 }

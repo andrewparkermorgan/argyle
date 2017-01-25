@@ -26,7 +26,7 @@
 }
 
 ## internal function for actually doing PCA
-.do.pca.genotypes <- function(gty, extras = NULL, what = c("genotypes","intensity","norm"),
+.do.pca.genotypes <- function(gty, extras = NULL, what = c("genotypes","intensity","norm"), weights = NULL,
 							  fast = FALSE, scale = TRUE, center = TRUE, eps = 1e-6, K = 1:3, ...) {
 	
 	if (!inherits(gty, "genotypes"))
@@ -50,6 +50,19 @@
 					x[ is.na(x) ] <- mean(x, na.rm = TRUE)
 					return(x)
 				})
+			}
+			f <- colMeans(X)/2
+			sigma <- sqrt(f*(1-f))
+			X <- scale(X, center = f, scale = sigma)
+			if (!is.null(weights)) {
+				if (length(weights) == ncol(X)) {
+					message("\tapplying weights ...")
+					weights <- weights/sum(weights)*ncol(X)
+					X <- scale(X, center = FALSE, scale = 1/weights)
+				}
+				else {
+					message("\t[weights provided but don't match dimensions; ignoring them]")
+				}
 			}
 		}
 		else if (what == "intensity") {
@@ -114,7 +127,12 @@
 	}
 	else {
 		message("\t(using base::prcomp() ...)")
-		pc <- prcomp(features, center = center, scale. = scale)
+		if (what == "genotypes") {
+			pc <- prcomp(features, center = TRUE, scale. = FALSE)
+		}
+		else {
+			pc <- prcomp(features, center = center, scale. = scale)
+		}
 	}
 	proj <- predict(pc)
 	if (!is.null(extras)) {
@@ -169,6 +187,7 @@
 #' 	underlying 2D intensities.  The latter triggers an error if intensity matrices are absent.
 #' @param K how many PCs to return.
 #' @param fast if \code{TRUE}, use \code{corpcor::fast.svd()} to speed up calculations
+#' @param weights a vector of weights by which to pre-multiply the genotypes matrix
 #' @param ... other parameters for call to \code{prcomp}, such as \code{center} and \code{scale}
 #' 	(both \code{TRUE} by default)
 #'
@@ -186,7 +205,7 @@
 #' @seealso \code{pca.plink()} for using PLINK's (much faster and more powerful) implementation
 #'
 #' @export
-pca.genotypes <- function(x, extras = NULL, what = c("genotypes","intensity","norm"), K = 3, fast = FALSE, ...) {
+pca.genotypes <- function(x, extras = NULL, what = c("genotypes","intensity","norm"), K = 3, fast = FALSE, weights = NULL, ...) {
 	
 	if (!inherits(x, "genotypes"))
 		stop("Please supply an object of class 'genotypes.'")
@@ -195,7 +214,10 @@ pca.genotypes <- function(x, extras = NULL, what = c("genotypes","intensity","no
 		stop("You probably don't want to do PCA with <1 dimension.")
 	
 	## run the PCA
-	rez <- .do.pca.genotypes(x, extras = extras, what = what, fast = fast, K = K, ...)
+	if (is.null(weights))
+		rez <- .do.pca.genotypes(x, extras = extras, what = what, fast = fast, K = K, ...)
+	else
+		rez <- .do.pca.genotypes(x, extras = extras, what = what, fast = fast, K = K, weights = weights, scale = FALSE, ...)
 	
 	## add sample metatdata, if any
 	meta <- data.frame(iid = rownames(rez))

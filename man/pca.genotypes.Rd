@@ -5,7 +5,7 @@
 \title{Perform PCA on a \code{genotypes} object}
 \usage{
 \method{pca}{genotypes}(x, extras = NULL, what = c("genotypes", "intensity",
-  "norm"), K = 3, fast = FALSE, ...)
+  "norm"), K = 3, fast = FALSE, weights = NULL, ...)
 }
 \arguments{
 \item{x}{an object of class \code{genotypes}}
@@ -19,6 +19,8 @@ underlying 2D intensities.  The latter triggers an error if intensity matrices a
 \item{K}{how many PCs to return.}
 
 \item{fast}{if \code{TRUE}, use \code{corpcor::fast.svd()} to speed up calculations}
+
+\item{weights}{a vector of weights by which to pre-multiply the genotypes matrix}
 
 \item{...}{other parameters for call to \code{prcomp}, such as \code{center} and \code{scale}
 (both \code{TRUE} by default)}
