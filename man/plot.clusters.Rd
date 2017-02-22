@@ -4,7 +4,7 @@
 \alias{plot.clusters}
 \title{Plot 2D hybridization intensities at a few markers}
 \usage{
-plot.clusters(x, markers = NULL, theme.fn = ggplot2::theme_bw,
+\method{plot}{clusters}(x, markers = NULL, theme.fn = ggplot2::theme_bw,
   force = FALSE, hilite = NULL, ...)
 }
 \arguments{

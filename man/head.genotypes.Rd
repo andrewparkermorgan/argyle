@@ -5,7 +5,7 @@
 \alias{head.genotypes}
 \title{Show the first few samples and markers for a \code{genotypes}}
 \usage{
-head.genotypes(x, n = 10, nsamples = min(10, ncol(x)), ...)
+\method{head}{genotypes}(x, n = 10, nsamples = min(10, ncol(x)), ...)
 }
 \arguments{
 \item{x}{an object of class \code{genotypes}}

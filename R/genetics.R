@@ -112,8 +112,10 @@ nmiss <- function(gty, by = c("markers","samples"), ...) {
 #' @export
 missingness <- function(gty, by = c("markers","samples"), ...) {
 	
+	by <- match.arg(by)
 	rez <- nmiss(gty, by = by, ...)
-	return( rez/length(rez) )
+	denom <- if (by == "markers") ncol(gty) else nrow(gty)
+	return(rez/denom)
 	
 }
 

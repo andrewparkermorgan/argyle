@@ -63,7 +63,7 @@ plot.QC.result <- function(qc, show = c("point","label"), theme.fn = ggplot2::th
 	rez <- gtable:::rbind_gtable( ggplot2::ggplotGrob(p3), ggplot2::ggplotGrob(p2),
 								  size = "first")
 	panels <- rez$layout$t[grep("panel", rez$layout$name)]
-	rez$heights[panels] <- lapply(c(1,2), grid::unit, "null")
+	#rez$heights[panels] <- lapply(c(1,2), grid::unit, "npc")
 	
 	return(rez)
 	

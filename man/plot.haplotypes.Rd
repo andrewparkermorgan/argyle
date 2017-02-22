@@ -4,7 +4,7 @@
 \alias{plot.haplotypes}
 \title{Plot the results of haplotype reconstruction}
 \usage{
-plot.haplotypes(x, space = 0.1, ...)
+\method{plot}{haplotypes}(x, space = 0.1, ...)
 }
 \arguments{
 \item{x}{a dataframe containing the results of \code{reconstruct.haps()}}
