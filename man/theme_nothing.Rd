@@ -20,4 +20,3 @@ A very minimal graphics theme
 \seealso{
 \code{\link[ggplot2]{theme}}
 }
-

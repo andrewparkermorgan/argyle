@@ -17,4 +17,3 @@ a copy of \code{gty} with only chrX
 \description{
 Shortcut for grabbing just chrX
 }
-

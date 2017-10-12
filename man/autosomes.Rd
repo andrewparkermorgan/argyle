@@ -17,4 +17,3 @@ a copy of \code{gty} without chrX, chrY or chrM (or markers not assigned to a ch
 \description{
 Shortcut for grabbing just the autosomes
 }
-

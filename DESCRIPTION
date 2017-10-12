@@ -1,8 +1,8 @@
 Package: argyle
 Type: Package
 Title: Basic interface and QC for genotypes from Illumina Infinium arrays
-Version: 0.2.0
-Date: 2016-26-05
+Version: 0.2.1
+Date: 2017-10-11
 Author: Andrew P Morgan
 Maintainer: Andrew P Morgan  <andrew.parker.morgan@gmail.com>
 Description: Some useful stuff for handling genotypes (and underlying
@@ -23,11 +23,12 @@ Imports:
     reshape2,
     Matrix,
     stringi,
-    mvtnorm
+    mvtnorm,
+    Rcpp (>= 0.12.12)
 Suggests:
     corpcor,
     knitr
 License: CC BY-NC-SA 4.0
 VignetteBuilder: knitr
 LinkingTo: Rcpp
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1

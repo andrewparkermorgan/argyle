@@ -15,4 +15,3 @@ a \code{ggplot2} scale function
 \description{
 A red-to-orange color scale for heatmaps
 }
-

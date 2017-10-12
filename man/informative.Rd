@@ -38,4 +38,3 @@ A marker is defined to be "informative" if it is not monomorphic across a group 
 \seealso{
 \code{\link{segregating}}, \code{\link{fixed.diffs}}
 }
-

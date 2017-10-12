@@ -18,4 +18,3 @@ Custom y-axis scale for -log10(p-values)
 \seealso{
 \code{\link[ggplot2]{scale_x_continuous}}
 }
-

@@ -18,4 +18,3 @@ Make a blank grob for plotting
 \seealso{
 \code{\link[grid]{grid.rect}}
 }
-

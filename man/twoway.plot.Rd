@@ -34,4 +34,3 @@ A two-way contingency table can be rendered as a tesselation of rectangles whose
 \seealso{
 \code{\link{twoway}}
 }
-

@@ -28,4 +28,3 @@ In the output object, all sample and marker filters are set to \code{FALSE}.
 \seealso{
 \code{\link{run.sample.qc}}, \code{\link{apply.filters}}
 }
-

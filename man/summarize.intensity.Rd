@@ -32,4 +32,3 @@ The \code{q}th quantiles of "sum-intensity" are computed for each sample, across
 \seealso{
 \code{\link{summarize.calls}}, \code{\link{intensity.vs.ref}}, \code{\link{run.sample.qc}}
 }
-

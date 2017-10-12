@@ -17,4 +17,3 @@ a copy of \code{gty} without intensity data (but with any QC summaries still pre
 \description{
 Strip intensity matrices from a \code{genotypes} object
 }
-

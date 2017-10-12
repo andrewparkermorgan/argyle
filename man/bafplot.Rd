@@ -30,4 +30,3 @@ For a detailed description of the BAF and LRR metrics, their calculation,
 \seealso{
 \code{\link{tQN}}, \code{\link{supsmu}}
 }
-

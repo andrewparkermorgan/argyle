@@ -30,4 +30,3 @@ A site is defined to have a "fixed difference" between two samples if they have 
 \seealso{
 \code{\link{segregating}}
 }
-

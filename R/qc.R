@@ -321,6 +321,7 @@ run.marker.qc <- function(gty, max.H = Inf, max.N = Inf, min.hom = 0, hits = 0, 
 ## given a list of filters, update it with 'data' a list(filter_name = logical(to_filter))
 .update.filters <- function(fl, what = c("samples","markers"), data, ...) {
 	
+	what <- match.arg(what)
 	for (d in names(data)) {
 		ii <- which(data[[d]])
 		for (i in ii) {

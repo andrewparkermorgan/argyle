@@ -18,4 +18,3 @@ A graphics theme suitable for heatmaps
 \seealso{
 \code{\link[ggplot2]{theme}}
 }
-

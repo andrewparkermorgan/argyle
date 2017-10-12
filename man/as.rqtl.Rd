@@ -42,4 +42,3 @@ Broman KW, Sen S. (2009) A Guide to QTL Mapping with R/qtl. Springer, New York.
 \seealso{
 \code{\link[qtl]{read.cross}}, \code{\link{as.genotypes.cross}} (for inverse operation)
 }
-

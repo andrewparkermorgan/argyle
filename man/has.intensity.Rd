@@ -17,4 +17,3 @@ logical scalar; TRUE is intensity data is present
 \description{
 Check if a \code{genotypes} object has intensity data attached
 }
-

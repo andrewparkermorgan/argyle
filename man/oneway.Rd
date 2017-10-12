@@ -26,4 +26,3 @@ To facilitate plotting downstream, the function tries to guess if the phenotype 
 	(assuming the \code{PLINK} convention of 1=control/2=case), ordinal/categorical, or continuous.
 	Categorical phenotypes will be converted to a factor.
 }
-

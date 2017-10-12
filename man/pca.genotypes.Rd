@@ -45,4 +45,3 @@ Uses base-\code{R}'s \code{prcomp} under the hood (unless \code{fast = TRUE}). B
 \seealso{
 \code{pca.plink()} for using PLINK's (much faster and more powerful) implementation
 }
-

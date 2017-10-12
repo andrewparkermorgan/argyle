@@ -1333,6 +1333,10 @@ recode.genotypes <- function(gty, mode = c("pass","01","native","relative"),
 			message("Recoding to 0/1/2 using reference alleles.")
 		}
 		else {
+			if (is.character(gty))
+				converter <- .recode.numeric.by.freq
+			else
+				converter <- .recode.numeric.by.freq.from.numeric
 			recode.as <- "relative"
 			message("Recoding to 0/1/2 using empirical frequencies.")
 		}

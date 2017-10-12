@@ -38,4 +38,3 @@ Gatti DM et al. (2014) Quantitative trait locus mapping methods for Diversity Ou
 
 Svenson KL et al. (2012) High-resolution genetic mapping using the mouse Diversity Outbred population. Genetics 190(2): 437-447. doi:10.1534/genetics.111.132597.
 }
-

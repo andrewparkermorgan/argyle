@@ -29,4 +29,3 @@ Any metadata associated with markers or samples is *not* merged into the final r
 \seealso{
 \code{\link{summarize.intensity}}, \code{\link{intensity.vs.ref}}, \code{\link{run.sample.qc}}
 }
-

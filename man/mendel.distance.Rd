@@ -37,4 +37,3 @@ Define the "Mendel distance" between an individual and two possible parents as t
 \seealso{
 \code{\link{guess.parents}}
 }
-

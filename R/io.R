@@ -432,6 +432,8 @@ as.rqtl <- function(gty, type = c("f2","bc"), chroms = paste0("chr", c(1:19,"X")
 		warning(paste("For export to R/qtl, genotypes should be encoded numerically, and by reference to",
 					  "the parental strains of a cross.  See ?recode.to.parent."))
 	
+	type <- match.arg(type)
+
 	## dump intensity data
 	gty <- drop.intensity(gty)
 	

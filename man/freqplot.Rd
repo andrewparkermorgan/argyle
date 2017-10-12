@@ -26,4 +26,3 @@ Plot frequencies of missing, heterozygous, and minor-allele calls across genome
 \seealso{
 \code{\link{qcplot}}, \code{\link{bafplot}}, \code{\link{summarize.calls}}
 }
-

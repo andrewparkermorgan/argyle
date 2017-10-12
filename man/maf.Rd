@@ -16,4 +16,3 @@ function does not truly return the MAF unless the allele encoding is \code{"rela
 \seealso{
 \code{\link{freq}}
 }
-
