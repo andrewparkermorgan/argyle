@@ -34,6 +34,8 @@
 #'
 #' @docType package
 #' @name argyle
+#' @importFrom Rcpp sourceCpp
+#' @useDynLib argyle, .registration=TRUE
 NULL
 
 #' Constructor for a \code{genotypes} object
