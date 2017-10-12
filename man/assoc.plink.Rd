@@ -6,7 +6,7 @@
 \usage{
 assoc.plink(prefix, model = c("assoc", "linear", "logistic"),
   test = c("additive", "genotypic", "hethom", "dominant", "recessive"),
-  perms = TRUE, nperms = 1e+05, geno.missing = 0, ind.missing = 0,
+  perms = TRUE, nperms = 100000, geno.missing = 0, ind.missing = 0,
   maf = 0, hwe = 1,
   flags = "--keep-allele-order --allow-no-sex --nonfounders", ...)
 }
@@ -63,4 +63,3 @@ PLINK v1.9: \url{https://www.cog-genomics.org/plink2}
 Purcell S et al. (2007) PLINK: a toolset for whole-genome association and population-based 
 	linkage analysis. Am J Hum Genet 81(3): 559-575. doi:10.1086/519795.
 }
-

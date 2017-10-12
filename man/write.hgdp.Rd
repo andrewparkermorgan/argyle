@@ -25,4 +25,3 @@ Write genotypes to disk in the Stanford HGDP format, which can be read by (among
 Lischer HEL and Excoffier L (2012) PGDSpider: An automated data conversion tool for connecting
 	population genetics and genomics programs. Bioinformatics 28: 298-299.
 }
-

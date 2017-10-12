@@ -24,4 +24,3 @@ The input dataframe is assumed to have the following columns: \code{.id}, \code{
 \code{start}, \code{end}, \code{hap1} and \code{hap2}.  Since the result is a \code{ggplot},
 it can be futher decorated/modified at will.
 }
-

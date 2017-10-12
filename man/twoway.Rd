@@ -28,4 +28,3 @@ A wrapper around \code{oneway()}, generalizing it to marker pairs.  The continge
 	so that taking the mean gives a penetrance value.  Other ordinal or categorical phenotypes will be
 	converted from factor to the underlying integer representation, which may or may not be meaningful.
 }
-

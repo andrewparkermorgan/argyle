@@ -48,4 +48,3 @@ A wrapper for the sample-level QC functions, applied to genotype calls (always) 
 \seealso{
 \code{\link{summarize.calls}}, \code{\link{intensity.vs.ref}}, \code{\link{apply.filters}}
 }
-

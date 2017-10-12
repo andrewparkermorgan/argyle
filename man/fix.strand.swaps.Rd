@@ -22,4 +22,3 @@ Fix alleles in marker map using those in observed genotypes
 Because this method relies on information in observed genotypes, it is advisable
 	to use it only with "many" samples, where "many" is enough to capture all alleles of interest.
 }
-

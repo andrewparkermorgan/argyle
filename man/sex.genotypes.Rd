@@ -15,4 +15,3 @@ named numeric vector giving sample sexes: 0=unknown, 1=male, 2=female
 \description{
 Extract vector of sample sexes
 }
-

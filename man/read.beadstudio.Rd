@@ -76,4 +76,3 @@ This function initializes a \code{genotypes} object from Illumina BeadStudio out
 \references{
 Inspiration from Dan Gatti's DOQTL package: <https://github.com/dmgatti/DOQTL/blob/master/R/extract.raw.data.R>
 }
-

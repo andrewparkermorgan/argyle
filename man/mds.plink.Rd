@@ -36,4 +36,3 @@ Purcell S et al. (2007) PLINK: a toolset for whole-genome association and popula
 \seealso{
 \code{\link{pca.plink}}
 }
-

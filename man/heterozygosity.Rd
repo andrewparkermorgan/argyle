@@ -21,4 +21,3 @@ a named vector with the heterozygosity of each marker
 \description{
 Calculate heterozygosity by marker
 }
-

@@ -54,4 +54,3 @@ Didion JP et al. (2012) Discovery of novel variants in genotyping arrays improve
 Didion JP et al. (2014) SNP array profiling of mouse cell lines identifies their strains of origin and reveals
 	cross-contamination and widespread aneuploidy. BMC Genomics 15:847. doi:10.1186/1471-2164-15-847.
 }
-

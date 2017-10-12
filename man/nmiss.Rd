@@ -19,4 +19,3 @@ a named vector of missing-genotype *counts*
 \description{
 Count number of missing genotypes by marker or sample
 }
-

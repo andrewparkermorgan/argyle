@@ -22,4 +22,3 @@ Extract BAF/LRR as a dataframe
 \details{
 BAF and LRR must have already been computed using the \code{\link{tQN}} function.
 }
-

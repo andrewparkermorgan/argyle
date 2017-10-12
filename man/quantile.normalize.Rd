@@ -29,4 +29,3 @@ A simple wrapper around the quantile normalization originally described in Bolst
 Bolstad BM et al. (2003) A comparison of normalization methods for high density oligonucleotide
 	array data based on bias and variance. Bioinformatics 19(2): 185-193.
 }
-

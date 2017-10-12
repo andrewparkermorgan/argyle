@@ -24,4 +24,3 @@ Define the "consensus" genotype to be the genotype with greatest frequency among
 	of samples, with ties broken in favor of the major allele.  This function computes that consensus
 	ignoring missing values, and then masks sites with missingness greater than \code{nas.allowed}.
 }
-

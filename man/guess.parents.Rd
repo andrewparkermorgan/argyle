@@ -25,4 +25,3 @@ This wrapper calls \code{mendel.distance()} for all mother-father pairs availabl
 	\code{parents} and all offspring in \code{gty}, and for each offspring reports the mother-father
 	pair with the smallest Mendel distance.  No guarantees are made with respect to near-misses.
 }
-

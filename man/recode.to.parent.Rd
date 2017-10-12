@@ -20,4 +20,3 @@ a recoded \code{genotypes} object
 \description{
 Recode genotypes against genotypes of a parent
 }
-

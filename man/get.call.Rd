@@ -19,4 +19,3 @@ a dataframe containing sample metadata, marker metadata, and genotype calls
 \description{
 Extract genotype calls as a dataframe
 }
-
