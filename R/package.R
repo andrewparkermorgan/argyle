@@ -265,6 +265,7 @@ genotypes <- function(G, map, ped = NULL, alleles = c("auto","native","01","rela
 		.reply("Input not a matrix.", FALSE)
 	
 	final <- NA	
+	alleles <- match.arg(alleles)
 	if (alleles == "auto") {
 		if (is.character(G)) {
 			final <- "native"

@@ -93,6 +93,7 @@ predict.sex <- function(object, method = c("ycalls","xy"), clean = TRUE, platfor
 	if (!(inherits(object, "genotypes") && .has.valid.map(object)))
 		stop("Please supply an object of class 'genotypes' with valid marker map.")
 	
+	method <- match.arg(method)
 	if (method == "ycalls") {
 		message("Predicting sex using count of good calls on chrY...")
 		sexes <- .predict.sex.ycalls(object, ...)

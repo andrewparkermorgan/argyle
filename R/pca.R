@@ -213,6 +213,8 @@ pca.genotypes <- function(x, extras = NULL, what = c("genotypes","intensity","no
 	if (!is.numeric(K) || K < 1)
 		stop("You probably don't want to do PCA with <1 dimension.")
 	
+	what <- match.arg(what)
+
 	## run the PCA
 	if (is.null(weights))
 		rez <- .do.pca.genotypes(x, extras = extras, what = what, fast = fast, K = K, ...)
