@@ -23,7 +23,8 @@ Imports:
     reshape2,
     Matrix,
     stringi,
-    mvtnorm
+    mvtnorm,
+    Rcpp (>= 0.12.12)
 Suggests:
     corpcor,
     knitr
