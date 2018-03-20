@@ -796,4 +796,5 @@ thin.genotypes <- function(gty, spacing = 5.0, ...) {
 	return(thinned)
 	
 }
+#' @export
 thin <- function(gty, ...) UseMethod("thin")
