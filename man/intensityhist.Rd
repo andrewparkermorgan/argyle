@@ -24,3 +24,4 @@ Each sample's mean intensity is indicated by a dotted line, and the reference in
 	(specified in \code{ref.line}, if any) is indicated by a dashed line.  If any sample filters have
 	been set, either manually or by an automatic QC procedure, that sample's histogram will be plotted in red.
 }
+

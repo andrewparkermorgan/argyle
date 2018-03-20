@@ -18,3 +18,4 @@ table of sample counts by sex
 Counts the number of samples of each sex, converts numeric codes to human-friendly
 labels, and returns the table.
 }
+

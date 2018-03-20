@@ -25,3 +25,4 @@ Replacement of the marker map relies on marker names: only markers with which ar
 	subsetting function.)  Intensity matrices, BAF/LRR matrices, and site filters are adjusted accordingly.
 	A validity check is performed before the function returns to flag problems.
 }
+

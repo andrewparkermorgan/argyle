@@ -30,3 +30,4 @@ geno[ 1:10, ]
 geno[ ,c("sample1","sample2") ]
 }
 }
+

@@ -22,3 +22,4 @@ Convert genotypes to a dataframe
 In general the dataframe will be a less-efficient way to store genotypes, but is a
 	useful intermediate for writing genotypes to disk in a human-readable format.
 }
+

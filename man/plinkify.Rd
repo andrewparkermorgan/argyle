@@ -38,3 +38,4 @@ When the fileset does not exist and \code{gty} is a \code{genotypes} object, a n
 in the location specified by \code{where} via a call to \code{write.plink(gty)}.  Then the path to
 that fileset is returned.
 }
+

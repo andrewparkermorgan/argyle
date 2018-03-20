@@ -16,3 +16,4 @@ summarize.filters(gty, filter.codes = "NHIF", ...)
 \description{
 Show tally of filters failed by sites, samples.
 }
+

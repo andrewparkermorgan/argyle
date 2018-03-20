@@ -4,7 +4,7 @@
 \alias{rbind.genotypes}
 \title{Concatenate two \code{genotypes} objects 'vertically'}
 \usage{
-\method{rbind}{genotypes}(a, b, ...)
+rbind.genotypes(a, b, ...)
 }
 \arguments{
 \item{a}{an object of class \code{genotypes}}
@@ -21,3 +21,4 @@ The objects \code{a} and \code{b} must represent the same samples at non-overlap
 	of markers in order for this operation to be meaningful. That means their column names must match.
 	Sample or site filters are dropped in the result.
 }
+

@@ -24,3 +24,4 @@ We use linear discriminant analysis via (\code{MASS::lda()}) to extract the most
 	informative dimensions of the input data, given the labelled training samples, and then
 	project the test samples onto that dimension.
 }
+

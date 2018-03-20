@@ -42,3 +42,4 @@ This function attempts to reconstruct haplotypes of target individuals (in \code
  The model is constrained to only the homozygous states when a sample should really be hemizygous:
  this is true for males on chrX and everybody on chrM.
 }
+

@@ -765,14 +765,27 @@ thin.genotypes <- function(gty, spacing = 5.0, ...) {
 	# subsample by chromosome
 	message("Starting with ", nrow(gty), " markers...")
 	suppressMessages({
-		thinned <- genoapply(subset(gty, !is.na(cM)), 1, .(chr), function(d) {
+		
+		thinner <- function(d) {
 			binned <- fixed.bins(markers(d)$cM, spacing)
 			.keep1 <- function(z) z[1]
 			keep <- sapply(split(seq_len(nrow(d)), binned), .keep1)
 			keep <- union(keep, c(1,nrow(d)))
 			d[ sort(keep), ]
+		}
+		
+		gty <- subset(gty, !is.na(cM))
+		vals <- split(seq_len(nrow(gty)), attr(gty, "map")$chr)
+		ll <- lapply(vals, function(v) {
+			x <- gty[ v,,drop = FALSE ]
+			if (nrow(x))
+				thinner(x)
+			else
+				return(NULL)
 		})
-		thinned <- Reduce(rbind, thinned)
+		nulls <- sapply(ll, function(f) is.null(f))
+		ll <- ll[ !nulls ]
+		thinned <- Reduce(rbind, ll)
 	})
 	
 	dropped <- setdiff(attr(gty, "map")$chr, attr(thinned, "map")$chr)

@@ -46,3 +46,4 @@ genoapply(x, 2, .(fid), myfunction, extra.arg = TRUE)
 }
 
 }
+

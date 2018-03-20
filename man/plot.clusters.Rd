@@ -38,3 +38,4 @@ Each point represents a genotype call for a single sample.  Points are coloured 
 \seealso{
 \code{\link{dotplot.genotypes}} for compact plotting of genotype calls only
 }
+

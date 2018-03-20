@@ -16,3 +16,4 @@
 \description{
 Access attributes of a \code{genotypes} object as if they were a list
 }
+

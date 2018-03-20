@@ -19,3 +19,4 @@ a named vector with the proportion of sites of heterozygous for each sample
 \description{
 Calculate the proportion of sites at which each sample is heterozygous
 }
+

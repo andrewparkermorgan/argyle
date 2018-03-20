@@ -20,3 +20,4 @@ a list with two elements: \code{$sites}, logical vector of filter status for mar
 \description{
 Check if markers or samples are marked with filters
 }
+

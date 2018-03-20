@@ -108,7 +108,7 @@
 	message("Preparing input matrices...")
 	
 	if (!is.null(extras)) {
-		suppressMessages(both <- merge(gty, extras))
+		suppressMessages(both <- merge(gty, extras, check.alleles = TRUE))
 		both <- .make.pca.input(both)
 		keep <- .check.variance(both[ colnames(gty), ]) & .check.variance(both[ colnames(extras), ])
 		features <- both[ colnames(gty),keep ]

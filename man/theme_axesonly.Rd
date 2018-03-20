@@ -20,3 +20,4 @@ A graphics theme with only an x-axis
 \seealso{
 \code{\link[ggplot2]{theme}}
 }
+

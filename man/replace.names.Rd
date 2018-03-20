@@ -22,3 +22,4 @@ The values in \code{nn} are used to replace existing names using the following r
 	number of samples in \code{gty}, and each element should be a new name to replace an old one.  Missing values are
 	not permitted, for obvious reasons.
 }
+

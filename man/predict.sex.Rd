@@ -40,3 +40,4 @@ Implements several (soon) methods for predicting the sex of a sample given genot
 	a pre-constructed set of clusters in 2d space corresponding to each sex.  Only available for the
 	GigaMUGA array for mouse, at present.
 }
+

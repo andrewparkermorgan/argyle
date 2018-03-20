@@ -38,3 +38,4 @@ A wrapper for the marker-level QC functions, applied to genotype calls.  Samplie
 \seealso{
 \code{\link{summarize.calls}}, \code{\link{run.sample.qc}}, \code{\link{apply.filters}}
 }
+

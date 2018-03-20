@@ -30,3 +30,4 @@ if \code{screeplot = FALSE}, a \code{ggplot}; if \code{screeplot = TRUE}, a \cod
 \description{
 Auto-plotting of a PCA result
 }
+

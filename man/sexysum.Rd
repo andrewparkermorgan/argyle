@@ -24,3 +24,4 @@ Summary stats for the sex chromosomes
 \details{
 If genotypes are not present for *both* sex chromosomes, the results are unpredictable.
 }
+

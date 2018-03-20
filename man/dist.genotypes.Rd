@@ -24,3 +24,4 @@ To get a plain distance matrix, do \code{as.matrix(dist(x))}.
 \seealso{
 \code{\link[stats]{dist}}
 }
+

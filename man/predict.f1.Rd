@@ -38,3 +38,4 @@ Each column in the input is assumed to be either a representative individual fro
 \seealso{
 \code{\link{segregating}}, \code{\link{fixed.diffs}}
 }
+

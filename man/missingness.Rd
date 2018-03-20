@@ -19,3 +19,4 @@ a named vector of missing-genotype *proportions*
 \description{
 Calculate rate of missing genoypes by marker or sample
 }
+

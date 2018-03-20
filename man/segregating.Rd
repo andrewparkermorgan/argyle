@@ -33,3 +33,4 @@ A site is defined to be "segregating" if two or more alleles are present in one 
 \seealso{
 \code{\link{fixed.diffs}}
 }
+

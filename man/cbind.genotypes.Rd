@@ -4,7 +4,7 @@
 \alias{cbind.genotypes}
 \title{Concatenate two \code{genotypes} objects 'horizontally'}
 \usage{
-\method{cbind}{genotypes}(a, b = NULL, ...)
+cbind.genotypes(a, b = NULL, ...)
 }
 \arguments{
 \item{a}{an object of class \code{genotypes}}
@@ -21,3 +21,4 @@ The objects \code{a} and \code{b} must represent the same markers typed on non-o
 	of samples in order for this operation to be meaningful. That means their row names must match.
 	Any sample or site filters are dropped in the result.
 }
+

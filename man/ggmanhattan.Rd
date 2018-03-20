@@ -28,3 +28,4 @@ a \code{ggplot2} object whose x-axis is defined by chromosome and position (with
 \description{
 Create skeleton of a 'Manhattan plot' (concatenated chromosomes) with \code{ggplot2}
 }
+

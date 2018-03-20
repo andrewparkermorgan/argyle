@@ -23,3 +23,4 @@ a named vector of allele frequencies
 \description{
 Calculate allele frequencies by marker or sample
 }
+

@@ -39,3 +39,4 @@ Didion JP et al. (2014) SNP array profiling of mouse cell lines identifies their
 \seealso{
 \code{\link{summarize.intensity}}, \code{\link{summarize.calls}}, \code{\link{run.sample.qc}}
 }
+

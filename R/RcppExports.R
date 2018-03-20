@@ -2,10 +2,10 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 dist_ibs <- function(x) {
-    .Call('_argyle_dist_ibs', PACKAGE = 'argyle', x)
+    .Call(`_argyle_dist_ibs`, x)
 }
 
 tQN_Cpp <- function(r, theta, A_theta, A_r, B_theta, B_r, H_theta, H_r) {
-    .Call('_argyle_tQN_Cpp', PACKAGE = 'argyle', r, theta, A_theta, A_r, B_theta, B_r, H_theta, H_r)
+    .Call(`_argyle_tQN_Cpp`, r, theta, A_theta, A_r, B_theta, B_r, H_theta, H_r)
 }
 

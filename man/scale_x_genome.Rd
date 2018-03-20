@@ -4,7 +4,7 @@
 \alias{scale_x_genome}
 \title{Custom x-axis scale for genome coordinates.}
 \usage{
-scale_x_genome(scale = 1000000, unit = NULL, ...)
+scale_x_genome(scale = 1e+06, unit = NULL, ...)
 }
 \arguments{
 \item{scale}{scale factor, in base pairs}
@@ -25,3 +25,4 @@ For example, if \code{scale = 1000}, we might set \code{unit = "kbp"}.
 \seealso{
 \code{\link[ggplot2]{scale_x_continuous}}
 }
+
